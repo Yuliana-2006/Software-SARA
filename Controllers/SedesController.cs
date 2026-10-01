@@ -12,7 +12,7 @@ namespace Software_SARA.Controllers
         }
 
         // GET: SedesController/Details/5
-        public ActionResult Details(int id)
+        public ActionResult CrearSede()
         {
             return View();
         }

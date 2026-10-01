@@ -1,7 +1,85 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-@{
+﻿@{
+    ViewData["Title"] = "Sedes";
 }
+<a asp-controller="Sedes" asp-action="CrearSede" class="sede-link">
 
-<h1>Registrar Sede</h1>
+    <div class="sede-card">
+
+        <div class="sede-plus">
+            <i class="bi bi-plus-lg"></i>
+        </div>
+
+        <div class="sede-title">
+            Agregar<br />
+            Sede
+        </div>
+
+    </div>
+
+</a>
+
+<style>
+
+    .sede-link {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+
+    .sede-link:hover {
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .sedes-container {
+        width: 100%;
+        min-height: calc(100vh - 120px);
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding-top: 55px;
+    }
+
+    .sede-card {
+        width: 300px;
+        height: 450px;
+        background-color: #5B805E;
+        border: 5px solid #2E4F3E;
+        border-radius: 42px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+    }
+
+    .sede-plus {
+        width: 130px;
+        height: 130px;
+        background-color: #ECE9DF;
+        border: 5px solid #2E4F3E;
+        border-radius: 50%;
+        margin-top: 65px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .sede-plus i {
+        font-size: 55px;
+        color: #2E4F3E;
+        font-weight: 900;
+        -webkit-text-stroke: 1.5px #2E4F3E;
+    }
+
+    .sede-title {
+        margin-top: 105px;
+        color: white;
+        font-size: 36px;
+        font-weight: 800;
+        line-height: 1.15;
+        text-align: center;
+        width: 100%;
+    }
+
+</style>
+
