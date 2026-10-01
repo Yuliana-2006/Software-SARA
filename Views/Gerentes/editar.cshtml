@@ -1,0 +1,178 @@
+﻿@model Software_SARA.Controllers.GerenteViewModel
+
+@{
+    ViewData["Title"] = "Editar Gerente - SARA";
+}
+
+<style>
+    body {
+        background-color: #E6E4DC;
+    }
+
+    .banner-titulo {
+        background-color: #2D4A36;
+        color: white;
+        padding: 20px 40px;
+        font-size: 2.5rem;
+        font-weight: 800;
+    }
+
+    .form-container {
+        padding: 40px 60px;
+    }
+
+    .field-label {
+        color: #2D4A36;
+        font-weight: 800;
+        font-size: 1.2rem;
+        margin-bottom: 8px;
+    }
+
+    .field-input {
+        background-color: #587B58;
+        border: none;
+        border-radius: 25px;
+        height: 50px;
+        color: white;
+        padding: 0 20px;
+        font-size: 1.1rem;
+        width: 100%;
+    }
+
+    .input-group-custom {
+        display: flex;
+        background-color: #587B58;
+        border-radius: 25px;
+        overflow: hidden;
+    }
+
+    .select-doc {
+        background-color: #2D4A36;
+        color: white;
+        border: none;
+        padding: 0 15px;
+        font-weight: 700;
+        border-radius: 25px 0 0 25px;
+    }
+
+    .input-doc {
+        background-color: transparent;
+        border: none;
+        color: white;
+        padding: 0 20px;
+        height: 50px;
+        width: 100%;
+    }
+
+    .btn-sara-guardar {
+        background-color: #E6E4DC;
+        color: #2D4A36;
+        font-weight: 800;
+        font-size: 1.2rem;
+        border: 4px solid #2D4A36;
+        border-radius: 30px;
+        padding: 8px 35px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-sara-guardar:hover {
+        background-color: #2D4A36;
+        color: white;
+    }
+
+    .btn-sara-cancelar {
+        background-color: #2D4A36;
+        color: white;
+        font-weight: 800;
+        font-size: 1.2rem;
+        border: 4px solid #2D4A36;
+        border-radius: 30px;
+        padding: 8px 35px;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.2s ease;
+    }
+
+    .btn-sara-cancelar:hover {
+        background-color: #1e3324;
+        color: white;
+    }
+</style>
+
+<div class="banner-titulo">
+    Editar Gerente
+</div>
+
+<div class="form-container">
+    <form asp-controller="Gerentes" asp-action="Editar" method="post">
+        <input type="hidden" asp-for="Id" />
+
+        <div class="row g-4">
+            
+            <!-- Columna Izquierda -->
+            <div class="col-md-6 pe-md-5">
+                <div class="mb-4">
+                    <label class="field-label">Nombres</label>
+                    <input asp-for="Nombres" class="field-input" required />
+                </div>
+
+                <div class="mb-4">
+                    <label class="field-label">Apellidos</label>
+                    <input asp-for="Apellidos" class="field-input" required />
+                </div>
+
+                <div class="mb-4">
+                    <label class="field-label">Correo electrónico</label>
+                    <input asp-for="Correo" type="email" class="field-input" required />
+                </div>
+
+                <div class="mb-4">
+                    <label class="field-label">Teléfono</label>
+                    <input asp-for="Telefono" class="field-input" required />
+                </div>
+            </div>
+
+            <!-- Columna Derecha -->
+            <div class="col-md-6 ps-md-5">
+                <div class="mb-4">
+                    <label class="field-label">Dirección</label>
+                    <input asp-for="Direccion" class="field-input" required />
+                </div>
+
+                <div class="mb-4">
+                    <label class="field-label">Número de Documento</label>
+                    <div class="input-group-custom">
+                        <select asp-for="TipoDocumento" class="select-doc">
+                            <option value="CC">CC</option>
+                            <option value="CE">CE</option>
+                            <option value="PAS">PAS</option>
+                        </select>
+                        <input asp-for="NumeroDocumento" class="input-doc" required />
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="field-label">Sede</label>
+                    <input class="field-input" value="@Model.Sede" disabled />
+                    <input type="hidden" asp-for="Sede" value="@Model.Sede" />
+                </div>
+
+                <div class="mb-4">
+                    <label class="field-label">Fecha de nacimiento</label>
+                    <input asp-for="FechaNacimiento" type="date" class="field-input" required />
+                </div>
+            </div>
+
+        </div>
+
+        <div class="d-flex justify-content-center gap-4 mt-5">
+            <button type="submit" class="btn-sara-guardar">
+                Guardar Cambios
+            </button>
+            <a asp-controller="Gerentes" asp-action="Index" class="btn-sara-cancelar">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
