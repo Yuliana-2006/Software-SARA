@@ -6,7 +6,6 @@
     // Inicial para el avatar circular
     var inicial = !string.IsNullOrEmpty(rol) ? rol.Substring(0, 1).ToUpper() : "U";
 }
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -18,56 +17,80 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <style>
-            body {
-                background-color: #ECE9DF;
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            }
+        body {
+            background-color: #ECE9DF;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+        }
 
-            /* Sidebar lateral estilo SARA */
-            .sidebar {
-                width: 260px;
-                background-color: #2E4F3E;
-                min-height: 100vh;
-                transition: all 0.3s;
-            }
+        /* Sidebar lateral estilo SARA */
+        .sidebar {
+            width: 260px;
+            background-color: #2E4F3E;
+            min-height: 100vh;
+            transition: all 0.3s ease-in-out;
+            white-space: nowrap;
+        }
 
-            .sidebar-header {
-                background-color: #254030;
-                padding: 15px;
-                color: #ffffff;
-                font-weight: bold;
-                font-size: 18px;
-            }
+        /* Clase para colapsar la barra lateral */
+        .sidebar.collapsed {
+            width: 70px;
+        }
 
-            .sidebar-menu a {
-                color: #ffffff;
-                text-decoration: none;
-                padding: 12px 20px;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                font-weight: 600;
-                font-size: 15px;
-                transition: background 0.2s;
-            }
+        /* Ocultar el texto cuando está colapsado */
+        .sidebar.collapsed .sidebar-text {
+            display: none;
+        }
 
-                .sidebar-menu a:hover {
-                    background-color: #3C6348;
-                }
+        /* Centrar íconos y ajustar espacios al colapsar */
+        .sidebar.collapsed .sidebar-header {
+            justify-content: center !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
 
-            /* Avatar de perfil superior */
-            .avatar-circle {
-                width: 40px;
-                height: 40px;
-                background-color: #3C6348;
-                color: white;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: bold;
-                font-size: 18px;
-            }
+        .sidebar.collapsed .sidebar-menu a {
+            justify-content: center;
+            padding: 12px 0;
+        }
+
+        .sidebar-header {
+            background-color: #254030;
+            padding: 15px;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .sidebar-menu a {
+            color: #ffffff;
+            text-decoration: none;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            font-size: 15px;
+            transition: background 0.2s;
+        }
+
+        .sidebar-menu a:hover {
+            background-color: #3C6348;
+        }
+
+        /* Avatar de perfil superior */
+        .avatar-circle {
+            width: 40px;
+            height: 40px;
+            background-color: #3C6348;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
     </style>
 </head>
 <body>
@@ -77,46 +100,47 @@
         <!-- MENÚ LATERAL IZQUIERDO -->
         <div class="sidebar d-flex flex-column justify-content-between shadow" id="sidebarMenu">
             <div>
-                <!-- Encabezado con 3 líneas y Nombre del Software sin recuadros -->
+                <!-- Encabezado con Botón para Colapsar -->
                 <div class="sidebar-header d-flex align-items-center gap-2 border-0 bg-transparent px-3 py-3">
-                    <i class="bi bi-list fs-3 text-white" style="cursor: pointer;"></i>
-                    <span class="fw-bold text-white fs-5">Software SARA</span>
+                    <i class="bi bi-list fs-3 text-white" id="toggleSidebarBtn" style="cursor: pointer;" title="Colapsar / Desplegar menú"></i>
+                    <span class="fw-bold text-white fs-5 sidebar-text">Software SARA</span>
                 </div>
 
                 <!-- Lista de Acciones según el Rol -->
                 <div class="sidebar-menu mt-2">
-                    <a asp-controller="Home" asp-action="Index">
-                        <i class="bi bi-house-door-fill"></i> Inicio
+                    <!-- 1. INICIO (Bienvenida) - Visible para todos -->
+                    <a asp-controller="Home" asp-action="Index" title="Inicio">
+                        <i class="bi bi-house-door-fill"></i> <span class="sidebar-text">Inicio</span>
                     </a>
 
                     @if (rol == "Dueño")
                     {
-                        <a asp-controller="Home" asp-action="Index"><i class="bi bi-building"></i> Sedes</a>
-                        <a asp-controller="Gerentes" asp-action="Index"><i class="bi bi-person-badge-fill"></i> Gerentes</a>
-                        <a asp-controller="Home" asp-action="Index"><i class="bi bi-bar-chart-line-fill"></i> Informes</a>
+                        <a asp-controller="Home" asp-action="Index" title="Sedes"><i class="bi bi-building"></i> <span class="sidebar-text">Sedes</span></a>
+                        <a asp-controller="Gerentes" asp-action="Index" title="Gerentes"><i class="bi bi-person-badge-fill"></i> <span class="sidebar-text">Gerentes</span></a>
+                        <a asp-controller="Home" asp-action="Index" title="Informes"><i class="bi bi-bar-chart-line-fill"></i> <span class="sidebar-text">Informes</span></a>
                     }
 
                     @if (rol == "Gerente")
                     {
-                        <a asp-controller="Home" asp-action="Index"><i class="bi bi-people-fill"></i> Personal</a>
-                        <a asp-controller="Home" asp-action="Index"><i class="bi bi-cash-stack"></i> Caja</a>
-                        <a asp-controller="Home" asp-action="Index"><i class="bi bi-receipt"></i> Facturas</a>
-                        <a asp-controller="Home" asp-action="Index"><i class="bi bi-cart-check-fill"></i> Pedidos</a>
-                        <a asp-controller="Home" asp-action="Index"><i class="bi bi-bell-fill"></i> Recordatorios</a>
-                        <a asp-controller="Home" asp-action="Index"><i class="bi bi-bar-chart-line-fill"></i> Informes</a>
+                        <a asp-controller="Personal" asp-action="Index" title="Personal"><i class="bi bi-people-fill"></i> <span class="sidebar-text">Personal</span></a>
+                        <a asp-controller="Home" asp-action="Index" title="Caja"><i class="bi bi-cash-stack"></i> <span class="sidebar-text">Caja</span></a>
+                        <a asp-controller="Home" asp-action="Index" title="Facturas"><i class="bi bi-receipt"></i> <span class="sidebar-text">Facturas</span></a>
+                        <a asp-controller="Home" asp-action="Index" title="Pedidos"><i class="bi bi-cart-check-fill"></i> <span class="sidebar-text">Pedidos</span></a>
+                        <a asp-controller="Home" asp-action="Index" title="Recordatorios"><i class="bi bi-bell-fill"></i> <span class="sidebar-text">Recordatorios</span></a>
+                        <a asp-controller="Home" asp-action="Index" title="Informes"><i class="bi bi-bar-chart-line-fill"></i> <span class="sidebar-text">Informes</span></a>
                     }
 
                     @if (rol == "Tesorero")
                     {
-                        <a asp-controller="Home" asp-action="Index"><i class="bi bi-receipt"></i> Facturas</a>
-                        <a asp-controller="Home" asp-action="Index"><i class="bi bi-box-arrow-in-right"></i> Apertura Caja</a>
-                        <a asp-controller="Home" asp-action="Index"><i class="bi bi-box-arrow-left"></i> Cierre Caja</a>
+                        <a asp-controller="Home" asp-action="Index" title="Facturas"><i class="bi bi-receipt"></i> <span class="sidebar-text">Facturas</span></a>
+                        <a asp-controller="Home" asp-action="Index" title="Apertura Caja"><i class="bi bi-box-arrow-in-right"></i> <span class="sidebar-text">Apertura Caja</span></a>
+                        <a asp-controller="Home" asp-action="Index" title="Cierre Caja"><i class="bi bi-box-arrow-left"></i> <span class="sidebar-text">Cierre Caja</span></a>
                     }
 
                     @if (rol == "Empleado")
                     {
-                        <a asp-controller="Home" asp-action="Index"><i class="bi bi-box-arrow-in-right"></i> Apertura Caja</a>
-                        <a asp-controller="Home" asp-action="Index"><i class="bi bi-box-arrow-left"></i> Cierre Caja</a>
+                        <a asp-controller="Home" asp-action="Index" title="Apertura Caja"><i class="bi bi-box-arrow-in-right"></i> <span class="sidebar-text">Apertura Caja</span></a>
+                        <a asp-controller="Home" asp-action="Index" title="Cierre Caja"><i class="bi bi-box-arrow-left"></i> <span class="sidebar-text">Cierre Caja</span></a>
                     }
                 </div>
             </div>
@@ -124,8 +148,8 @@
             <!-- Botón Cerrar Sesión al final -->
             <div class="sidebar-menu mb-3">
                 <hr class="border-light opacity-25 mx-3" />
-                <a asp-controller="Acceso" asp-action="CerrarSesion" class="text-warning">
-                    <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                <a asp-controller="Acceso" asp-action="CerrarSesion" class="text-warning" title="Cerrar Sesión">
+                    <i class="bi bi-box-arrow-right"></i> <span class="sidebar-text">Cerrar Sesión</span>
                 </a>
             </div>
         </div>
@@ -154,5 +178,24 @@
     </div>
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- SCRIPT PARA COLAPSAR/DESPLEGAR EL MENÚ -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const toggleBtn = document.getElementById("toggleSidebarBtn");
+            const sidebar = document.getElementById("sidebarMenu");
+
+            // Cargar estado guardado previa navegación (opcional)
+            if (localStorage.getItem("sidebar-collapsed") === "true") {
+                sidebar.classList.add("collapsed");
+            }
+
+            toggleBtn.addEventListener("click", function () {
+                sidebar.classList.toggle("collapsed");
+                // Guardar preferencia del usuario
+                localStorage.setItem("sidebar-collapsed", sidebar.classList.contains("collapsed"));
+            });
+        });
+    </script>
 </body>
 </html>

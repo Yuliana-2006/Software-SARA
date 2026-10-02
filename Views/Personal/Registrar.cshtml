@@ -1,0 +1,119 @@
+﻿@model Software_SARA.Models.Personal
+
+@{
+    string rol = ViewBag.RolActual ?? "Empleado";
+    ViewData["Title"] = "Registrar " + rol;
+}
+
+<style>
+    .sara-form-container {
+        background-color: #3B6146;
+        border-radius: 30px;
+        padding: 30px 40px;
+        max-width: 600px;
+        margin: 0 auto;
+        color: #FFFFFF;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    .sara-input-pill {
+        background-color: #FFFFFF;
+        border: 1px solid #CCCCCC;
+        border-radius: 50px;
+        padding: 8px 20px;
+        color: #333333;
+        font-weight: 500;
+    }
+
+    .sara-btn-submit {
+        background-color: #FFFFFF;
+        color: #1A3020;
+        border-radius: 50px;
+        font-weight: 800;
+        font-size: 1.1rem;
+        padding: 10px 0;
+        width: 100%;
+        border: none;
+    }
+
+    .sara-btn-cancel {
+        background-color: transparent;
+        color: #FFFFFF;
+        border: 1.5px solid #FFFFFF;
+        border-radius: 50px;
+        font-weight: 800;
+        font-size: 1.1rem;
+        padding: 8px 0;
+        width: 100%;
+        text-align: center;
+        text-decoration: none;
+        display: block;
+        margin-top: 10px;
+    }
+</style>
+
+<div class="container py-4">
+    <div class="sara-form-container">
+        <h2 class="text-center fw-extrabold text-uppercase m-0">REGISTRAR @rol.ToUpper()</h2>
+        <p class="text-center fw-bold mb-4">Sede asignada: @(ViewBag.NombreSede ?? "Sede Principal")</p>
+
+        <form asp-action="Registrar" method="post">
+            <input type="hidden" asp-for="Rol" value="@rol" />
+
+            <div class="mb-3">
+                <label class="fw-bold">Sede de Registro</label>
+                <input asp-for="SedeRegistro" class="form-control sara-input-pill" readonly />
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-4">
+                    <label class="fw-bold">Tipo Doc.</label>
+                    <select asp-for="TipoDoc" class="form-select sara-input-pill">
+                        <option value="CC">CC</option>
+                        <option value="TI">TI</option>
+                        <option value="CE">CE</option>
+                    </select>
+                </div>
+                <div class="col-8">
+                    <label class="fw-bold">Número de Documento</label>
+                    <input asp-for="NumeroDoc" class="form-control sara-input-pill" required />
+                </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label class="fw-bold">Nombres</label>
+                    <input asp-for="Nombres" class="form-control sara-input-pill" required />
+                </div>
+                <div class="col-6">
+                    <label class="fw-bold">Apellidos</label>
+                    <input asp-for="Apellidos" class="form-control sara-input-pill" required />
+                </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label class="fw-bold">Teléfono</label>
+                    <input asp-for="Telefono" class="form-control sara-input-pill" />
+                </div>
+                <div class="col-6">
+                    <label class="fw-bold">Correo Electrónico</label>
+                    <input asp-for="Correo" type="email" class="form-control sara-input-pill" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="fw-bold">Dirección de Vivienda</label>
+                <input asp-for="Direccion" class="form-control sara-input-pill" />
+            </div>
+
+            <div class="mb-4">
+                <label class="fw-bold">Fecha de Nacimiento</label>
+                <input asp-for="FechaNacimiento" type="date" class="form-control sara-input-pill" />
+            </div>
+
+            <button type="submit" class="sara-btn-submit">REGISTRAR</button>
+            <a asp-action="SeleccionarRol" asp-route-rol="@rol" class="sara-btn-cancel">CANCELAR</a>
+        </form>
+    </div>
+</div>
