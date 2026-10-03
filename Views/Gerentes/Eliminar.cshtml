@@ -7,99 +7,111 @@
 <style>
     body {
         background-color: #E6E4DC;
+        margin: 0;
+        padding: 0;
     }
 
-    .banner-titulo {
-        background-color: #2D4A36;
+    .header-banner {
+        background-color: #385E42;
         color: white;
-        padding: 20px 40px;
-        font-size: 2.5rem;
-        font-weight: 800;
+        padding: 15px 40px;
+        margin-bottom: 50px;
     }
 
-    .eliminar-container {
+    .header-banner h1 {
+        font-size: 2.2rem;
+        font-weight: 900;
+        margin: 0;
+    }
+
+    .confirm-container {
         display: flex;
         justify-content: center;
         align-items: center;
-        min-height: calc(100vh - 180px);
         padding: 20px;
     }
 
-    .card-confirmacion {
+    .card-confirm {
         width: 100%;
-        max-width: 600px;
+        max-width: 500px;
         background-color: #587B58;
-        border: 5px solid #2D4A36;
-        border-radius: 35px;
-        padding: 50px 30px;
+        border: 4px solid #25402D;
+        border-radius: 25px;
+        padding: 40px 30px;
         text-align: center;
         color: white;
-        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        box-shadow: 0 8px 18px rgba(0,0,0,0.15);
     }
 
-    .pregunta-texto {
-        font-size: 2.2rem;
+    .confirm-text {
+        font-size: 1.6rem;
         font-weight: 800;
         line-height: 1.3;
-        margin-bottom: 40px;
+        margin-bottom: 35px;
+    }
+
+    .btn-container {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
     }
 
     .btn-pill-confirmar {
         background-color: #E6E4DC;
-        color: #2D4A36;
-        border: 4px solid #2D4A36;
-        border-radius: 30px;
-        padding: 10px 35px;
+        color: #25402D;
+        border: 2px solid #25402D;
+        border-radius: 20px;
+        padding: 8px 25px;
         font-weight: 800;
-        font-size: 1.3rem;
+        font-size: 1.05rem;
         cursor: pointer;
         transition: all 0.2s ease;
+        text-decoration: none;
     }
 
     .btn-pill-confirmar:hover {
-        background-color: #2D4A36;
+        background-color: #25402D;
         color: white;
     }
 
     .btn-pill-cancelar {
         background-color: #E6E4DC;
-        color: #2D4A36;
-        border: 4px solid #2D4A36;
-        border-radius: 30px;
-        padding: 10px 35px;
+        color: #25402D;
+        border: 2px solid #25402D;
+        border-radius: 20px;
+        padding: 8px 25px;
         font-weight: 800;
-        font-size: 1.3rem;
+        font-size: 1.05rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
         text-decoration: none;
         display: inline-block;
-        transition: all 0.2s ease;
     }
 
     .btn-pill-cancelar:hover {
-        background-color: #2D4A36;
+        background-color: #25402D;
         color: white;
     }
 </style>
 
-<div class="banner-titulo">
-    Eliminar Gerente
+<div class="header-banner">
+    <h1>Eliminar Gerente</h1>
 </div>
 
-<div class="eliminar-container">
-    <div class="card-confirmacion">
-        <div class="pregunta-texto">
-            ¿Desea desactivar al gerente seleccionado?
+<div class="confirm-container">
+    <div class="card-confirm">
+        <div class="confirm-text">
+            ¿Desea desactivar<br />
+            al gerente<br />
+            seleccionado?
         </div>
 
-        <form asp-controller="Gerentes" asp-action="EliminarConfirmado" method="post">
+        <form asp-controller="Gerentes" asp-action="Eliminar" method="post">
             <input type="hidden" asp-for="Id" />
             
-            <div class="d-flex justify-content-center gap-4">
-                <button type="submit" class="btn-pill-confirmar">
-                    Confirmar
-                </button>
-                <a asp-controller="Gerentes" asp-action="Index" class="btn-pill-cancelar">
-                    Cancelar
-                </a>
+            <div class="btn-container">
+                <button type="submit" class="btn-pill-confirmar">Confirmar</button>
+                <a asp-controller="Gerentes" asp-action="Index" class="btn-pill-cancelar">Cancelar</a>
             </div>
         </form>
     </div>
