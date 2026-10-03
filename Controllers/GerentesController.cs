@@ -90,5 +90,32 @@ namespace Software_SARA.Controllers
 
             return View(gerenteActualizado);
         }
+
+        // GET: /Gerentes/Eliminar/1
+        [HttpGet]
+        public IActionResult Eliminar(int id)
+        {
+            var gerente = _listaGerentes.FirstOrDefault(g => g.Id == id);
+            if (gerente == null)
+            {
+                return RedirectToAction("Index");
+            }
+            return View(gerente);
+        }
+
+        // POST: /Gerentes/EliminarConfirmado
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult EliminarConfirmado(int id)
+        {
+            var gerente = _listaGerentes.FirstOrDefault(g => g.Id == id);
+            if (gerente != null)
+            {
+                _listaGerentes.Remove(gerente);
+                TempData["MensajeExito"] = "¡Gerente eliminado correctamente!";
+            }
+
+            return RedirectToAction("Index");
+        }
     }
 }
