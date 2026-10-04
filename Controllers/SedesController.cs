@@ -1,83 +1,72 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Software_SARA.Controllers
 {
+    public class SedeViewModel
+    {
+        public int Id { get; set; }
+
+        public string Nombre { get; set; } = "";
+
+        public string Codigo { get; set; } = "";
+
+        public string CorreoElectronico { get; set; } = "";
+
+        public string Departamento { get; set; } = "";
+
+        public string CiudadMunicipio { get; set; } = "";
+
+        public string Barrio { get; set; } = "";
+
+        public string Direccion { get; set; } = "";
+
+        public string Telefono { get; set; } = "";
+    }
+
+
     public class SedesController : Controller
     {
-        // GET: SedesController
-        public ActionResult RegistrarSede()
+        // Lista temporal de sedes
+        private static List<SedeViewModel> _listaSedes = new List<SedeViewModel>();
+
+
+        // GET: /Sedes/RegistrarSede
+        [HttpGet]
+        public IActionResult RegistrarSede()
+        {
+            return View(_listaSedes);
+        }
+
+
+        // GET: /Sedes/CrearSede
+        [HttpGet]
+        public IActionResult CrearSede()
         {
             return View();
         }
 
-        // GET: SedesController/Details/5
-        public ActionResult CrearSede()
-        {
-            return View();
-        }
 
-        // GET: SedesController/Create
-        public ActionResult Create()
-        {
-            return View();
-        }
-
-        // POST: SedesController/Create
+        // POST: /Sedes/CrearSede
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
-        {
-            try
-            {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
-        }
 
-        // GET: SedesController/Edit/5
-        public ActionResult Edit(int id)
+        public IActionResult CrearSede(SedeViewModel sede)
         {
-            return View();
-        }
+            if (!ModelState.IsValid)
+            {
+                return View(sede);
+            }
 
-        // POST: SedesController/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
-        {
-            try
-            {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
-        }
+            sede.Id = _listaSedes.Count + 1;
 
-        // GET: SedesController/Delete/5
-        public ActionResult Delete(int id)
-        {
-            return View();
-        }
+            _listaSedes.Add(sede);
 
-        // POST: SedesController/Delete/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
-        {
-            try
-            {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
+            TempData["MensajeExito"] = "¡Sede registrada exitosamente!";
+
+            return RedirectToAction(nameof(RegistrarSede));
         }
     }
 }
