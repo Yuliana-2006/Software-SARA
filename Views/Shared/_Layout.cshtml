@@ -6,7 +6,6 @@
     // Inicial para el avatar circular
     var inicial = !string.IsNullOrEmpty(rol) ? rol.Substring(0, 1).ToUpper() : "U";
 }
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -18,56 +17,57 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <style>
-            body {
-                background-color: #ECE9DF;
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            }
+        body {
+            background-color: #ECE9DF;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-            /* Sidebar lateral estilo SARA */
-            .sidebar {
-                width: 260px;
-                background-color: #2E4F3E;
-                min-height: 100vh;
-                transition: all 0.3s;
-            }
+        /* Sidebar lateral estilo SARA */
+        .sidebar {
+            width: 260px;
+            background-color: #2E4F3E;
+            min-height: 100vh;
+            transition: all 0.3s;
+        }
 
-            .sidebar-header {
-                background-color: #254030;
-                padding: 15px;
-                color: #ffffff;
-                font-weight: bold;
-                font-size: 18px;
-            }
+        .sidebar-header {
+            background-color: #254030;
+            padding: 12px 15px;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 18px;
+        }
 
-            .sidebar-menu a {
-                color: #ffffff;
-                text-decoration: none;
-                padding: 12px 20px;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                font-weight: 600;
-                font-size: 15px;
-                transition: background 0.2s;
-            }
+        .sidebar-menu a {
+            color: #ffffff;
+            text-decoration: none;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            font-size: 15px;
+            transition: background 0.2s;
+        }
 
-                .sidebar-menu a:hover {
-                    background-color: #3C6348;
-                }
+        .sidebar-menu a:hover {
+            background-color: #3C6348;
+        }
 
-            /* Avatar de perfil superior */
-            .avatar-circle {
-                width: 40px;
-                height: 40px;
-                background-color: #3C6348;
-                color: white;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: bold;
-                font-size: 18px;
-            }
+        /* Avatar de perfil superior (reducido) */
+        .avatar-circle-sm {
+            width: 32px;
+            height: 32px;
+            background-color: #ECE9DF;
+            color: #2E4F3E;
+            border: 2px solid #2E4F3E;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -78,8 +78,8 @@
         <div class="sidebar d-flex flex-column justify-content-between shadow" id="sidebarMenu">
             <div>
                 <!-- Encabezado con 3 líneas y Nombre del Software sin recuadros -->
-                <div class="sidebar-header d-flex align-items-center gap-2 border-0 bg-transparent px-3 py-3">
-                    <i class="bi bi-list fs-3 text-white" style="cursor: pointer;"></i>
+                <div class="sidebar-header d-flex align-items-center gap-2 border-0 bg-transparent px-3 py-2">
+                    <i class="bi bi-list fs-4 text-white" style="cursor: pointer;"></i>
                     <span class="fw-bold text-white fs-5">Software SARA</span>
                 </div>
 
@@ -133,13 +133,13 @@
         <!-- CONTENIDO PRINCIPAL Y BARRA SUPERIOR -->
         <div class="flex-grow-1 d-flex flex-column min-vh-100">
 
-            <!-- Barra Superior con Perfil de Usuario -->
-            <div class="d-flex justify-content-end align-items-center px-4 py-3 bg-white shadow-sm" style="border-bottom: 2px solid #E2DFD2;">
-                <div class="text-end me-3">
-                    <div class="fw-bold text-dark" style="font-size: 15px;">@rol Demo</div>
-                    <div class="text-uppercase fw-bold text-muted" style="font-size: 11px; letter-spacing: 0.5px;">@rol</div>
+            <!-- BARRA SUPERIOR REDUCIDA -->
+            <div class="d-flex justify-content-end align-items-center px-3 py-1 bg-white shadow-sm" style="height: 48px; border-bottom: 2px solid #E2DFD2;">
+                <div class="text-end me-2">
+                    <div class="fw-bold text-dark lh-1" style="font-size: 13px;">@rol Demo</div>
+                    <div class="text-uppercase fw-bold text-muted lh-1 mt-1" style="font-size: 10px; letter-spacing: 0.5px;">@rol</div>
                 </div>
-                <div class="avatar-circle shadow-sm">
+                <div class="avatar-circle-sm">
                     @inicial
                 </div>
             </div>
