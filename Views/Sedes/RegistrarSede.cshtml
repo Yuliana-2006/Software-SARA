@@ -1,6 +1,42 @@
-﻿@{
+﻿@model List<Software_SARA.Controllers.SedeViewModel>
+
+@{ 
     ViewData["Title"] = "Sedes";
 }
+
+<div class="sedes-container">
+
+    @foreach (var sede in Model)
+    {
+        <div class="sede-card">
+
+            <div class="sede-icon">
+                <i class="bi bi-shop"></i>
+            </div>
+
+            <div class="sede-name">
+                @sede.Nombre
+            </div>
+
+            <div class="sede-buttons">
+
+                <button class="sede-button">
+                    Consultar
+                </button>
+
+                <button class="sede-button">
+                    Editar
+                </button>
+
+                <button class="sede-button">
+                    Eliminar
+                </button>
+
+            </div>
+
+        </div>
+    }
+
 <a asp-controller="Sedes" asp-action="CrearSede" class="sede-link">
 
     <div class="sede-card">
@@ -18,68 +54,373 @@
 
 </a>
 
+</div>
+
+@if (TempData["MensajeExito"] != null)
+{
+    <div class="mensaje-exito">
+        @TempData["MensajeExito"]
+    </div>
+}
+
 <style>
 
-    .sede-link {
-        text-decoration: none;
-        color: inherit;
-        display: block;
-    }
-
-    .sede-link:hover {
-        text-decoration: none;
-        color: inherit;
-    }
+    /* =========================================
+       CONTENEDOR GENERAL
+       ========================================= */
 
     .sedes-container {
         width: 100%;
+
         min-height: calc(100vh - 120px);
+
         display: flex;
+
         justify-content: center;
+
         align-items: flex-start;
-        padding-top: 55px;
+
+        gap: 55px;
+
+        padding-top: 20px;
+
+        box-sizing: border-box;
+
+        flex-wrap: wrap;
     }
+
+
+    /* =========================================
+       TARJETA
+       ========================================= */
 
     .sede-card {
-        width: 300px;
-        height: 450px;
+        width: 280px;
+
+        height: 385px;
+
+        flex: 0 0 280px;
+
         background-color: #5B805E;
-        border: 5px solid #2E4F3E;
-        border-radius: 42px;
+
+        border: 7px solid #2E4F3E;
+
+        border-radius: 35px;
+
+        box-sizing: border-box;
+
         display: flex;
+
         flex-direction: column;
+
         align-items: center;
-        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+
+        overflow: hidden;
+
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.18);
     }
+
+
+    /* =========================================
+       ICONO DE TIENDA
+       ========================================= */
+
+    .sede-icon {
+        width: 105px;
+
+        height: 105px;
+
+        min-width: 105px;
+
+        min-height: 105px;
+
+        margin-top: 25px;
+
+        background-color: #ECE9DF;
+
+        border: 6px solid #2E4F3E;
+
+        border-radius: 50%;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        box-sizing: border-box;
+    }
+
+
+    .sede-icon i {
+        font-size: 52px;
+
+        color: #2E4F3E;
+
+        line-height: 1;
+    }
+
+
+    /* =========================================
+       NOMBRE DE LA SEDE
+       ========================================= */
+
+    .sede-name {
+        width: 90%;
+
+        margin-top: 10px;
+
+        color: #F5F5F5;
+
+        font-size: 30px;
+
+        line-height: 1.1;
+
+        font-weight: 800;
+
+        text-align: center;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+    }
+
+
+    /* =========================================
+       BOTONES DE LA SEDE
+       ========================================= */
+
+    .sede-buttons {
+        width: 100%;
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+
+        gap: 8px;
+
+        margin-top: 14px;
+    }
+
+
+    .sede-button {
+        width: 150px;
+
+        height: 42px;
+
+        padding: 0;
+
+        border-radius: 25px;
+
+        border: 6px solid #2E4F3E;
+
+        background-color: #ECE9DF;
+
+        color: #355B43;
+
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+        font-size: 18px;
+
+        font-weight: 800;
+
+        line-height: 1;
+
+        cursor: pointer;
+
+        box-sizing: border-box;
+    }
+
+
+    .sede-button:hover {
+        background-color: #DCD9CF;
+    }
+
+
+    /* =========================================
+       ENLACE DE AGREGAR
+       ========================================= */
+
+    .sede-link {
+        display: block;
+
+        width: 280px;
+
+        height: 385px;
+
+        flex: 0 0 280px;
+
+        text-decoration: none;
+
+        color: inherit;
+    }
+
+
+    .sede-link:hover {
+        text-decoration: none;
+
+        color: inherit;
+    }
+
+
+    /* =========================================
+       TARJETA AGREGAR
+       ========================================= */
+
+    .agregar-card {
+        cursor: pointer;
+
+        justify-content: flex-start;
+    }
+
+
+    .agregar-card:hover {
+        transform: translateY(-2px);
+
+        transition: transform 0.2s ease;
+    }
+
+
+    /* =========================================
+       CÍRCULO DEL SIGNO +
+       ========================================= */
 
     .sede-plus {
-        width: 130px;
-        height: 130px;
+        width: 105px;
+
+        height: 105px;
+
+        min-width: 105px;
+
+        min-height: 105px;
+
+        margin-top: 60px;
+
         background-color: #ECE9DF;
-        border: 5px solid #2E4F3E;
+
+        border: 6px solid #2E4F3E;
+
         border-radius: 50%;
-        margin-top: 65px;
+
         display: flex;
-        justify-content: center;
+
         align-items: center;
+
+        justify-content: center;
+
+        box-sizing: border-box;
     }
 
-    .sede-plus i {
-        font-size: 55px;
+
+    /* SIGNO + MÁS GRUESO */
+
+    .sede-plus {
         color: #2E4F3E;
+
+        font-family: Arial, sans-serif;
+
+        font-size: 68px;
+
         font-weight: 900;
-        -webkit-text-stroke: 1.5px #2E4F3E;
+
+        line-height: 0;
+
+        transform: translateY(-5px);
+
+        -webkit-text-stroke: 2px #2E4F3E;
     }
+
+
+    /* =========================================
+       TEXTO AGREGAR SEDE
+       ========================================= */
 
     .sede-title {
-        margin-top: 105px;
-        color: white;
-        font-size: 36px;
-        font-weight: 800;
-        line-height: 1.15;
-        text-align: center;
         width: 100%;
+
+        margin-top: 45px;
+
+        color: #F5F5F5;
+
+        font-size: 34px;
+
+        line-height: 1.05;
+
+        font-weight: 800;
+
+        text-align: center;
     }
+
+
+    /* =========================================
+       MENSAJE DE ÉXITO
+       ========================================= */
+
+    .mensaje-exito {
+        position: fixed;
+
+        right: 25px;
+
+        bottom: 25px;
+
+        background-color: #2E4F3E;
+
+        color: white;
+
+        padding: 18px 30px;
+
+        border-radius: 18px;
+
+        font-size: 20px;
+
+        font-weight: 800;
+
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25);
+
+        z-index: 9999;
+
+        animation: mostrarMensaje 4s ease forwards;
+    }
+
+    @@keyframes mostrarMensaje {
+
+        0% {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        10% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        85% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        100% {
+            opacity: 0;
+            transform: translateY(20px);
+            visibility: hidden;
+        }
+
+    }
+
+    /* =========================================
+       PANTALLAS PEQUEÑAS
+       ========================================= */
+
+    @@media (max-width: 750px) {
+
+        .sedes-container {
+            gap: 25px;
+        }
+
+    }
+
 
 </style>
 

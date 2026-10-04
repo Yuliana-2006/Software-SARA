@@ -1,4 +1,6 @@
-﻿@{
+﻿@model Software_SARA.Controllers.SedeViewModel
+
+@{
     ViewData["Title"] = "Registrar Sede";
 }
 
@@ -9,20 +11,34 @@
         <!-- TÍTULO -->
         <h1>REGISTRAR SEDE</h1>
 
+        @if (!ViewData.ModelState.IsValid)
+{
+    <div style="color: white; background-color: #8B3A3A; padding: 10px; border-radius: 10px; margin-bottom: 15px;">
+        Revisa los datos ingresados.
+    </div> 
+}
+
+        <form asp-controller="Sedes"
+              asp-action="CrearSede"
+              method="post">
+
+            @Html.AntiForgeryToken()
 
         <!-- FILA 1 -->
         <div class="form-row">
 
-            <div class="form-group">
+            <div class="form-group"> 
                 <label>Nombre</label>
-                <input type="text"
+                <input asp-for="Nombre"
+                       type="text"
                        class="form-control"
                        placeholder="Nombre" />
             </div>
 
             <div class="form-group">
                 <label>Código</label>
-                <input type="text"
+                <input asp-for="Codigo"
+                       type="text"
                        class="form-control"
                        placeholder="Código" />
             </div>
@@ -35,14 +51,16 @@
 
             <div class="form-group">
                 <label>Correo Electrónico</label>
-                <input type="email"
+                <input asp_for="CorreoElectronico"
+                       type="email"
                        class="form-control"
                        placeholder="Correo" />
             </div>
 
             <div class="form-group">
                 <label>Departamento</label>
-                <input type="text"
+                <input asp-for="Departamento"
+                       type="text"
                        class="form-control"
                        placeholder="Departamento" />
             </div>
@@ -55,14 +73,16 @@
 
             <div class="form-group">
                 <label>Ciudad/Municipio</label>
-                <input type="text"
+                <input asp-for="CiudadMunicipio"
+                       type="text"
                        class="form-control"
                        placeholder="Ciudad/Municipio" />
             </div>
 
             <div class="form-group">
                 <label>Barrio</label>
-                <input type="text"
+                <input asp-for="Barrio"
+                       type="text"
                        class="form-control"
                        placeholder="Barrio" />
             </div>
@@ -74,8 +94,8 @@
         <div class="form-group full-width">
 
             <label>Dirección</label>
-
-            <input type="text"
+            <input asp-for="Direccion"
+                   type="text"
                    class="form-control"
                    placeholder="Dirección" />
 
@@ -86,8 +106,8 @@
         <div class="form-group full-width">
 
             <label>Teléfono</label>
-
-            <input type="tel"
+            <input asp-for="Telefono"
+                   type="tel"
                    class="form-control"
                    placeholder="Teléfono" />
 
@@ -102,14 +122,14 @@
             </button>
 
             <a asp-controller="Sedes"
-               asp-action="Index"
+               asp-action="RegistrarSede"
                class="btn-cancelar">
                 CANCELAR
             </a>
 
         </div>
 
-    </div>
+    </form>
 
 </div>
 
