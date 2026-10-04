@@ -14,15 +14,21 @@
                 <i class="bi bi-shop"></i>
             </div>
 
-            <div class="sede-name">
-                @sede.Nombre
-            </div>
+            <h2>@sede.Nombre</h2>
 
-            <div class="sede-buttons">
-
-                <button class="sede-button">
-                    Consultar
-                </button>
+            <button class="sede-button"
+                    onclick="mostrarSede(
+                        '@sede.Nombre',
+                        '@sede.Codigo',
+                        '@sede.CorreoElectronico',
+                        '@sede.Departamento',
+                        '@sede.CiudadMunicipio',
+                        '@sede.Barrio',
+                        '@sede.Direccion',
+                        '@sede.Telefono'
+                    )">
+                Consultar
+            </button>
 
                 <button class="sede-button">
                     Editar
@@ -34,8 +40,8 @@
 
             </div>
 
-        </div>
     }
+    
 
 <a asp-controller="Sedes" asp-action="CrearSede" class="sede-link">
 
@@ -62,6 +68,76 @@
         @TempData["MensajeExito"]
     </div>
 }
+
+<div id="modalSede" class="modal-sede">
+
+    <div class="consulta-card">
+
+        <!-- ENCABEZADO -->
+        <div class="consulta-header">
+            <h2>Detalles de la Sede</h2>
+
+            <button type="button"
+                    class="btn-cerrar-x"
+                    onclick="cerrarSede()">
+                &times;
+            </button>
+        </div>
+
+        <!-- INFORMACIÓN -->
+        <div class="informacion-sede">
+
+            <div class="dato-sede">
+                <span>Nombre</span>
+                <strong id="datoNombre"></strong>
+            </div>
+
+            <div class="dato-sede">
+                <span>Código</span>
+                <strong id="datoCodigo"></strong>
+            </div>
+
+            <div class="dato-sede">
+                <span>Correo electrónico</span>
+                <strong id="datoCorreoElectronico"></strong>
+            </div>
+
+            <div class="dato-sede">
+                <span>Departamento</span>
+                <strong id="datoDepartamento"></strong>
+            </div>
+
+            <div class="dato-sede">
+                <span>Ciudad/Municipio</span>
+                <strong id="datoCiudad"></strong>
+            </div>
+
+            <div class="dato-sede">
+                <span>Barrio</span>
+                <strong id="datoBarrio"></strong>
+            </div>
+
+            <div class="dato-sede">
+                <span>Dirección</span>
+                <strong id="datoDireccion"></strong>
+            </div>
+
+            <div class="dato-sede">
+                <span>Teléfono</span>
+                <strong id="datoTelefono"></strong>
+            </div>
+
+        </div>
+
+        <button type="button"
+                class="btn-cerrar-consulta"
+                onclick="cerrarSede()">
+            Cerrar
+        </button>
+
+    </div>
+
+</div>
 
 <style>
 
@@ -410,6 +486,220 @@
     }
 
     /* =========================================
+       MODAL DE CONSULTA
+       ========================================= */
+
+    .modal-sede {
+    display: none;
+
+    position: fixed;
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 100%;
+
+    background-color: rgba(0, 0, 0, 0.50);
+
+    z-index: 9999;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    box-sizing: border-box;
+
+    overflow-y: auto;
+}
+
+
+/* =========================================
+   TARJETA DE DETALLES
+   ========================================= */
+
+.consulta-card {
+    width: 520px;
+    max-width: 95%;
+
+    background-color: #2E4F3E;
+
+    border: 2px solid #203C2E;
+
+    border-radius: 28px;
+
+    padding: 24px 28px;
+
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
+
+    box-sizing: border-box;
+
+}
+
+
+/* =========================================
+   ENCABEZADO
+   ========================================= */
+
+.consulta-header {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    margin-bottom: 18px;
+}
+
+.consulta-header h2 {
+    margin: 0;
+
+    color: white;
+
+    font-size: 28px;
+
+    font-weight: 800;
+}
+
+
+/* =========================================
+   BOTÓN X
+   ========================================= */
+
+.btn-cerrar-x {
+    width: 38px;
+    height: 38px;
+
+    border: none;
+
+    background: transparent;
+
+    color: #DCD9CF;
+
+    font-size: 34px;
+
+    line-height: 1;
+
+    cursor: pointer;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+}
+
+.btn-cerrar-x:hover {
+    color: white;
+
+    transform: scale(1.1);
+}
+
+
+/* =========================================
+   CAMPOS
+   ========================================= */
+
+.dato-sede {
+    background-color: #5E875E;
+
+    border-radius: 15px;
+
+    padding: 10px 16px;
+
+    margin-bottom: 10px;
+
+    color: white;
+
+    box-sizing: border-box;
+}
+
+.dato-sede span {
+    display: block;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    margin-bottom: 3px;
+}
+
+.dato-sede strong {
+    display: block;
+
+    font-size: 17px;
+
+    font-weight: 800;
+
+    color: white;
+
+    word-break: break-word;
+}
+
+
+/* =========================================
+   BOTÓN CERRAR
+   ========================================= */
+
+.btn-cerrar-consulta {
+    display: block;
+
+    width: 130px;
+
+    height: 42px;
+
+    margin: 18px auto 0 auto;
+
+    border: none;
+
+    border-radius: 25px;
+
+    background-color: #ECE9DF;
+
+    color: #2E4F3E;
+
+    font-size: 16px;
+
+    font-weight: 800;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+.btn-cerrar-consulta:hover {
+    background-color: #ffffff;
+
+    transform: scale(1.03); 
+}
+
+
+    /* =========================================
+       RESPONSIVE
+       ========================================= */
+
+    @@media (max-width: 650px) {
+
+        .consulta-card {
+
+            padding: 22px;
+
+            border-radius: 22px;
+        }
+
+        .dato-sede {
+
+            padding: 12px 15px;
+        }
+
+        .dato-sede strong {
+
+            font-size: 17px;
+        }
+
+    }
+
+    /* =========================================
        PANTALLAS PEQUEÑAS
        ========================================= */
 
@@ -423,4 +713,65 @@
 
 
 </style>
+
+<script>
+
+    function mostrarSede(
+        nombre,
+        codigo,
+        correo,
+        departamento,
+        ciudad,
+        barrio,
+        direccion,
+        telefono
+    ) {
+
+        document.getElementById("datoNombre").textContent = nombre;
+
+        document.getElementById("datoCodigo").textContent = codigo;
+
+        document.getElementById("datoCorreoElectronico").textContent = correo;
+
+        document.getElementById("datoDepartamento").textContent = departamento;
+
+        document.getElementById("datoCiudad").textContent = ciudad;
+
+        document.getElementById("datoBarrio").textContent = barrio;
+
+        document.getElementById("datoDireccion").textContent = direccion;
+
+        document.getElementById("datoTelefono").textContent = telefono;
+
+
+        document.getElementById("modalSede").style.display = "flex";
+
+        document.body.style.overflow = "hidden";
+    }
+
+
+    function cerrarSede() {
+
+        document.getElementById("modalSede").style.display = "none";
+
+        document.body.style.overflow = "auto";
+    }
+
+
+    /* Cerrar al hacer clic fuera de la tarjeta */
+
+    document.getElementById("modalSede").addEventListener(
+        "click",
+        function (event) {
+
+            if (event.target === this) {
+
+                cerrarSede();
+
+            }
+
+        }
+    );
+
+</script>
 
