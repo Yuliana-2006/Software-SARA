@@ -108,11 +108,26 @@
         margin-bottom: 20px;
     }
 
+    /* Banners Flotantes Toast */
     .toast-exito {
         position: fixed;
         bottom: 30px;
         right: 30px;
         background-color: #2D4A36;
+        color: white;
+        padding: 15px 25px;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 1050;
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+
+    .toast-error {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background-color: #a83232;
         color: white;
         padding: 15px 25px;
         border-radius: 15px;
@@ -170,10 +185,18 @@
     }
 </style>
 
+<!-- Alertas Flotantes -->
 @if (TempData["MensajeExito"] != null)
 {
     <div id="toastMensaje" class="toast-exito">
         @TempData["MensajeExito"]
+    </div>
+}
+
+@if (TempData["MensajeError"] != null)
+{
+    <div id="toastError" class="toast-error">
+        @TempData["MensajeError"]
     </div>
 }
 
@@ -221,7 +244,6 @@
             </div>
         </div>
     </a>
-
 </div>
 
 <!-- Modal Consultar con Todos los Campos Registrados -->
@@ -229,7 +251,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal-content-custom">
             <div class="modal-body p-2">
-                
+
                 <div class="modal-field">
                     <div class="modal-field-label">Nombres</div>
                     <div class="modal-field-value" id="mNombres"></div>
@@ -279,10 +301,15 @@
 </div>
 
 <script>
+    // Temporizador para ocultar alertas (Éxito y Error) a los 4 segundos
     setTimeout(function () {
-        var toast = document.getElementById('toastMensaje');
-        if (toast) {
-            toast.style.display = 'none';
+        var toastExito = document.getElementById('toastMensaje');
+        if (toastExito) {
+            toastExito.style.display = 'none';
+        }
+        var toastError = document.getElementById('toastError');
+        if (toastError) {
+            toastError.style.display = 'none';
         }
     }, 4000);
 
