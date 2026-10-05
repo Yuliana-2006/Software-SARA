@@ -12,8 +12,7 @@ namespace Software_SARA.Controllers
         // Lista temporal en memoria con datos iniciales de prueba
         private static List<Personal> listaPersonal = new List<Personal>
         {
-            new Personal { Id = 1, Nombres = "Carlos", Apellidos = "Mendoza", Rol = "Tesorero", TipoDoc = "CC", NumeroDoc = "1012345678", SedeRegistro = "Sede Principal" },
-            new Personal { Id = 2, Nombres = "Ana", Apellidos = "Ríos", Rol = "Empleado", TipoDoc = "CC", NumeroDoc = "1098765432", SedeRegistro = "Sede Principal" }
+
         };
 
         // 1. PANTALLA PRINCIPAL DE PERSONAL (Las 3 tarjetas: Tesorero, Empleado, +)
@@ -83,30 +82,16 @@ namespace Software_SARA.Controllers
 
         // 6. CONSULTAR REGISTRO (GET)
         [HttpGet]
-        public IActionResult Consultar(int id, string rol = "Empleado")
+        public IActionResult Consultar(int id)
         {
-            var persona = listaPersonal.FirstOrDefault(p => p.Id == id);
-            if (persona == null)
-            {
-                return RedirectToAction("SeleccionarRol", new { rol = rol });
-            }
-
-            ViewBag.RolActual = rol;
-            return View(persona);
+            return NoContent();
         }
 
         // 7. EDITAR REGISTRO (GET)
         [HttpGet]
-        public IActionResult Editar(int id, string rol = "Empleado")
+        public IActionResult Editar(int id)
         {
-            var persona = listaPersonal.FirstOrDefault(p => p.Id == id);
-            if (persona == null)
-            {
-                return RedirectToAction("SeleccionarRol", new { rol = rol });
-            }
-
-            ViewBag.RolActual = rol;
-            return View(persona);
+            return NoContent();
         }
 
         // 8. GUARDAR EDICIÓN (POST)
