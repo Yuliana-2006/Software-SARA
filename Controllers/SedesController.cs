@@ -68,5 +68,65 @@ namespace Software_SARA.Controllers
 
             return RedirectToAction(nameof(RegistrarSede));
         }
+
+        [HttpGet]
+        public IActionResult EditarSede(int id)
+        {
+            var sede = _listaSedes
+                .FirstOrDefault(s => s.Id == id);
+
+            if (sede == null)
+            {
+                return RedirectToAction("RegistrarSede");
+            }
+
+            return View(sede);
+        }
+
+
+        // POST: /Sedes/Editar
+        [HttpPost]
+        public IActionResult EditarSede(SedeViewModel sedeActualizada)
+        {
+            if (ModelState.IsValid)
+            {
+                var sedeExistente = _listaSedes
+                    .FirstOrDefault(s => s.Id == sedeActualizada.Id);
+
+                if (sedeExistente != null)
+                {
+                    sedeExistente.Nombre =
+                        sedeActualizada.Nombre;
+
+                    sedeExistente.Codigo =
+                        sedeActualizada.Codigo;
+
+                    sedeExistente.CorreoElectronico =
+                        sedeActualizada.CorreoElectronico;
+
+                    sedeExistente.Departamento =
+                        sedeActualizada.Departamento;
+
+                    sedeExistente.CiudadMunicipio =
+                        sedeActualizada.CiudadMunicipio;
+
+                    sedeExistente.Barrio =
+                        sedeActualizada.Barrio;
+
+                    sedeExistente.Direccion =
+                        sedeActualizada.Direccion;
+
+                    sedeExistente.Telefono =
+                        sedeActualizada.Telefono;
+
+                    TempData["MensajeExito"] =
+                        "¡Sede modificada exitosamente!";
+
+                    return RedirectToAction("RegistrarSede");
+                }
+            }
+
+            return View(sedeActualizada);
+        }
     }
 }
