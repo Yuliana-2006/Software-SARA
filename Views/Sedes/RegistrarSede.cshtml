@@ -14,7 +14,9 @@
                 <i class="bi bi-shop"></i>
             </div>
 
-            <h2>@sede.Nombre</h2>
+            <div class="sede-name">
+                <h2>@sede.Nombre</h2>
+            </div>
 
             <button class="sede-button"
                     onclick="mostrarSede(
@@ -30,9 +32,12 @@
                 Consultar
             </button>
 
-                <button class="sede-button">
-                    Editar
-                </button>
+                <a asp-controller="Sedes"
+                   asp-action="EditarSede"
+                   asp-route-id="@sede.Id"
+                   class="sede-button">
+                   Editar
+                </a>
 
                 <button class="sede-button">
                     Eliminar
@@ -99,7 +104,7 @@
 
             <div class="dato-sede">
                 <span>Correo electrónico</span>
-                <strong id="datoCorreoElectronico"></strong>
+                <strong id="datoCorreo"></strong>
             </div>
 
             <div class="dato-sede">
@@ -246,7 +251,7 @@
 
         margin-top: 10px;
 
-        color: #F5F5F5;
+        color: #DAD7CD;
 
         font-size: 30px;
 
@@ -282,36 +287,37 @@
 
 
     .sede-button {
-        width: 150px;
+         width: 150px;
+         height: 42px;
+         padding: 0;
 
-        height: 42px;
+         border-radius: 25px;
+         border: 6px solid #2E4F3E;
 
-        padding: 0;
+         background-color: #ECE9DF;
+         color: #355B43;
 
-        border-radius: 25px;
+         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+         font-size: 18px;
+         font-weight: 800;
+         line-height: 1;
 
-        border: 6px solid #2E4F3E;
+         cursor: pointer;
+         box-sizing: border-box;
 
-        background-color: #ECE9DF;
+    /* CORRECCIONES */
+         text-decoration: none;
 
-        color: #355B43;
-
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-
-        font-size: 18px;
-
-        font-weight: 800;
-
-        line-height: 1;
-
-        cursor: pointer;
-
-        box-sizing: border-box;
+         display: flex;
+         align-items: center;
+         justify-content: center;
     }
 
 
     .sede-button:hover {
         background-color: #DCD9CF;
+        color: #355B43;
+        text-decoration: none;
     }
 
 
@@ -731,7 +737,7 @@
 
         document.getElementById("datoCodigo").textContent = codigo;
 
-        document.getElementById("datoCorreoElectronico").textContent = correo;
+        document.getElementById("datoCorreo").textContent = correo;
 
         document.getElementById("datoDepartamento").textContent = departamento;
 
