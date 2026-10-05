@@ -9,66 +9,62 @@
         background-color: #E6E4DC;
     }
 
-    /* Contenedor principal centrado */
     .gerentes-grid-container {
         display: flex;
         flex-wrap: wrap;
-        gap: 35px;
+        gap: 25px;
         justify-content: center;
         align-items: stretch;
-        padding: 40px 20px;
+        padding: 30px 15px;
     }
 
-    /* Estilo Base Tarjeta Verde */
+    /* Tarjeta principal */
     .card-sara {
-        width: 250px;
-        min-height: 380px;
+        width: 190px;
+        min-height: 330px;
         background-color: #587B58;
-        border: 4px solid #2D4A36;
-        border-radius: 35px;
-        padding: 25px 20px;
+        border: 3px solid #2D4A36;
+        border-radius: 25px;
+        padding: 20px 15px;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: space-between;
-        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 5px 10px rgba(0,0,0,0.15);
         color: white;
         text-align: center;
     }
 
-    /* Círculo superior blanco/gris para foto de perfil */
     .avatar-circle {
-        width: 100px;
-        height: 100px;
+        width: 75px;
+        height: 75px;
         background-color: #E6E4DC;
-        border: 4px solid #2D4A36;
+        border: 3px solid #2D4A36;
         border-radius: 50%;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
     }
 
-    /* Títulos dentro de la tarjeta */
     .gerente-name-title {
-        font-size: 1.25rem;
+        font-size: 1rem;
         font-weight: 800;
         color: white;
-        margin-bottom: 15px;
+        margin-bottom: 10px;
         line-height: 1.2;
     }
 
-    /* Botones tipo Píldora en la tarjeta */
     .btn-pill-sara {
         width: 100%;
-        max-width: 170px;
+        max-width: 135px;
         background-color: #E6E4DC;
         color: #2D4A36;
-        border: 3px solid #2D4A36;
-        border-radius: 25px;
-        padding: 6px 0;
+        border: 2px solid #2D4A36;
+        border-radius: 20px;
+        padding: 4px 0;
         font-weight: 800;
-        font-size: 1.1rem;
+        font-size: 0.9rem;
         text-decoration: none;
         display: inline-block;
-        margin-bottom: 10px;
+        margin-bottom: 6px;
         cursor: pointer;
         transition: all 0.2s ease;
     }
@@ -78,7 +74,6 @@
         color: white;
     }
 
-    /* Estilo especial para la tarjeta "Agregar Gerente" */
     .card-agregar-link {
         text-decoration: none;
         color: white;
@@ -86,34 +81,34 @@
 
     .card-agregar-link:hover .card-sara {
         background-color: #496849;
-        transform: translateY(-4px);
+        transform: translateY(-3px);
     }
 
     .plus-circle {
-        width: 110px;
-        height: 110px;
+        width: 80px;
+        height: 80px;
         background-color: #E6E4DC;
-        border: 5px solid #2D4A36;
+        border: 4px solid #2D4A36;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         color: #2D4A36;
-        font-size: 4rem;
+        font-size: 2.8rem;
         font-weight: 900;
         line-height: 1;
-        margin-top: 30px;
+        margin-top: 15px;
     }
 
     .agregar-text {
-        font-size: 2rem;
+        font-size: 1.4rem;
         font-weight: 800;
         color: white;
-        line-height: 1.1;
-        margin-bottom: 30px;
+        line-height: 1.15;
+        margin-bottom: 20px;
     }
 
-    /* Alerta flotante de éxito */
+    /* Banners Flotantes Toast */
     .toast-exito {
         position: fixed;
         bottom: 30px;
@@ -128,34 +123,69 @@
         font-size: 1.1rem;
     }
 
-    /* Modal de Consulta */
+    .toast-error {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background-color: #a83232;
+        color: white;
+        padding: 15px 25px;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 1050;
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+
+    /* Modal estilo UI SARA */
     .modal-content-custom {
         background-color: #2D4A36;
         color: white;
         border-radius: 25px;
         padding: 20px;
+        border: 2px solid #1e3324;
     }
 
     .modal-field {
         background-color: #587B58;
         border-radius: 15px;
-        padding: 10px 15px;
+        padding: 10px 18px;
         margin-bottom: 12px;
     }
 
     .modal-field-label {
         font-size: 0.85rem;
-        color: #d1e0d1;
+        color: #e2ede2;
         font-weight: 700;
+        margin-bottom: 2px;
     }
 
     .modal-field-value {
         font-size: 1.1rem;
         font-weight: 800;
+        color: #ffffff;
+        word-break: break-all;
+    }
+
+    .btn-cerrar-modal {
+        background-color: #E6E4DC;
+        color: #2D4A36;
+        border: none;
+        border-radius: 20px;
+        padding: 8px 35px;
+        font-weight: 800;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-cerrar-modal:hover {
+        background-color: #ffffff;
+        color: #1e3324;
     }
 </style>
 
-<!-- Notificación Flotante de Éxito -->
+<!-- Alertas Flotantes -->
 @if (TempData["MensajeExito"] != null)
 {
     <div id="toastMensaje" class="toast-exito">
@@ -163,9 +193,15 @@
     </div>
 }
 
+@if (TempData["MensajeError"] != null)
+{
+    <div id="toastError" class="toast-error">
+        @TempData["MensajeError"]
+    </div>
+}
+
 <div class="gerentes-grid-container">
 
-    <!-- Renderizado de las tarjetas de gerentes existentes -->
     @if (Model != null && Model.Any())
     {
         @foreach (var gerente in Model)
@@ -188,12 +224,16 @@
                     <a asp-controller="Gerentes" asp-action="Editar" asp-route-id="@gerente.Id" class="btn-pill-sara">
                         Editar
                     </a>
+
+                    <a asp-controller="Gerentes" asp-action="Eliminar" asp-route-id="@gerente.Id" class="btn-pill-sara">
+                        Eliminar
+                    </a>
                 </div>
             </div>
         }
     }
 
-    <!-- Tarjeta fija para AGREGAR GERENTE -->
+    <!-- Tarjeta Agregar Gerente -->
     <a asp-controller="Gerentes" asp-action="Crear" class="card-agregar-link">
         <div class="card-sara">
             <div class="plus-circle">
@@ -204,64 +244,78 @@
             </div>
         </div>
     </a>
-
 </div>
 
-<!-- Modal para Consultar Gerente -->
+<!-- Modal Consultar con Todos los Campos Registrados -->
 <div class="modal fade" id="modalConsultar" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal-content-custom">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold fs-3">Detalles del Gerente</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
+            <div class="modal-body p-2">
+
                 <div class="modal-field">
-                    <div class="modal-field-label">Nombres y Apellidos</div>
-                    <div class="modal-field-value" id="mNombresApellidos"></div>
+                    <div class="modal-field-label">Nombres</div>
+                    <div class="modal-field-value" id="mNombres"></div>
                 </div>
+
+                <div class="modal-field">
+                    <div class="modal-field-label">Apellidos</div>
+                    <div class="modal-field-value" id="mApellidos"></div>
+                </div>
+
                 <div class="modal-field">
                     <div class="modal-field-label">Documento</div>
                     <div class="modal-field-value" id="mDocumento"></div>
                 </div>
+
                 <div class="modal-field">
                     <div class="modal-field-label">Correo electrónico</div>
                     <div class="modal-field-value" id="mCorreo"></div>
                 </div>
+
                 <div class="modal-field">
                     <div class="modal-field-label">Teléfono</div>
                     <div class="modal-field-value" id="mTelefono"></div>
                 </div>
+
                 <div class="modal-field">
                     <div class="modal-field-label">Dirección</div>
                     <div class="modal-field-value" id="mDireccion"></div>
                 </div>
+
                 <div class="modal-field">
                     <div class="modal-field-label">Sede</div>
                     <div class="modal-field-value" id="mSede"></div>
                 </div>
-                <div class="modal-field mb-0">
+
+                <div class="modal-field">
                     <div class="modal-field-label">Fecha de Nacimiento</div>
                     <div class="modal-field-value" id="mFechaNacimiento"></div>
                 </div>
+
             </div>
-            <div class="modal-footer border-0 pt-0 justify-content-center">
-                <button type="button" class="btn-pill-sara" data-bs-dismiss="modal">Cerrar</button>
+            <div class="modal-footer border-0 pt-2 justify-content-center">
+                <button type="button" class="btn-cerrar-modal" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
+    // Temporizador para ocultar alertas (Éxito y Error) a los 4 segundos
     setTimeout(function () {
-        var toast = document.getElementById('toastMensaje');
-        if (toast) {
-            toast.style.display = 'none';
+        var toastExito = document.getElementById('toastMensaje');
+        if (toastExito) {
+            toastExito.style.display = 'none';
+        }
+        var toastError = document.getElementById('toastError');
+        if (toastError) {
+            toastError.style.display = 'none';
         }
     }, 4000);
 
     function abrirModalConsultar(nombres, apellidos, correo, telefono, direccion, tipoDoc, numDoc, sede, fechaNac) {
-        document.getElementById('mNombresApellidos').innerText = nombres + ' ' + apellidos;
+        document.getElementById('mNombres').innerText = nombres || '';
+        document.getElementById('mApellidos').innerText = apellidos || '';
         document.getElementById('mDocumento').innerText = (tipoDoc || '') + ' ' + (numDoc || '');
         document.getElementById('mCorreo').innerText = correo || '';
         document.getElementById('mTelefono').innerText = telefono || '';
