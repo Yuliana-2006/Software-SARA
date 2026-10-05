@@ -1,83 +1,132 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Software_SARA.Controllers
 {
+    public class SedeViewModel
+    {
+        public int Id { get; set; }
+
+        public string Nombre { get; set; } = "";
+
+        public string Codigo { get; set; } = "";
+
+        public string CorreoElectronico { get; set; } = "";
+
+        public string Departamento { get; set; } = "";
+
+        public string CiudadMunicipio { get; set; } = "";
+
+        public string Barrio { get; set; } = "";
+
+        public string Direccion { get; set; } = "";
+
+        public string Telefono { get; set; } = "";
+    }
+
+
     public class SedesController : Controller
     {
-        // GET: SedesController
-        public ActionResult RegistrarSede()
+        // Lista temporal de sedes
+        private static List<SedeViewModel> _listaSedes = new List<SedeViewModel>();
+
+
+        // GET: /Sedes/RegistrarSede
+        [HttpGet]
+        public IActionResult RegistrarSede()
+        {
+            return View(_listaSedes);
+        }
+
+
+        // GET: /Sedes/CrearSede
+        [HttpGet]
+        public IActionResult CrearSede()
         {
             return View();
         }
 
-        // GET: SedesController/Details/5
-        public ActionResult Details(int id)
-        {
-            return View();
-        }
 
-        // GET: SedesController/Create
-        public ActionResult Create()
-        {
-            return View();
-        }
-
-        // POST: SedesController/Create
+        // POST: /Sedes/CrearSede
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+
+        public IActionResult CrearSede(SedeViewModel sede)
         {
-            try
+            if (!ModelState.IsValid)
             {
-                return RedirectToAction(nameof(Index));
+                return View(sede);
             }
-            catch
-            {
-                return View();
-            }
+
+            sede.Id = _listaSedes.Count + 1;
+
+            _listaSedes.Add(sede);
+
+            TempData["MensajeExito"] = "¡Sede registrada exitosamente!";
+
+            return RedirectToAction(nameof(RegistrarSede));
         }
 
-        // GET: SedesController/Edit/5
-        public ActionResult Edit(int id)
+        [HttpGet]
+        public IActionResult EditarSede(int id)
         {
-            return View();
+            var sede = _listaSedes
+                .FirstOrDefault(s => s.Id == id);
+
+            if (sede == null)
+            {
+                return RedirectToAction("RegistrarSede");
+            }
+
+            return View(sede);
         }
 
-        // POST: SedesController/Edit/5
+
+        // POST: /Sedes/Editar
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public IActionResult EditarSede(SedeViewModel sedeActualizada)
         {
-            try
+            if (ModelState.IsValid)
             {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
-        }
+                var sedeExistente = _listaSedes
+                    .FirstOrDefault(s => s.Id == sedeActualizada.Id);
 
-        // GET: SedesController/Delete/5
-        public ActionResult Delete(int id)
-        {
-            return View();
-        }
+                if (sedeExistente != null)
+                {
+                    sedeExistente.Nombre =
+                        sedeActualizada.Nombre;
 
-        // POST: SedesController/Delete/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
-        {
-            try
-            {
-                return RedirectToAction(nameof(Index));
+                    sedeExistente.Codigo =
+                        sedeActualizada.Codigo;
+
+                    sedeExistente.CorreoElectronico =
+                        sedeActualizada.CorreoElectronico;
+
+                    sedeExistente.Departamento =
+                        sedeActualizada.Departamento;
+
+                    sedeExistente.CiudadMunicipio =
+                        sedeActualizada.CiudadMunicipio;
+
+                    sedeExistente.Barrio =
+                        sedeActualizada.Barrio;
+
+                    sedeExistente.Direccion =
+                        sedeActualizada.Direccion;
+
+                    sedeExistente.Telefono =
+                        sedeActualizada.Telefono;
+
+                    TempData["MensajeExito"] =
+                        "¡Sede modificada exitosamente!";
+
+                    return RedirectToAction("RegistrarSede");
+                }
             }
-            catch
-            {
-                return View();
-            }
+
+            return View(sedeActualizada);
         }
     }
 }

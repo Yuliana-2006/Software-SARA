@@ -1,7 +1,783 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-@{
+﻿@model List<Software_SARA.Controllers.SedeViewModel>
+
+@{ 
+    ViewData["Title"] = "Sedes";
 }
 
-<h1>Registrar Sede</h1>
+<div class="sedes-container">
+
+    @foreach (var sede in Model)
+    {
+        <div class="sede-card">
+
+            <div class="sede-icon">
+                <i class="bi bi-shop"></i>
+            </div>
+
+            <div class="sede-name">
+                <h2>@sede.Nombre</h2>
+            </div>
+
+            <button class="sede-button"
+                    onclick="mostrarSede(
+                        '@sede.Nombre',
+                        '@sede.Codigo',
+                        '@sede.CorreoElectronico',
+                        '@sede.Departamento',
+                        '@sede.CiudadMunicipio',
+                        '@sede.Barrio',
+                        '@sede.Direccion',
+                        '@sede.Telefono'
+                    )">
+                Consultar
+            </button>
+
+                <a asp-controller="Sedes"
+                   asp-action="EditarSede"
+                   asp-route-id="@sede.Id"
+                   class="sede-button">
+                   Editar
+                </a>
+
+                <button class="sede-button">
+                    Eliminar
+                </button>
+
+            </div>
+
+    }
+    
+
+<a asp-controller="Sedes" asp-action="CrearSede" class="sede-link">
+
+    <div class="sede-card">
+
+        <div class="sede-plus">
+            <i class="bi bi-plus-lg"></i>
+        </div>
+
+        <div class="sede-title">
+            Agregar<br />
+            Sede
+        </div>
+
+    </div>
+
+</a>
+
+</div>
+
+@if (TempData["MensajeExito"] != null)
+{
+    <div class="mensaje-exito">
+        @TempData["MensajeExito"]
+    </div>
+}
+
+<div id="modalSede" class="modal-sede">
+
+    <div class="consulta-card">
+
+        <!-- ENCABEZADO -->
+        <div class="consulta-header">
+            <h2>Detalles de la Sede</h2>
+
+            <button type="button"
+                    class="btn-cerrar-x"
+                    onclick="cerrarSede()">
+                &times;
+            </button>
+        </div>
+
+        <!-- INFORMACIÓN -->
+        <div class="informacion-sede">
+
+            <div class="dato-sede">
+                <span>Nombre</span>
+                <strong id="datoNombre"></strong>
+            </div>
+
+            <div class="dato-sede">
+                <span>Código</span>
+                <strong id="datoCodigo"></strong>
+            </div>
+
+            <div class="dato-sede">
+                <span>Correo electrónico</span>
+                <strong id="datoCorreo"></strong>
+            </div>
+
+            <div class="dato-sede">
+                <span>Departamento</span>
+                <strong id="datoDepartamento"></strong>
+            </div>
+
+            <div class="dato-sede">
+                <span>Ciudad/Municipio</span>
+                <strong id="datoCiudad"></strong>
+            </div>
+
+            <div class="dato-sede">
+                <span>Barrio</span>
+                <strong id="datoBarrio"></strong>
+            </div>
+
+            <div class="dato-sede">
+                <span>Dirección</span>
+                <strong id="datoDireccion"></strong>
+            </div>
+
+            <div class="dato-sede">
+                <span>Teléfono</span>
+                <strong id="datoTelefono"></strong>
+            </div>
+
+        </div>
+
+        <button type="button"
+                class="btn-cerrar-consulta"
+                onclick="cerrarSede()">
+            Cerrar
+        </button>
+
+    </div>
+
+</div>
+
+<style>
+
+    /* =========================================
+       CONTENEDOR GENERAL
+       ========================================= */
+
+    .sedes-container {
+        width: 100%;
+
+        min-height: calc(100vh - 120px);
+
+        display: flex;
+
+        justify-content: center;
+
+        align-items: flex-start;
+
+        gap: 55px;
+
+        padding-top: 20px;
+
+        box-sizing: border-box;
+
+        flex-wrap: wrap;
+    }
+
+
+    /* =========================================
+       TARJETA
+       ========================================= */
+
+    .sede-card {
+        width: 280px;
+
+        height: 385px;
+
+        flex: 0 0 280px;
+
+        background-color: #5B805E;
+
+        border: 7px solid #2E4F3E;
+
+        border-radius: 35px;
+
+        box-sizing: border-box;
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+
+        overflow: hidden;
+
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.18);
+    }
+
+
+    /* =========================================
+       ICONO DE TIENDA
+       ========================================= */
+
+    .sede-icon {
+        width: 105px;
+
+        height: 105px;
+
+        min-width: 105px;
+
+        min-height: 105px;
+
+        margin-top: 25px;
+
+        background-color: #ECE9DF;
+
+        border: 6px solid #2E4F3E;
+
+        border-radius: 50%;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        box-sizing: border-box;
+    }
+
+
+    .sede-icon i {
+        font-size: 52px;
+
+        color: #2E4F3E;
+
+        line-height: 1;
+    }
+
+
+    /* =========================================
+       NOMBRE DE LA SEDE
+       ========================================= */
+
+    .sede-name {
+        width: 90%;
+
+        margin-top: 10px;
+
+        color: #DAD7CD;
+
+        font-size: 30px;
+
+        line-height: 1.1;
+
+        font-weight: 800;
+
+        text-align: center;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+    }
+
+
+    /* =========================================
+       BOTONES DE LA SEDE
+       ========================================= */
+
+    .sede-buttons {
+        width: 100%;
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+
+        gap: 8px;
+
+        margin-top: 14px;
+    }
+
+
+    .sede-button {
+         width: 150px;
+         height: 42px;
+         padding: 0;
+
+         border-radius: 25px;
+         border: 6px solid #2E4F3E;
+
+         background-color: #ECE9DF;
+         color: #355B43;
+
+         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+         font-size: 18px;
+         font-weight: 800;
+         line-height: 1;
+
+         cursor: pointer;
+         box-sizing: border-box;
+
+    /* CORRECCIONES */
+         text-decoration: none;
+
+         display: flex;
+         align-items: center;
+         justify-content: center;
+    }
+
+
+    .sede-button:hover {
+        background-color: #DCD9CF;
+        color: #355B43;
+        text-decoration: none;
+    }
+
+
+    /* =========================================
+       ENLACE DE AGREGAR
+       ========================================= */
+
+    .sede-link {
+        display: block;
+
+        width: 280px;
+
+        height: 385px;
+
+        flex: 0 0 280px;
+
+        text-decoration: none;
+
+        color: inherit;
+    }
+
+
+    .sede-link:hover {
+        text-decoration: none;
+
+        color: inherit;
+    }
+
+
+    /* =========================================
+       TARJETA AGREGAR
+       ========================================= */
+
+    .agregar-card {
+        cursor: pointer;
+
+        justify-content: flex-start;
+    }
+
+
+    .agregar-card:hover {
+        transform: translateY(-2px);
+
+        transition: transform 0.2s ease;
+    }
+
+
+    /* =========================================
+       CÍRCULO DEL SIGNO +
+       ========================================= */
+
+    .sede-plus {
+        width: 105px;
+
+        height: 105px;
+
+        min-width: 105px;
+
+        min-height: 105px;
+
+        margin-top: 60px;
+
+        background-color: #ECE9DF;
+
+        border: 6px solid #2E4F3E;
+
+        border-radius: 50%;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        box-sizing: border-box;
+    }
+
+
+    /* SIGNO + MÁS GRUESO */
+
+    .sede-plus {
+        color: #2E4F3E;
+
+        font-family: Arial, sans-serif;
+
+        font-size: 68px;
+
+        font-weight: 900;
+
+        line-height: 0;
+
+        transform: translateY(-5px);
+
+        -webkit-text-stroke: 2px #2E4F3E;
+    }
+
+
+    /* =========================================
+       TEXTO AGREGAR SEDE
+       ========================================= */
+
+    .sede-title {
+        width: 100%;
+
+        margin-top: 45px;
+
+        color: #F5F5F5;
+
+        font-size: 34px;
+
+        line-height: 1.05;
+
+        font-weight: 800;
+
+        text-align: center;
+    }
+
+
+    /* =========================================
+       MENSAJE DE ÉXITO
+       ========================================= */
+
+    .mensaje-exito {
+        position: fixed;
+
+        right: 25px;
+
+        bottom: 25px;
+
+        background-color: #2E4F3E;
+
+        color: white;
+
+        padding: 18px 30px;
+
+        border-radius: 18px;
+
+        font-size: 20px;
+
+        font-weight: 800;
+
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25);
+
+        z-index: 9999;
+
+        animation: mostrarMensaje 4s ease forwards;
+    }
+
+    @@keyframes mostrarMensaje {
+
+        0% {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        10% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        85% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        100% {
+            opacity: 0;
+            transform: translateY(20px);
+            visibility: hidden;
+        }
+
+    }
+
+    /* =========================================
+       MODAL DE CONSULTA
+       ========================================= */
+
+    .modal-sede {
+    display: none;
+
+    position: fixed;
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 100%;
+
+    background-color: rgba(0, 0, 0, 0.50);
+
+    z-index: 9999;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    box-sizing: border-box;
+
+    overflow-y: auto;
+}
+
+
+/* =========================================
+   TARJETA DE DETALLES
+   ========================================= */
+
+.consulta-card {
+    width: 520px;
+    max-width: 95%;
+
+    background-color: #2E4F3E;
+
+    border: 2px solid #203C2E;
+
+    border-radius: 28px;
+
+    padding: 24px 28px;
+
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
+
+    box-sizing: border-box;
+
+}
+
+
+/* =========================================
+   ENCABEZADO
+   ========================================= */
+
+.consulta-header {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    margin-bottom: 18px;
+}
+
+.consulta-header h2 {
+    margin: 0;
+
+    color: white;
+
+    font-size: 28px;
+
+    font-weight: 800;
+}
+
+
+/* =========================================
+   BOTÓN X
+   ========================================= */
+
+.btn-cerrar-x {
+    width: 38px;
+    height: 38px;
+
+    border: none;
+
+    background: transparent;
+
+    color: #DCD9CF;
+
+    font-size: 34px;
+
+    line-height: 1;
+
+    cursor: pointer;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+}
+
+.btn-cerrar-x:hover {
+    color: white;
+
+    transform: scale(1.1);
+}
+
+
+/* =========================================
+   CAMPOS
+   ========================================= */
+
+.dato-sede {
+    background-color: #5E875E;
+
+    border-radius: 15px;
+
+    padding: 10px 16px;
+
+    margin-bottom: 10px;
+
+    color: white;
+
+    box-sizing: border-box;
+}
+
+.dato-sede span {
+    display: block;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    margin-bottom: 3px;
+}
+
+.dato-sede strong {
+    display: block;
+
+    font-size: 17px;
+
+    font-weight: 800;
+
+    color: white;
+
+    word-break: break-word;
+}
+
+
+/* =========================================
+   BOTÓN CERRAR
+   ========================================= */
+
+.btn-cerrar-consulta {
+    display: block;
+
+    width: 130px;
+
+    height: 42px;
+
+    margin: 18px auto 0 auto;
+
+    border: none;
+
+    border-radius: 25px;
+
+    background-color: #ECE9DF;
+
+    color: #2E4F3E;
+
+    font-size: 16px;
+
+    font-weight: 800;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+.btn-cerrar-consulta:hover {
+    background-color: #ffffff;
+
+    transform: scale(1.03); 
+}
+
+
+    /* =========================================
+       RESPONSIVE
+       ========================================= */
+
+    @@media (max-width: 650px) {
+
+        .consulta-card {
+
+            padding: 22px;
+
+            border-radius: 22px;
+        }
+
+        .dato-sede {
+
+            padding: 12px 15px;
+        }
+
+        .dato-sede strong {
+
+            font-size: 17px;
+        }
+
+    }
+
+    /* =========================================
+       PANTALLAS PEQUEÑAS
+       ========================================= */
+
+    @@media (max-width: 750px) {
+
+        .sedes-container {
+            gap: 25px;
+        }
+
+    }
+
+
+</style>
+
+<script>
+
+    function mostrarSede(
+        nombre,
+        codigo,
+        correo,
+        departamento,
+        ciudad,
+        barrio,
+        direccion,
+        telefono
+    ) {
+
+        document.getElementById("datoNombre").textContent = nombre;
+
+        document.getElementById("datoCodigo").textContent = codigo;
+
+        document.getElementById("datoCorreo").textContent = correo;
+
+        document.getElementById("datoDepartamento").textContent = departamento;
+
+        document.getElementById("datoCiudad").textContent = ciudad;
+
+        document.getElementById("datoBarrio").textContent = barrio;
+
+        document.getElementById("datoDireccion").textContent = direccion;
+
+        document.getElementById("datoTelefono").textContent = telefono;
+
+
+        document.getElementById("modalSede").style.display = "flex";
+
+        document.body.style.overflow = "hidden";
+    }
+
+
+    function cerrarSede() {
+
+        document.getElementById("modalSede").style.display = "none";
+
+        document.body.style.overflow = "auto";
+    }
+
+
+    /* Cerrar al hacer clic fuera de la tarjeta */
+
+    document.getElementById("modalSede").addEventListener(
+        "click",
+        function (event) {
+
+            if (event.target === this) {
+
+                cerrarSede();
+
+            }
+
+        }
+    );
+
+</script>
+
