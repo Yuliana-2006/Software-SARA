@@ -128,5 +128,36 @@ namespace Software_SARA.Controllers
 
             return View(sedeActualizada);
         }
+
+        // GET: Sedes/EliminarSede/5
+        [HttpGet]
+        public IActionResult EliminarSede(int id)
+        {
+            var sede = _listaSedes.FirstOrDefault(s => s.Id == id);
+
+            if (sede == null)
+            {
+                return RedirectToAction("RegistrarSede");
+            }
+
+            return View(sede);
+        }
+
+        // POST: Sedes/EliminarSede
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult ConfirmarEliminarSede(int id)
+        {
+            var sede = _listaSedes.FirstOrDefault(s => s.Id == id);
+             
+            if (sede != null)
+            {
+                _listaSedes.Remove(sede);
+
+                TempData["MensajeExito"] = "¡Sede eliminada exitosamente!";
+            }
+
+            return RedirectToAction("RegistrarSede");
+        }
     }
 }
