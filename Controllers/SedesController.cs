@@ -131,7 +131,7 @@ namespace Software_SARA.Controllers
 
         // GET: Sedes/EliminarSede/5
         [HttpGet]
-        public IActionResult EliminarSede(int id)
+        public IActionResult ConfirmarEliminarSede(int id)
         {
             var sede = _listaSedes.FirstOrDefault(s => s.Id == id);
 
@@ -140,13 +140,13 @@ namespace Software_SARA.Controllers
                 return RedirectToAction("RegistrarSede");
             }
 
-            return View(sede);
+            return View("EliminarSede", sede);
         }
 
         // POST: Sedes/EliminarSede
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult ConfirmarEliminarSede(int id)
+        public IActionResult EliminarSede(int id)
         {
             var sede = _listaSedes.FirstOrDefault(s => s.Id == id);
              
