@@ -9,27 +9,21 @@ namespace Software_SARA.Controllers
 {
     public class PersonalController : Controller
     {
-        // Lista temporal en memoria con datos iniciales de prueba
+        // Lista temporal en memoria (luego la reemplazaremos por la base de datos)
         private static List<Personal> listaPersonal = new List<Personal>
         {
-
+            // Datos de prueba (puedes borrarlos si quieres empezar vacío)
+            // new Personal { Id = 1, Nombres = "Juan", Apellidos = "Perez", Rol = "Tesorero", SedeRegistro = "Sede Principal", TipoDoc = "CC", NumeroDoc = "123456" }
         };
 
-        // 1. PANTALLA PRINCIPAL DE PERSONAL (Las 3 tarjetas: Tesorero, Empleado, +)
+        // 1. PANTALLA PRINCIPAL DE PERSONAL (Tesorero, Empleado)
         [HttpGet]
         public IActionResult Index()
         {
             return View();
         }
 
-        // 2. SELECCIONAR QUÉ ROL SE REGISTRARÁ AL PULSAR (+)
-        [HttpGet]
-        public IActionResult SeleccionarRolRegistro()
-        {
-            return View();
-        }
-
-        // 3. TARJETAS POR SECCIÓN (Muestra los empleados registrados en Tesorero o Empleado)
+        // 2. TARJETAS POR SECCIÓN (Muestra los empleados registrados en Tesorero o Empleado)
         [HttpGet]
         public IActionResult SeleccionarRol(string rol = "Empleado")
         {
@@ -43,7 +37,7 @@ namespace Software_SARA.Controllers
             return View(listaFiltrada);
         }
 
-        // 4. FORMULARIO REGISTRAR (GET)
+        // 3. FORMULARIO REGISTRAR (GET)
         [HttpGet]
         public IActionResult Registrar(string rol = "Empleado")
         {
@@ -55,13 +49,13 @@ namespace Software_SARA.Controllers
             {
                 Rol = rol,
                 SedeRegistro = sede,
-                FechaNacimiento = DateTime.Now.AddYears(-18)
+                FechaNacimiento = DateTime.Now.AddYears(-18) // Fecha por defecto (18 años atrás)
             };
 
             return View(nuevo);
         }
 
-        // 5. GUARDAR EL REGISTRO (POST)
+        // 4. GUARDAR EL REGISTRO (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Registrar(Personal personal)
@@ -80,21 +74,23 @@ namespace Software_SARA.Controllers
             return View(personal);
         }
 
-        // 6. CONSULTAR REGISTRO (GET)
+        // 5. CONSULTAR REGISTRO (GET)
         [HttpGet]
         public IActionResult Consultar(int id)
         {
+            // Aquí luego pondremos la lógica real para consultar un registro por ID
             return NoContent();
         }
 
-        // 7. EDITAR REGISTRO (GET)
+        // 6. EDITAR REGISTRO (GET)
         [HttpGet]
         public IActionResult Editar(int id)
         {
+            // Aquí luego pondremos la lógica real para cargar un registro y editarlo
             return NoContent();
         }
 
-        // 8. GUARDAR EDICIÓN (POST)
+        // 7. GUARDAR EDICIÓN (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Editar(Personal personal)
@@ -123,7 +119,7 @@ namespace Software_SARA.Controllers
             return View(personal);
         }
 
-        // 9. ELIMINAR REGISTRO (POST)
+        // 8. ELIMINAR REGISTRO (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Eliminar(int id, string rol = "Empleado")
