@@ -113,7 +113,8 @@
             </div>
 
             <button type="submit" class="sara-btn-submit">REGISTRAR</button>
-            <a asp-action="SeleccionarRol" asp-route-rol="@rol" class="sara-btn-cancel">CANCELAR</a>
+            <!-- El botón Cancelar vuelve a la sección del rol actual -->
+            <a asp-action="SeleccionarRol" asp-route-rol="@Model.Rol" class="sara-btn-cancel">CANCELAR</a>
         </form>
     </div>
 </div>
