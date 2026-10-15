@@ -1,17 +1,15 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace Software_SARA.Models
+namespace Software_SARA.Repositories.Models;
+
+public partial class Proveedor
 {
-    [Table("proveedor")]
-    public class Proveedor
-    {
-        [Key]
-        [Column("id_proveedor")]
-        public int IdProveedor { get; set; }
+    public int IdProveedor { get; set; }
 
-        [Column("nom_proveedor")]
-        [StringLength(50)]
-        public string NombreProveedor { get; set; } = string.Empty;
-    }
+    public string NomProveedor { get; set; } = null!;
+
+    public virtual ICollection<Factura> Facturas { get; set; } = new List<Factura>();
+
+    public virtual ICollection<Recordatorio> Recordatorios { get; set; } = new List<Recordatorio>();
 }

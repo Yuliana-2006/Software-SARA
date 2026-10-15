@@ -1,17 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-
-namespace Software_SARA.Models
+﻿namespace Software_SARA.Repositories.Models
 {
-    [Table("rol")]
     public class Rol
     {
-        [Key]
-        [Column("id_rol")]
         public int IdRol { get; set; }
-
-        [Column("nom_rol")]
-        [StringLength(50)]
-        public string NombreRol { get; set; } = string.Empty;
+        public string NomRol { get; set; } = null!;
+        public virtual ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>();
     }
 }

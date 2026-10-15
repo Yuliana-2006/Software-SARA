@@ -1,17 +1,13 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace Software_SARA.Models
+namespace Software_SARA.Repositories.Models;
+
+public partial class Servicio
 {
-    [Table("servicio")]
-    public class Servicio
-    {
-        [Key]
-        [Column("id_servicio")]
-        public int IdServicio { get; set; }
+    public int IdServicio { get; set; }
 
-        [Column("nom_servicio")]
-        [StringLength(50)]
-        public string NombreServicio { get; set; } = string.Empty;
-    }
+    public string NomServicio { get; set; } = null!;
+
+    public virtual ICollection<Factura> Facturas { get; set; } = new List<Factura>();
 }

@@ -1,33 +1,23 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace Software_SARA.Models
+namespace Software_SARA.Repositories.Models;
+
+public partial class DiaCaja
 {
-    [Table("dia_caja")]
-    public class DiaCaja
-    {
-        [Key]
-        [Column("id_dia_caja")]
-        public int IdDiaCaja { get; set; }
+    public int IdDiaCaja { get; set; }
 
-        [Column("id_usuario")]
-        public int IdUsuario { get; set; }
-        [ForeignKey("IdUsuario")]
-        public Usuario? Usuario { get; set; }
+    public int IdUsuario { get; set; }
 
-        [Column("monto_inicial")]
-        public decimal MontoInicial { get; set; }
+    public decimal MontoInicial { get; set; }
 
-        [Column("fecha_hora_apertura")]
-        public DateTime FechaHoraApertura { get; set; }
+    public DateTime FechaHoraApertura { get; set; }
 
-        [Column("monto_final")]
-        public decimal MontoFinal { get; set; }
+    public decimal MontoFinal { get; set; }
 
-        [Column("fecha_hora_cierre")]
-        public DateTime FechaHoraCierre { get; set; }
+    public DateTime FechaHoraCierre { get; set; }
 
-        [Column("estado_dia")]
-        public bool EstadoDia { get; set; }
-    }
+    public bool EstadoDia { get; set; }
+
+    public virtual Usuario IdUsuarioNavigation { get; set; } = null!;
 }

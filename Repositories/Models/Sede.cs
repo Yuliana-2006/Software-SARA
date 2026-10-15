@@ -1,39 +1,25 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace Software_SARA.Models
+namespace Software_SARA.Repositories.Models;
+
+public partial class Sede
 {
-    [Table("sede")]
-    public class Sede
-    {
-        [Key]
-        [Column("id_sede")]
-        public int IdSede { get; set; }
+    public int IdSede { get; set; }
 
-        [Column("nom_sede")]
-        [StringLength(100)]
-        public string NombreSede { get; set; } = string.Empty;
+    public string NomSede { get; set; } = null!;
 
-        [Column("dir_sede")]
-        [StringLength(100)]
-        public string DireccionSede { get; set; } = string.Empty;
+    public string DirSede { get; set; } = null!;
 
-        [Column("tel_sede")]
-        public int TelefonoSede { get; set; }
+    public string TelSede { get; set; } = null!;
 
-        [Column("estado_sede")]
-        public bool EstadoSede { get; set; }
+    public bool EstadoSede { get; set; }
 
-        [Column("ciu_sede")]
-        [StringLength(50)]
-        public string CiudadSede { get; set; } = string.Empty;
+    public string CiuSede { get; set; } = null!;
 
-        [Column("dep_sede")]
-        [StringLength(50)]
-        public string DepartamentoSede { get; set; } = string.Empty;
+    public string DepSede { get; set; } = null!;
 
-        [Column("barrio_sede")]
-        [StringLength(50)]
-        public string BarrioSede { get; set; } = string.Empty;
-    }
+    public string BarrioSede { get; set; } = null!;
+
+    public virtual ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>();
 }

@@ -1,43 +1,31 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace Software_SARA.Models
+namespace Software_SARA.Repositories.Models;
+
+public partial class Factura
 {
-    [Table("factura")]
-    public class Factura
-    {
-        [Key]
-        [Column("id_factura")]
-        public int IdFactura { get; set; }
+    public int IdFactura { get; set; }
 
-        [Column("id_usuario")]
-        public int IdUsuario { get; set; }
-        [ForeignKey("IdUsuario")]
-        public Usuario? Usuario { get; set; }
+    public int IdUsuario { get; set; }
 
-        [Column("tip_factura")]
-        public bool TipoFactura { get; set; }
+    public bool TipFactura { get; set; }
 
-        [Column("id_proveedor")]
-        public int? IdProveedor { get; set; }
-        [ForeignKey("IdProveedor")]
-        public Proveedor? Proveedor { get; set; }
+    public int? IdProveedor { get; set; }
 
-        [Column("id_servicio")]
-        public int? IdServicio { get; set; }
-        [ForeignKey("IdServicio")]
-        public Servicio? Servicio { get; set; }
+    public int? IdServicio { get; set; }
 
-        [Column("valor_factura")]
-        public decimal ValorFactura { get; set; }
+    public decimal ValorFactura { get; set; }
 
-        [Column("fecha_reg_factura")]
-        public DateTime FechaRegistro { get; set; }
+    public DateOnly FechaRegFactura { get; set; }
 
-        [Column("fecha_vencimiento")]
-        public DateTime FechaVencimiento { get; set; }
+    public DateOnly FechaVencimiento { get; set; }
 
-        [Column("estado_factura")]
-        public bool EstadoFactura { get; set; }
-    }
+    public bool EstadoFactura { get; set; }
+
+    public virtual Proveedor? IdProveedorNavigation { get; set; }
+
+    public virtual Servicio? IdServicioNavigation { get; set; }
+
+    public virtual Usuario IdUsuarioNavigation { get; set; } = null!;
 }

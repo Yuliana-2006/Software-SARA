@@ -1,58 +1,43 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace Software_SARA.Models
+namespace Software_SARA.Repositories.Models;
+
+public partial class Usuario
 {
-    [Table("usuario")]
-    public class Usuario
-    {
-        [Key]
-        [Column("id_usuario")]
-        public int IdUsuario { get; set; }
+    public int IdUsuario { get; set; }
 
-        [Column("id_rol")]
-        public int IdRol { get; set; }
-        [ForeignKey("IdRol")]
-        public Rol? Rol { get; set; }
+    public int IdRol { get; set; }
 
-        [Column("tip_doc")]
-        public bool TipoDoc { get; set; }
+    public bool TipDoc { get; set; }
 
-        [Column("id_sede")]
-        public int IdSede { get; set; }
-        [ForeignKey("IdSede")]
-        public Sede? Sede { get; set; }
+    public int IdSede { get; set; }
 
-        [Column("nom_usuario")]
-        [StringLength(50)]
-        public string Nombres { get; set; } = string.Empty;
+    public string NomUsuario { get; set; } = null!;
 
-        [Column("apelli_usuario")]
-        [StringLength(50)]
-        public string Apellidos { get; set; } = string.Empty;
+    public string ApelliUsuario { get; set; } = null!;
 
-        [Column("num_doc")]
-        public int NumeroDoc { get; set; }
+    public int NumDoc { get; set; }
 
-        [Column("correo")]
-        [StringLength(100)]
-        public string Correo { get; set; } = string.Empty;
+    public string Correo { get; set; } = null!;
 
-        [Column("telefono")]
-        public int Telefono { get; set; }
+    public string Telefono { get; set; } = null!;
 
-        [Column("dir_usuario")]
-        [StringLength(100)]
-        public string Direccion { get; set; } = string.Empty;
+    public string DirUsuario { get; set; } = null!;
 
-        [Column("contraseña")]
-        [StringLength(250)]
-        public string Contrasena { get; set; } = string.Empty;
+    public string Contraseña { get; set; } = null!;
 
-        [Column("estado_usuario")]
-        public bool Estado { get; set; }
+    public bool EstadoUsuario { get; set; }
 
-        [Column("fecha_naci")]
-        public DateTime FechaNacimiento { get; set; }
-    }
+    public DateOnly FechaNaci { get; set; }
+
+    public virtual ICollection<DiaCaja> DiaCajas { get; set; } = new List<DiaCaja>();
+
+    public virtual ICollection<Factura> Facturas { get; set; } = new List<Factura>();
+
+    public virtual Rol IdRolNavigation { get; set; } = null!;
+
+    public virtual Sede IdSedeNavigation { get; set; } = null!;
+
+    public virtual ICollection<Recordatorio> Recordatorios { get; set; } = new List<Recordatorio>();
 }

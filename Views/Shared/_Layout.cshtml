@@ -1,6 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Http
 @{
     var rol = Context.Session.GetString("UsuarioRol") ?? "Usuario";
+    var nombre = Context.Session.GetString("UsuarioNombre") ?? "Usuario Demo";
     var doc = Context.Session.GetString("UsuarioDoc") ?? "0000";
 
     // Inicial para el avatar circular
@@ -79,7 +80,7 @@
         }
 
         /* Avatar de perfil superior */
-        .avatar-circle {
+        .avatar-circle-sm {
             width: 40px;
             height: 40px;
             background-color: #3C6348;
@@ -160,7 +161,9 @@
             <!-- BARRA SUPERIOR REDUCIDA -->
             <div class="d-flex justify-content-end align-items-center px-3 py-1 bg-white shadow-sm" style="height: 48px; border-bottom: 2px solid #E2DFD2;">
                 <div class="text-end me-2">
-                    <div class="fw-bold text-dark lh-1" style="font-size: 13px;">@rol Demo</div>
+                    <!-- Muestra el nombre real del usuario desde la base de datos -->
+                    <div class="fw-bold text-dark lh-1" style="font-size: 13px;">@nombre</div>
+                    <!-- Muestra el rol real del usuario desde la base de datos -->
                     <div class="text-uppercase fw-bold text-muted lh-1 mt-1" style="font-size: 10px; letter-spacing: 0.5px;">@rol</div>
                 </div>
                 <div class="avatar-circle-sm">

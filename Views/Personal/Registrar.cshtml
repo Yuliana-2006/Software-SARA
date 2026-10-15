@@ -1,8 +1,10 @@
-﻿@model Software_SARA.Models.Personal
+﻿@model Software_SARA.Repositories.Models.Usuario
 
 @{
     string rol = ViewBag.RolActual ?? "Empleado";
     ViewData["Title"] = "Registrar " + rol;
+    // Mapear el nombre del rol a su ID (según tu base de datos)
+    int idRol = rol == "Tesorero" ? 3 : (rol == "Empleado" ? 4 : 0);
 }
 
 <style>
@@ -58,17 +60,19 @@
         <p class="text-center fw-bold mb-4">Sede asignada: @(ViewBag.NombreSede ?? "Sede Principal")</p>
 
         <form asp-action="Registrar" method="post">
-            <input type="hidden" asp-for="Rol" value="@rol" />
+            <!-- Campos ocultos para el rol y la sede -->
+            <input type="hidden" name="IdRol" value="@idRol" />
+            <input type="hidden" name="IdSede" value="@(ViewBag.IdSede ?? 1)" />
 
             <div class="mb-3">
                 <label class="fw-bold">Sede de Registro</label>
-                <input asp-for="SedeRegistro" class="form-control sara-input-pill" readonly />
+                <input value="@(ViewBag.NombreSede ?? "Sede Principal")" class="form-control sara-input-pill" readonly />
             </div>
 
             <div class="row g-2 mb-3">
                 <div class="col-4">
                     <label class="fw-bold">Tipo Doc.</label>
-                    <select asp-for="TipoDoc" class="form-select sara-input-pill">
+                    <select name="tipoDocString" class="form-select sara-input-pill">
                         <option value="CC">CC</option>
                         <option value="TI">TI</option>
                         <option value="CE">CE</option>
@@ -76,18 +80,18 @@
                 </div>
                 <div class="col-8">
                     <label class="fw-bold">Número de Documento</label>
-                    <input asp-for="NumeroDoc" class="form-control sara-input-pill" required />
+                    <input asp-for="NumDoc" class="form-control sara-input-pill" required />
                 </div>
             </div>
 
             <div class="row g-2 mb-3">
                 <div class="col-6">
                     <label class="fw-bold">Nombres</label>
-                    <input asp-for="Nombres" class="form-control sara-input-pill" required />
+                    <input asp-for="NomUsuario" class="form-control sara-input-pill" required />
                 </div>
                 <div class="col-6">
                     <label class="fw-bold">Apellidos</label>
-                    <input asp-for="Apellidos" class="form-control sara-input-pill" required />
+                    <input asp-for="ApelliUsuario" class="form-control sara-input-pill" required />
                 </div>
             </div>
 
@@ -104,17 +108,16 @@
 
             <div class="mb-3">
                 <label class="fw-bold">Dirección de Vivienda</label>
-                <input asp-for="Direccion" class="form-control sara-input-pill" />
+                <input asp-for="DirUsuario" class="form-control sara-input-pill" />
             </div>
 
             <div class="mb-4">
                 <label class="fw-bold">Fecha de Nacimiento</label>
-                <input asp-for="FechaNacimiento" type="date" class="form-control sara-input-pill" />
+                <input asp-for="FechaNaci" type="date" class="form-control sara-input-pill" />
             </div>
 
             <button type="submit" class="sara-btn-submit">REGISTRAR</button>
-            <!-- El botón Cancelar vuelve a la sección del rol actual -->
-            <a asp-action="SeleccionarRol" asp-route-rol="@Model.Rol" class="sara-btn-cancel">CANCELAR</a>
+            <a asp-action="SeleccionarRol" asp-route-rol="@rol" class="sara-btn-cancel">CANCELAR</a>
         </form>
     </div>
 </div>
