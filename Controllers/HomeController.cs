@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using Software_SARA.Repositories.Models;
+using Software_SARA.Repositories;
 
 namespace Software_SARA.Controllers
 {
