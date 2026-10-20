@@ -9,182 +9,195 @@
         background-color: #E6E4DC;
     }
 
-    .banner-titulo {
-        background-color: #2D4A36;
-        color: white;
-        padding: 20px 40px;
-        font-size: 2.5rem;
-        font-weight: 800;
-    }
-
-    .form-container {
-        padding: 40px 60px;
-    }
-
-    .field-label {
-        color: #2D4A36;
-        font-weight: 800;
-        font-size: 1.2rem;
-        margin-bottom: 8px;
-    }
-
-    .field-input {
-        background-color: #587B58;
-        border: none;
-        border-radius: 25px;
-        height: 50px;
-        color: white;
-        padding: 0 20px;
-        font-size: 1.1rem;
-        width: 100%;
-    }
-
-    .field-input:focus {
-        background-color: #4B6B4B;
-        color: white;
-        outline: none;
-        box-shadow: none;
-    }
-
-    .input-group-custom {
+    .form-wrapper {
         display: flex;
-        background-color: #587B58;
-        border-radius: 25px;
-        overflow: hidden;
+        justify-content: center;
+        align-items: center;
+        padding: 20px 10px;
+    }
+
+    .card-registrar {
+        width: 100%;
+        max-width: 520px;
+        background-color: #385E42;
+        border: 4px solid #25402D;
+        border-radius: 35px;
+        padding: 30px 35px;
+        color: white;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+
+    .title-registrar {
+        font-size: 1.8rem;
+        font-weight: 900;
+        text-align: center;
+        letter-spacing: 0.5px;
+        margin-bottom: 2px;
+        text-transform: uppercase;
+    }
+
+    .subtitle-registrar {
+        font-size: 0.95rem;
+        text-align: center;
+        font-weight: 600;
+        color: #E6E4DC;
+        margin-bottom: 20px;
+    }
+
+    .form-label-custom {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 4px;
+        display: block;
+    }
+
+    .input-pill-sara {
+        width: 100%;
+        background-color: #ffffff;
+        border: none;
+        border-radius: 20px;
+        padding: 8px 16px;
+        font-size: 0.95rem;
+        color: #333333;
+        outline: none;
+    }
+
+    .input-pill-sara:focus {
+        box-shadow: 0 0 0 3px rgba(230, 228, 220, 0.5);
+    }
+
+    .input-readonly {
+        background-color: #ffffff;
+        color: #25402D;
+        font-weight: 700;
     }
 
     .select-doc {
-        background-color: #2D4A36;
-        color: white;
-        border: none;
-        padding: 0 15px;
-        font-weight: 700;
-        border-radius: 25px 0 0 25px;
-        cursor: pointer;
+        border-radius: 20px 0 0 20px;
+        width: 35%;
+        border-right: 1px solid #ccc;
     }
 
     .input-doc {
-        background-color: transparent;
-        border: none;
-        color: white;
-        padding: 0 20px;
-        height: 50px;
+        border-radius: 0 20px 20px 0;
+        width: 65%;
+    }
+
+    .btn-pill-registrar {
         width: 100%;
-    }
-
-    .input-doc:focus, .select-doc:focus {
-        outline: none;
-    }
-
-    .btn-sara-registrar {
-        background-color: #E6E4DC;
-        color: #2D4A36;
-        font-weight: 800;
-        font-size: 1.3rem;
-        border: 4px solid #2D4A36;
-        border-radius: 30px;
-        padding: 8px 45px;
+        background-color: #ffffff;
+        color: #25402D;
+        border: 2px solid #25402D;
+        border-radius: 25px;
+        padding: 10px 0;
+        font-weight: 900;
+        font-size: 1.1rem;
+        cursor: pointer;
         transition: all 0.2s ease;
+        text-transform: uppercase;
     }
 
-    .btn-sara-registrar:hover {
-        background-color: #2D4A36;
-        color: white;
+    .btn-pill-registrar:hover {
+        background-color: #25402D;
+        color: #ffffff;
     }
 
-    .btn-sara-cancelar-form {
-        background-color: #E6E4DC;
-        color: #2D4A36;
-        font-weight: 800;
-        font-size: 1.3rem;
-        border: 4px solid #2D4A36;
-        border-radius: 30px;
-        padding: 8px 45px;
+    .btn-pill-cancelar-form {
+        width: 100%;
+        background-color: transparent;
+        color: #ffffff;
+        border: 2px solid #ffffff;
+        border-radius: 25px;
+        padding: 10px 0;
+        font-weight: 900;
+        font-size: 1.1rem;
         text-decoration: none;
         display: inline-block;
+        text-align: center;
         transition: all 0.2s ease;
+        text-transform: uppercase;
     }
 
-    .btn-sara-cancelar-form:hover {
-        background-color: #2D4A36;
-        color: white;
+    .btn-pill-cancelar-form:hover {
+        background-color: #ffffff;
+        color: #25402D;
     }
 </style>
 
-<div class="banner-titulo">
-    Registrar Gerente
-</div>
+<div class="form-wrapper">
+    <div class="card-registrar">
 
-<div class="form-container">
-    <form asp-controller="Gerentes" asp-action="Crear" method="post">
-        <div class="row g-4">
-            
-            <!-- Columna Izquierda -->
-            <div class="col-md-6 pe-md-5">
-                <div class="mb-4">
-                    <label class="field-label">Nombres</label>
-                    <input asp-for="Nombres" class="field-input" required />
+        <div class="title-registrar">Registrar Gerente</div>
+        <div class="subtitle-registrar">Sede asignada: <strong>@Model?.Sede</strong></div>
+
+        <form asp-controller="Gerentes" asp-action="Crear" method="post">
+
+            <!-- Sede de Registro -->
+            <div class="mb-3">
+                <label class="form-label-custom">Sede de Registro</label>
+                <input asp-for="Sede" class="input-pill-sara input-readonly" readonly />
+            </div>
+
+            <!-- Documento: Tipo y Número -->
+            <div class="mb-3">
+                <div class="d-flex justify-content-between">
+                    <label class="form-label-custom" style="width: 35%;">Tipo Doc.</label>
+                    <label class="form-label-custom" style="width: 63%;">Número de Documento</label>
                 </div>
-
-                <div class="mb-4">
-                    <label class="field-label">Apellidos</label>
-                    <input asp-for="Apellidos" class="field-input" required />
-                </div>
-
-                <div class="mb-4">
-                    <label class="field-label">Correo electrónico</label>
-                    <input asp-for="Correo" type="email" class="field-input" required />
-                </div>
-
-                <div class="mb-4">
-                    <label class="field-label">Teléfono</label>
-                    <input asp-for="Telefono" class="field-input" required />
+                <div class="d-flex">
+                    <select asp-for="TipoDocumento" class="input-pill-sara select-doc">
+                        <option value="CC">CC</option>
+                        <option value="CE">CE</option>
+                        <option value="PAS">PAS</option>
+                    </select>
+                    <input asp-for="NumeroDocumento" class="input-pill-sara input-doc" placeholder="Número de Documento" required />
                 </div>
             </div>
 
-            <!-- Columna Derecha -->
-            <div class="col-md-6 ps-md-5">
-                <div class="mb-4">
-                    <label class="field-label">Dirección</label>
-                    <input asp-for="Direccion" class="field-input" required />
+            <!-- Nombres y Apellidos -->
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label class="form-label-custom">Nombres</label>
+                    <input asp-for="Nombres" class="input-pill-sara" placeholder="Nombres" required />
                 </div>
-
-                <div class="mb-4">
-                    <label class="field-label">Número de Documento</label>
-                    <div class="input-group-custom">
-                        <select asp-for="TipoDocumento" class="select-doc">
-                            <option value="CC">CC</option>
-                            <option value="CE">CE</option>
-                            <option value="PAS">PAS</option>
-                        </select>
-                        <input asp-for="NumeroDocumento" class="input-doc" required />
-                    </div>
-                </div>
-
-               <div class="mb-4">
-    <label class="field-label">Sede</label>
-    <!-- Campo visible pero deshabilitado -->
-    <input class="field-input" value="Sede Principal" disabled />
-    <!-- Campo oculto para enviar el valor al controlador -->
-    <input type="hidden" asp-for="Sede" value="Sede Principal" />
-</div>
-
-                <div class="mb-4">
-                    <label class="field-label">Fecha de nacimiento</label>
-                    <input asp-for="FechaNacimiento" type="date" class="field-input" required />
+                <div class="col-6">
+                    <label class="form-label-custom">Apellidos</label>
+                    <input asp-for="Apellidos" class="input-pill-sara" placeholder="Apellidos" required />
                 </div>
             </div>
 
-        </div>
+            <!-- Teléfono y Correo -->
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label class="form-label-custom">Teléfono</label>
+                    <input asp-for="Telefono" class="input-pill-sara" placeholder="Teléfono" required />
+                </div>
+                <div class="col-6">
+                    <label class="form-label-custom">Correo Electrónico</label>
+                    <input asp-for="Correo" type="email" class="input-pill-sara" placeholder="Correo" required />
+                </div>
+            </div>
 
-        <!-- Botones de Acción -->
-        <div class="d-flex justify-content-center gap-4 mt-5">
-            <button type="submit" class="btn-sara-registrar">
-                Registrar
-            </button>
-            <a asp-controller="Gerentes" asp-action="Index" class="btn-sara-cancelar-form">
-                Cancelar
-            </a>
-        </div>
-    </form>
+            <!-- Dirección de Vivienda -->
+            <div class="mb-3">
+                <label class="form-label-custom">Dirección de Vivienda</label>
+                <input asp-for="Direccion" class="input-pill-sara" placeholder="Dirección" required />
+            </div>
+
+            <!-- Fecha de Nacimiento -->
+            <div class="mb-4">
+                <label class="form-label-custom">Fecha de Nacimiento</label>
+                <input asp-for="FechaNacimiento" type="date" class="input-pill-sara" required />
+            </div>
+
+            <!-- Botones -->
+            <div class="d-flex flex-column gap-2">
+                <button type="submit" class="btn-pill-registrar">REGISTRAR</button>
+                <a asp-controller="Gerentes" asp-action="Index" class="btn-pill-cancelar-form">CANCELAR</a>
+            </div>
+
+        </form>
+
+    </div>
 </div>

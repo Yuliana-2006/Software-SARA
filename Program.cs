@@ -1,17 +1,23 @@
+using Microsoft.EntityFrameworkCore;
+using Software_SARA.Repositories.Models; // <-- Namespace del SarabdContext
+
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Agregar servicios para controladores, vistas y manejo de sesiones
 builder.Services.AddControllersWithViews();
+
+// Usar el contexto del profesor
+builder.Services.AddDbContext<SarabdContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(30); // Tiempo límite de inactividad
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
 
 var app = builder.Build();
 
-// 2. Configurar la canalización de solicitudes HTTP
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -20,15 +26,10 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
-
-// Habilitar el uso de variables de sesión
 app.UseSession();
-
 app.UseAuthorization();
 
-// Configurar para que la primera pantalla que abra sea el Login (Acceso)
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Acceso}/{action=Login}/{id?}");
