@@ -1,11 +1,20 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Software_SARA.Models;
+using Software_SARA.Repositories.Models; 
 using Microsoft.AspNetCore.Http;
+using System.Linq;
 
 namespace Software_SARA.Controllers
 {
     public class AccesoController : Controller
     {
+        private readonly SarabdContext _context;
+
+        public AccesoController(SarabdContext context)
+        {
+            _context = context;
+        }
+
         [HttpGet]
         public IActionResult Login()
         {
@@ -20,19 +29,48 @@ namespace Software_SARA.Controllers
                 return View(modelo);
             }
 
-            // Validamos tipo, número de documento y contraseña (datos de prueba para la interfaz)
-            string rolUsuario = ValidarEnBaseDeDatos(modelo.TipoDocumento, modelo.NumeroDocumento, modelo.Contrasena);
+            // Convertir TipoDoc "CC"/"CE" a booleano
+            bool tipoDocBool = modelo.TipoDocumento == "CC";
+            int numDocInt = int.Parse(modelo.NumeroDocumento);
 
-            if (rolUsuario != null)
+            // Buscar en la base de datos (con los nombres del contexto del profesor)
+            var usuario = _context.Usuarios.FirstOrDefault(u =>
+                u.TipDoc == tipoDocBool &&
+                u.NumDoc == numDocInt &&
+                u.Contraseña == modelo.Contrasena &&
+                u.EstadoUsuario == true);
+
+            if (usuario != null)
             {
-                // Guardamos el rol y el documento en la sesión
-                HttpContext.Session.SetString("UsuarioRol", rolUsuario);
-                HttpContext.Session.SetString("UsuarioDoc", modelo.NumeroDocumento);
+                // Guardar datos en la sesión
+                HttpContext.Session.SetString("UsuarioId", usuario.IdUsuario.ToString());
+                HttpContext.Session.SetString("UsuarioNombre", usuario.NomUsuario + " " + usuario.ApelliUsuario);
+                HttpContext.Session.SetString("UsuarioDoc", usuario.NumDoc.ToString());
+
+                // Cargar el rol
+                var rol = _context.Rols.FirstOrDefault(r => r.IdRol == usuario.IdRol);
+                HttpContext.Session.SetString("UsuarioRol", rol?.NomRol ?? "Sin Rol");
+
+                // Cargar la sede
+                var sede = _context.Sedes.FirstOrDefault(s => s.IdSede == usuario.IdSede);
+                HttpContext.Session.SetString("SedeNombre", sede?.NomSede ?? "Sede Principal");
+
+                // Redirigir según el rol
+                string nombreRol = rol?.NomRol ?? "";
+
+                if (nombreRol == "Dueño")
+                    return RedirectToAction("Index", "Home");
+                else if (nombreRol == "Gerente")
+                    return RedirectToAction("Index", "Personal");
+                else if (nombreRol == "Tesorero")
+                    return RedirectToAction("Index", "Home");
+                else if (nombreRol == "Empleado")
+                    return RedirectToAction("Index", "Home");
 
                 return RedirectToAction("Index", "Home");
             }
 
-            ViewBag.Error = "Documento o contraseña incorrectos.";
+            ViewBag.Error = "Documento o contraseña incorrectos, o usuario inactivo.";
             return View(modelo);
         }
 
@@ -40,17 +78,6 @@ namespace Software_SARA.Controllers
         {
             HttpContext.Session.Clear();
             return RedirectToAction("Login");
-        }
-
-        private string ValidarEnBaseDeDatos(string tipoDoc, string numDoc, string clave)
-        {
-            // Pruebas iniciales para probar cada rol
-            if (numDoc == "12345" && clave == "1234") return "Dueño";
-            if (numDoc == "67890" && clave == "1234") return "Gerente";
-            if (numDoc == "11223" && clave == "1234") return "Tesorero";
-            if (numDoc == "44556" && clave == "1234") return "Empleado";
-
-            return null;
         }
     }
 }
