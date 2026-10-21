@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Software_SARA.Models;
 using Software_SARA.Repositories.Models;
@@ -15,7 +15,7 @@ namespace Software_SARA.Controllers
         public int Id { get; set; }
         public string? Nombres { get; set; }
         public string? Apellidos { get; set; }
-        public string? TipoDocumento { get; set; } // "1" o "0" (o "CC", "CE", etc.)
+        public string? TipoDocumento { get; set; }
         public string? NumeroDocumento { get; set; }
         public string? Correo { get; set; }
         public string? Telefono { get; set; }
@@ -36,26 +36,34 @@ namespace Software_SARA.Controllers
         // GET: /Gerentes
         public async Task<IActionResult> Index()
         {
-            var listaGerentes = await _context.Usuarios
-                .Include(u => u.IdSedeNavigation)
-                .Include(u => u.IdRolNavigation)
-                .Where(u => u.IdRolNavigation != null && u.IdRolNavigation.NomRol == "Gerente")
-                .Select(u => new GerenteViewModel
-                {
-                    Id = u.IdUsuario,
-                    Nombres = u.NomUsuario,
-                    Apellidos = u.ApelliUsuario,
-                    TipoDocumento = u.TipDoc ? "1" : "0",
-                    NumeroDocumento = u.NumDoc.ToString(),
-                    Correo = u.Correo,
-                    Telefono = u.Telefono,
-                    Direccion = u.DirUsuario,
-                    Sede = u.IdSedeNavigation != null ? u.IdSedeNavigation.NomSede : "Sede Principal",
-                    FechaNacimiento = u.FechaNaci.ToDateTime(TimeOnly.MinValue)
-                })
-                .ToListAsync();
+            try
+            {
+                var listaGerentes = await _context.Usuarios
+                    .Include(u => u.IdSedeNavigation)
+                    .Include(u => u.IdRolNavigation)
+                    .Where(u => u.IdRolNavigation != null && u.IdRolNavigation.NomRol == "Gerente")
+                    .Select(u => new GerenteViewModel
+                    {
+                        Id = u.IdUsuario,
+                        Nombres = u.NomUsuario,
+                        Apellidos = u.ApelliUsuario,
+                        TipoDocumento = u.TipDoc ? "1" : "0",
+                        NumeroDocumento = u.NumDoc.ToString(),
+                        Correo = u.Correo,
+                        Telefono = u.Telefono,
+                        Direccion = u.DirUsuario,
+                        Sede = u.IdSedeNavigation != null ? u.IdSedeNavigation.NomSede : "Sede Principal",
+                        FechaNacimiento = u.FechaNaci.ToDateTime(TimeOnly.MinValue)
+                    })
+                    .ToListAsync();
 
-            return View(listaGerentes);
+                return View(listaGerentes);
+            }
+            catch (Exception ex)
+            {
+                TempData["MensajeError"] = "Error al conectar con la base de datos: " + ex.Message;
+                return View(new List<GerenteViewModel>());
+            }
         }
 
         // GET: /Gerentes/Crear
@@ -74,244 +82,266 @@ namespace Software_SARA.Controllers
         [HttpPost]
         public async Task<IActionResult> Crear(GerenteViewModel gerente)
         {
-            // --- VALIDACIÓN DE FECHA DE NACIMIENTO ---
-            if (gerente.FechaNacimiento.HasValue)
+            try
             {
-                var hoy = DateTime.Today;
-                var fecha = gerente.FechaNacimiento.Value;
-
-                int edad = hoy.Year - fecha.Year;
-                if (fecha.Date > hoy.AddYears(-edad)) edad--;
-
-                if (fecha > hoy)
+                if (gerente.FechaNacimiento.HasValue)
                 {
-                    TempData["MensajeError"] = "La fecha de nacimiento no puede ser una fecha futura.";
+                    var hoy = DateTime.Today;
+                    var fecha = gerente.FechaNacimiento.Value;
+                    int edad = hoy.Year - fecha.Year;
+                    if (fecha.Date > hoy.AddYears(-edad)) edad--;
+
+                    if (fecha > hoy || edad < 18 || edad > 100)
+                    {
+                        TempData["MensajeError"] = "Por favor ingrese una fecha de nacimiento válida (entre 18 y 100 años).";
+                        return RedirectToAction("Index");
+                    }
+                }
+                else
+                {
+                    TempData["MensajeError"] = "Por favor ingrese una fecha de nacimiento válida.";
                     return RedirectToAction("Index");
                 }
-                if (edad < 18)
+
+                if (string.IsNullOrEmpty(gerente.Telefono) || gerente.Telefono.Length != 10 || !gerente.Telefono.All(char.IsDigit))
                 {
-                    TempData["MensajeError"] = "El gerente debe ser mayor de edad (mínimo 18 años).";
+                    TempData["MensajeError"] = "El número de teléfono debe contener exactamente 10 dígitos numéricos.";
                     return RedirectToAction("Index");
                 }
-                if (edad > 100)
+
+                if (string.IsNullOrEmpty(gerente.NumeroDocumento) || gerente.NumeroDocumento.Length < 8 || gerente.NumeroDocumento.Length > 10 || !gerente.NumeroDocumento.All(char.IsDigit))
                 {
-                    TempData["MensajeError"] = "Por favor ingrese una fecha de nacimiento válida (edad mayor a 100 años no permitida).";
+                    TempData["MensajeError"] = "El número de documento debe contener entre 8 y 10 dígitos numéricos.";
+                    return RedirectToAction("Index");
+                }
+
+                if (string.IsNullOrEmpty(gerente.Correo) || !gerente.Correo.Contains("@"))
+                {
+                    TempData["MensajeError"] = "Por favor ingrese un correo electrónico válido (debe incluir '@').";
+                    return RedirectToAction("Index");
+                }
+
+                int.TryParse(gerente.NumeroDocumento, out int numDocParsed);
+
+                bool yaExiste = await _context.Usuarios.AnyAsync(g =>
+                    (!string.IsNullOrEmpty(g.NomUsuario) && g.NomUsuario.ToLower().Trim() == gerente.Nombres!.ToLower().Trim() &&
+                     !string.IsNullOrEmpty(g.ApelliUsuario) && g.ApelliUsuario.ToLower().Trim() == gerente.Apellidos!.ToLower().Trim())
+                    ||
+                    g.NumDoc == numDocParsed
+                );
+
+                if (yaExiste)
+                {
+                    TempData["MensajeError"] = "No se puede registrar el gerente. La persona o número de documento ya existe en el sistema.";
+                    return RedirectToAction("Index");
+                }
+
+                if (ModelState.IsValid)
+                {
+                    var rolGerente = await _context.Rols.FirstOrDefaultAsync(r => r.NomRol == "Gerente");
+                    var sedeDefault = await _context.Sedes.FirstOrDefaultAsync();
+
+                    bool tipDocBool = gerente.TipoDocumento == "1" || gerente.TipoDocumento?.ToUpper() == "CC" || gerente.TipoDocumento?.ToLower() == "true";
+
+                    var nuevoUsuario = new Usuario
+                    {
+                        NomUsuario = gerente.Nombres ?? string.Empty,
+                        ApelliUsuario = gerente.Apellidos ?? string.Empty,
+                        TipDoc = tipDocBool,
+                        NumDoc = numDocParsed,
+                        Correo = gerente.Correo ?? string.Empty,
+                        Telefono = gerente.Telefono ?? string.Empty,
+                        DirUsuario = gerente.Direccion ?? string.Empty,
+                        Contraseña = BCrypt.Net.BCrypt.HashPassword("123"),
+                        EstadoUsuario = true,
+                        FechaNaci = DateOnly.FromDateTime(gerente.FechaNacimiento.Value),
+                        IdRol = rolGerente != null ? rolGerente.IdRol : 2,
+                        IdSede = sedeDefault != null ? sedeDefault.IdSede : 1
+                    };
+
+                    _context.Usuarios.Add(nuevoUsuario);
+                    await _context.SaveChangesAsync();
+
+                    TempData["MensajeExito"] = "¡Gerente registrado exitosamente!";
                     return RedirectToAction("Index");
                 }
             }
-            else
+            catch (Exception ex)
             {
-                TempData["MensajeError"] = "Por favor ingrese una fecha de nacimiento válida.";
-                return RedirectToAction("Index");
-
-            } 
-
-            // --- VALIDACIÓN DE TELÉFONO (10 dígitos y solo números) ---
-            if (string.IsNullOrEmpty(gerente.Telefono) || gerente.Telefono.Length != 10 || !gerente.Telefono.All(char.IsDigit))
-            {
-                TempData["MensajeError"] = "El número de teléfono debe contener exactamente 10 dígitos numéricos.";
-                return RedirectToAction("Index");
-            }
-            // --- VALIDACIÓN DE NÚMERO DE DOCUMENTO (8 a 10 dígitos y solo números) ---
-            if (string.IsNullOrEmpty(gerente.NumeroDocumento) || gerente.NumeroDocumento.Length < 8 || gerente.NumeroDocumento.Length > 10 || !gerente.NumeroDocumento.All(char.IsDigit))
-            {
-                TempData["MensajeError"] = "El número de documento debe contener entre 8 y 10 dígitos numéricos.";
-                return RedirectToAction("Index");
-            }
-            // --- VALIDACIÓN DE CORREO ---
-            if (string.IsNullOrEmpty(gerente.Correo) || !gerente.Correo.Contains("@"))
-            {
-                TempData["MensajeError"] = "Por favor ingrese un correo electrónico válido (debe incluir '@').";
-                return RedirectToAction("Index");
+                TempData["MensajeError"] = "Ocurrió un error al intentar guardar el gerente: " + ex.Message;
             }
 
-
-            // Validar duplicados por Nombre/Apellido o por Número de Documento
-            int.TryParse(gerente.NumeroDocumento, out int numDocParsed);
-
-            
-
-            bool yaExiste = await _context.Usuarios.AnyAsync(g =>
-                (!string.IsNullOrEmpty(g.NomUsuario) && g.NomUsuario.ToLower().Trim() == gerente.Nombres!.ToLower().Trim() &&
-                 !string.IsNullOrEmpty(g.ApelliUsuario) && g.ApelliUsuario.ToLower().Trim() == gerente.Apellidos!.ToLower().Trim())
-                ||
-                g.NumDoc == numDocParsed
-            );
-
-            if (yaExiste)
-            {
-                TempData["MensajeError"] = "No se puede registrar el gerente. La persona o número de documento ya existe en el sistema.";
-                return RedirectToAction("Index");
-            }
-
-            if (ModelState.IsValid)
-            {
-                var rolGerente = await _context.Rols.FirstOrDefaultAsync(r => r.NomRol == "Gerente");
-                var sedeDefault = await _context.Sedes.FirstOrDefaultAsync();
-
-                bool tipDocBool = gerente.TipoDocumento == "1" || gerente.TipoDocumento?.ToUpper() == "CC" || gerente.TipoDocumento?.ToLower() == "true";
-
-                var nuevoUsuario = new Usuario
-                {
-                    NomUsuario = gerente.Nombres ?? string.Empty,
-                    ApelliUsuario = gerente.Apellidos ?? string.Empty,
-                    TipDoc = tipDocBool,
-                    NumDoc = numDocParsed,
-                    Correo = gerente.Correo ?? string.Empty,
-                    Telefono = gerente.Telefono ?? string.Empty,
-                    DirUsuario = gerente.Direccion ?? string.Empty,
-                    Contraseña = BCrypt.Net.BCrypt.HashPassword("123"), // Contraseña encriptada
-                    EstadoUsuario = true,
-                    FechaNaci = DateOnly.FromDateTime(gerente.FechaNacimiento.Value),
-                    IdRol = rolGerente != null ? rolGerente.IdRol : 2,
-                    IdSede = sedeDefault != null ? sedeDefault.IdSede : 1
-                };
-
-                _context.Usuarios.Add(nuevoUsuario);
-                await _context.SaveChangesAsync();
-
-                TempData["MensajeExito"] = "¡Gerente registrado exitosamente!";
-                return RedirectToAction("Index");
-            }
-
-            return View(gerente);
+            return RedirectToAction("Index");
         }
 
         // GET: /Gerentes/Editar/5
         [HttpGet]
         public async Task<IActionResult> Editar(int id)
         {
-            var u = await _context.Usuarios.FindAsync(id);
-            if (u == null)
+            try
             {
+                var u = await _context.Usuarios.FindAsync(id);
+                if (u == null)
+                {
+                    return RedirectToAction("Index");
+                }
+
+                var gerenteViewModel = new GerenteViewModel
+                {
+                    Id = u.IdUsuario,
+                    Nombres = u.NomUsuario,
+                    Apellidos = u.ApelliUsuario,
+                    TipoDocumento = u.TipDoc ? "1" : "0",
+                    NumeroDocumento = u.NumDoc.ToString(),
+                    Correo = u.Correo,
+                    Telefono = u.Telefono,
+                    Direccion = u.DirUsuario,
+                    FechaNacimiento = u.FechaNaci.ToDateTime(TimeOnly.MinValue)
+                };
+
+                return View(gerenteViewModel);
+            }
+            catch (Exception ex)
+            {
+                TempData["MensajeError"] = "Error al consultar el gerente: " + ex.Message;
                 return RedirectToAction("Index");
             }
-
-            var gerenteViewModel = new GerenteViewModel
-            {
-                Id = u.IdUsuario,
-                Nombres = u.NomUsuario,
-                Apellidos = u.ApelliUsuario,
-                TipoDocumento = u.TipDoc ? "1" : "0",
-                NumeroDocumento = u.NumDoc.ToString(),
-                Correo = u.Correo,
-                Telefono = u.Telefono,
-                Direccion = u.DirUsuario,
-                FechaNacimiento = u.FechaNaci.ToDateTime(TimeOnly.MinValue)
-            };
-
-            return View(gerenteViewModel);
         }
 
-        
         // POST: /Gerentes/Editar/5
         [HttpPost]
         public async Task<IActionResult> Editar(GerenteViewModel gerente)
         {
-            if (gerente.FechaNacimiento.HasValue)
+            try
             {
-                var hoy = DateTime.Today;
-                var fecha = gerente.FechaNacimiento.Value;
-
-                int edad = hoy.Year - fecha.Year;
-                if (fecha.Date > hoy.AddYears(-edad)) edad--;
-
-                if (fecha > hoy || edad < 18 || edad > 100)
+                if (gerente.FechaNacimiento.HasValue)
                 {
-                    TempData["MensajeError"] = "Por favor ingrese una fecha de nacimiento válida para un gerente (entre 18 y 100 años).";
+                    var hoy = DateTime.Today;
+                    var fecha = gerente.FechaNacimiento.Value;
+                    int edad = hoy.Year - fecha.Year;
+                    if (fecha.Date > hoy.AddYears(-edad)) edad--;
+
+                    if (fecha > hoy || edad < 18 || edad > 100)
+                    {
+                        TempData["MensajeError"] = "Por favor ingrese una fecha de nacimiento válida (entre 18 y 100 años).";
+                        return RedirectToAction("Index");
+                    }
+                }
+                else
+                {
+                    TempData["MensajeError"] = "Por favor ingrese una fecha de nacimiento válida.";
+                    return RedirectToAction("Index");
+                }
+
+                if (string.IsNullOrEmpty(gerente.Telefono) || gerente.Telefono.Length != 10 || !gerente.Telefono.All(char.IsDigit))
+                {
+                    TempData["MensajeError"] = "El número de teléfono debe contener exactamente 10 dígitos numéricos.";
+                    return RedirectToAction("Index");
+                }
+
+                if (string.IsNullOrEmpty(gerente.NumeroDocumento) || gerente.NumeroDocumento.Length < 8 || gerente.NumeroDocumento.Length > 10 || !gerente.NumeroDocumento.All(char.IsDigit))
+                {
+                    TempData["MensajeError"] = "El número de documento debe contener entre 8 y 10 dígitos numéricos.";
+                    return RedirectToAction("Index");
+                }
+
+                if (string.IsNullOrEmpty(gerente.Correo) || !gerente.Correo.Contains("@"))
+                {
+                    TempData["MensajeError"] = "Por favor ingrese un correo electrónico válido (debe incluir '@').";
+                    return RedirectToAction("Index");
+                }
+
+                int.TryParse(gerente.NumeroDocumento, out int numDocParsed);
+
+                bool documentoDuplicado = await _context.Usuarios.AnyAsync(g =>
+                    g.IdUsuario != gerente.Id &&
+                    g.NumDoc == numDocParsed
+                );
+
+                if (documentoDuplicado)
+                {
+                    TempData["MensajeError"] = "No se puede guardar los cambios. El número de documento pertenece a otro gerente.";
+                    return RedirectToAction("Index");
+                }
+
+                if (ModelState.IsValid)
+                {
+                    var existente = await _context.Usuarios.FindAsync(gerente.Id);
+                    if (existente != null)
+                    {
+                        bool tipDocBool = gerente.TipoDocumento == "1" || gerente.TipoDocumento?.ToUpper() == "CC" || gerente.TipoDocumento?.ToLower() == "true";
+
+                        existente.NomUsuario = gerente.Nombres ?? existente.NomUsuario;
+                        existente.ApelliUsuario = gerente.Apellidos ?? existente.ApelliUsuario;
+                        existente.TipDoc = tipDocBool;
+                        existente.NumDoc = numDocParsed;
+                        existente.Correo = gerente.Correo ?? existente.Correo;
+                        existente.Telefono = gerente.Telefono ?? existente.Telefono;
+                        existente.DirUsuario = gerente.Direccion ?? existente.DirUsuario;
+                        existente.FechaNaci = DateOnly.FromDateTime(gerente.FechaNacimiento!.Value);
+
+                        _context.Usuarios.Update(existente);
+                        await _context.SaveChangesAsync();
+
+                        TempData["MensajeExito"] = "¡Gerente actualizado exitosamente!";
+                    }
                     return RedirectToAction("Index");
                 }
             }
-
-            // --- NUEVA VALIDACIÓN DE TELÉFONO EN EDITAR ---
-            if (string.IsNullOrEmpty(gerente.Telefono) || gerente.Telefono.Length != 10 || !gerente.Telefono.All(char.IsDigit))
+            catch (Exception ex)
             {
-                TempData["MensajeError"] = "El número de teléfono debe contener exactamente 10 dígitos numéricos.";
-                return RedirectToAction("Index");
-            }
-            // --- VALIDACIÓN DE NÚMERO DE DOCUMENTO EN EDITAR (8 a 10 dígitos) ---
-            if (string.IsNullOrEmpty(gerente.NumeroDocumento) || gerente.NumeroDocumento.Length < 8 || gerente.NumeroDocumento.Length > 10 || !gerente.NumeroDocumento.All(char.IsDigit))
-            {
-                TempData["MensajeError"] = "El número de documento debe contener entre 8 y 10 dígitos numéricos.";
-                return RedirectToAction("Index");
-            }
-            // --- VALIDACIÓN DE CORREO EN EDITAR ---
-            if (string.IsNullOrEmpty(gerente.Correo) || !gerente.Correo.Contains("@"))
-            {
-                TempData["MensajeError"] = "Por favor ingrese un correo electrónico válido (debe incluir '@').";
-                return RedirectToAction("Index");
-            }
-            int.TryParse(gerente.NumeroDocumento, out int numDocParsed);
-
-            bool documentoDuplicado = await _context.Usuarios.AnyAsync(g =>
-                g.IdUsuario != gerente.Id &&
-                g.NumDoc == numDocParsed
-            );
-
-            if (documentoDuplicado)
-            {
-                TempData["MensajeError"] = "No se puede guardar los cambios. El número de documento pertenece a otro gerente.";
-                return RedirectToAction("Index");
+                TempData["MensajeError"] = "Ocurrió un error al actualizar los datos: " + ex.Message;
             }
 
-            if (ModelState.IsValid)
-            {
-                var existente = await _context.Usuarios.FindAsync(gerente.Id);
-                if (existente != null)
-                {
-                    bool tipDocBool = gerente.TipoDocumento == "1" || gerente.TipoDocumento?.ToUpper() == "CC" || gerente.TipoDocumento?.ToLower() == "true";
-
-                    existente.NomUsuario = gerente.Nombres ?? existente.NomUsuario;
-                    existente.ApelliUsuario = gerente.Apellidos ?? existente.ApelliUsuario;
-                    existente.TipDoc = tipDocBool;
-                    existente.NumDoc = numDocParsed;
-                    existente.Correo = gerente.Correo ?? existente.Correo;
-                    existente.Telefono = gerente.Telefono ?? existente.Telefono;
-                    existente.DirUsuario = gerente.Direccion ?? existente.DirUsuario;
-                    existente.FechaNaci = DateOnly.FromDateTime(gerente.FechaNacimiento!.Value);
-
-                    _context.Usuarios.Update(existente);
-                    await _context.SaveChangesAsync();
-
-                    TempData["MensajeExito"] = "¡Gerente actualizado exitosamente!";
-                }
-                return RedirectToAction("Index");
-            }
-
-            return View(gerente);
+            return RedirectToAction("Index");
         }
 
         // GET: /Gerentes/Eliminar/5
         [HttpGet]
         public async Task<IActionResult> Eliminar(int id)
         {
-            var u = await _context.Usuarios.FindAsync(id);
-            if (u == null)
+            try
             {
+                var u = await _context.Usuarios.FindAsync(id);
+                if (u == null)
+                {
+                    return RedirectToAction("Index");
+                }
+
+                var gerenteViewModel = new GerenteViewModel
+                {
+                    Id = u.IdUsuario,
+                    Nombres = u.NomUsuario,
+                    Apellidos = u.ApelliUsuario,
+                    NumeroDocumento = u.NumDoc.ToString()
+                };
+
+                return View(gerenteViewModel);
+            }
+            catch (Exception ex)
+            {
+                TempData["MensajeError"] = "Error al intentar consultar el registro a eliminar: " + ex.Message;
                 return RedirectToAction("Index");
             }
-
-            var gerenteViewModel = new GerenteViewModel
-            {
-                Id = u.IdUsuario,
-                Nombres = u.NomUsuario,
-                Apellidos = u.ApelliUsuario,
-                NumeroDocumento = u.NumDoc.ToString()
-            };
-
-            return View(gerenteViewModel);
         }
 
         // POST: /Gerentes/Eliminar
         [HttpPost, ActionName("Eliminar")]
         public async Task<IActionResult> EliminarConfirmado(int id)
         {
-            var usuario = await _context.Usuarios.FindAsync(id);
-            if (usuario != null)
+            try
             {
-                _context.Usuarios.Remove(usuario);
-                await _context.SaveChangesAsync();
-                TempData["MensajeExito"] = "¡Gerente eliminado exitosamente!";
+                var usuario = await _context.Usuarios.FindAsync(id);
+                if (usuario != null)
+                {
+                    _context.Usuarios.Remove(usuario);
+                    await _context.SaveChangesAsync();
+                    TempData["MensajeExito"] = "¡Gerente eliminado exitosamente!";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["MensajeError"] = "No se pudo eliminar el gerente: " + ex.Message;
             }
 
             return RedirectToAction("Index");
