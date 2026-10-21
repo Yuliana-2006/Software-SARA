@@ -1,0 +1,37 @@
+﻿@model Software_SARA.Repositories.Models.Usuario
+@{ ViewData["Title"] = "Consultar Dueño"; }
+
+<div class="container py-4">
+    <div class="card shadow mx-auto p-4" style="max-width: 600px; background-color: #3B6146; color: white; border-radius: 30px;">
+        <h3 class="fw-bold mb-4">Detalles del Dueño</h3>
+        
+        <div class="mb-2 p-3" style="background-color: #558257; border-radius: 15px;">
+            <small class="text-white-50 fw-bold">Nombres y Apellidos</small>
+            <div class="fs-5 fw-bold">@Model.NomUsuario @Model.ApelliUsuario</div>
+        </div>
+        <div class="mb-2 p-3" style="background-color: #558257; border-radius: 15px;">
+            <small class="text-white-50 fw-bold">Documento</small>
+            <div class="fs-5 fw-bold">@(Model.TipDoc ? "CC" : "CE") @Model.NumDoc</div>
+        </div>
+        <div class="mb-2 p-3" style="background-color: #558257; border-radius: 15px;">
+            <small class="text-white-50 fw-bold">Correo</small>
+            <div class="fs-5 fw-bold">@Model.Correo</div>
+        </div>
+        <div class="mb-2 p-3" style="background-color: #558257; border-radius: 15px;">
+            <small class="text-white-50 fw-bold">Teléfono</small>
+            <div class="fs-5 fw-bold">@Model.Telefono</div>
+        </div>
+        <div class="mb-2 p-3" style="background-color: #558257; border-radius: 15px;">
+            <small class="text-white-50 fw-bold">Dirección</small>
+            <div class="fs-5 fw-bold">@Model.DirUsuario</div>
+        </div>
+        <div class="mb-2 p-3" style="background-color: #558257; border-radius: 15px;">
+            <small class="text-white-50 fw-bold">Fecha de Nacimiento</small>
+            <div class="fs-5 fw-bold">@Model.FechaNaci.ToString("yyyy-MM-dd")</div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a asp-action="Index" class="btn btn-light rounded-pill px-5 fw-bold">Cerrar</a>
+        </div>
+    </div>
+</div>
