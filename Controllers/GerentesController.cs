@@ -214,7 +214,6 @@ namespace Software_SARA.Controllers
         {
             try
             {
-                // Validación de Fecha de Nacimiento
                 if (gerente.FechaNacimiento.HasValue)
                 {
                     var hoy = DateTime.Today;
@@ -234,21 +233,18 @@ namespace Software_SARA.Controllers
                     return RedirectToAction("Index");
                 }
 
-                // Validación de Teléfono (Exactamente 10 dígitos numéricos)
                 if (string.IsNullOrEmpty(gerente.Telefono) || gerente.Telefono.Length != 10 || !gerente.Telefono.All(char.IsDigit))
                 {
                     TempData["MensajeError"] = "El número de teléfono debe contener exactamente 10 dígitos numéricos.";
                     return RedirectToAction("Index");
                 }
 
-                // Validación de Número de Documento (Entre 8 y 10 dígitos numéricos)
                 if (string.IsNullOrEmpty(gerente.NumeroDocumento) || gerente.NumeroDocumento.Length < 8 || gerente.NumeroDocumento.Length > 10 || !gerente.NumeroDocumento.All(char.IsDigit))
                 {
                     TempData["MensajeError"] = "El número de documento debe contener entre 8 y 10 dígitos numéricos.";
                     return RedirectToAction("Index");
                 }
 
-                // Validación de Correo Electrónico (Debe incluir '@')
                 if (string.IsNullOrEmpty(gerente.Correo) || !gerente.Correo.Contains("@"))
                 {
                     TempData["MensajeError"] = "Por favor ingrese un correo electrónico válido (debe incluir '@').";
@@ -257,7 +253,6 @@ namespace Software_SARA.Controllers
 
                 int.TryParse(gerente.NumeroDocumento, out int numDocParsed);
 
-                // Validar duplicado de documento en edición (que no pertenezca a otro usuario)
                 bool documentoDuplicado = await _context.Usuarios.AnyAsync(g =>
                     g.IdUsuario != gerente.Id &&
                     g.NumDoc == numDocParsed
