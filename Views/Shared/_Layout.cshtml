@@ -114,6 +114,13 @@
                         <i class="bi bi-house-door-fill"></i> <span class="sidebar-text">Inicio</span>
                     </a>
 
+                    @if (rol == "Administrador")
+                    {
+                        <a asp-controller="Dueno" asp-action="Index" title="Dueños">
+                            <i class="bi bi-people-fill"></i> <span class="sidebar-text">Dueños</span>
+                        </a>
+                    }
+
                     @if (rol == "Dueño")
                     {
                         <a asp-controller="Sedes" asp-action="RegistrarSede" title="Sedes"><i class="bi bi-building"></i> <span class="sidebar-text">Sedes</span></a>
@@ -200,5 +207,8 @@
             });
         });
     </script>
+
+    <!-- ESTA ES LA LÍNEA QUE FALTABA Y SOLUCIONA EL ERROR -->
+      @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
