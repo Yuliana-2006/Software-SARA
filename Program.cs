@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Software_SARA.Repositories.Models; // <-- Namespace del SarabdContext
+using Software_SARA.Repositories.Models; // Namespace del SarabdContext
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +8,11 @@ builder.Services.AddControllersWithViews();
 // Usar el contexto del profesor
 builder.Services.AddDbContext<SarabdContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// ==========================================
+// REGISTRAR EL SERVICIO DE CORREO (NUEVA LÍNEA)
+// ==========================================
+builder.Services.AddScoped<Software_SARA.Services.EmailService>();
 
 builder.Services.AddSession(options =>
 {
