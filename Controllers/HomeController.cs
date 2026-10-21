@@ -21,5 +21,12 @@ namespace Software_SARA.Controllers
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
+
+        [HttpGet]
+        public IActionResult GenerarHash()
+        {
+            string hash = Software_SARA.Utilities.PasswordHelper.Encriptar("admin123");
+            return Content(hash);
+        }
     }
 }
