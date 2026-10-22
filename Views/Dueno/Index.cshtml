@@ -1,0 +1,222 @@
+﻿@model IEnumerable<Software_SARA.Repositories.Models.Usuario>
+@{
+    ViewData["Title"] = "Gestión de Dueños";
+}
+
+<style>
+    /* ESTILOS DE LA TARJETA (Según tu imagen 2) */
+    .sara-card-dueño {
+        background-color: #558257; /* Verde de la tarjeta */
+        border: 3.5px solid #2D4832; /* Borde oscuro */
+        border-radius: 25px; /* Bordes redondeados */
+        width: 260px;
+        padding: 25px 20px;
+        color: white;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transition: transform 0.2s ease;
+    }
+
+    .sara-card-dueño.inactivo {
+        background-color: #8a8a8a; /* Gris si está inactivo */
+        border-color: #555555;
+    }
+
+    /* Círculo del avatar */
+    .sara-avatar {
+        width: 100px;
+        height: 100px;
+        background-color: #D9D7C7; /* Color crema */
+        border-radius: 50%;
+        margin: 0 auto 15px auto;
+        border: 2px solid #2D4832;
+    }
+
+    .sara-name {
+        font-size: 1.3rem;
+        font-weight: 800;
+        margin-bottom: 5px;
+        line-height: 1.2;
+    }
+
+    .sara-role {
+        font-size: 1rem;
+        color: #C8E0C8; /* Verde claro para el rol */
+        font-weight: 600;
+        margin-bottom: 20px;
+    }
+
+    /* Botones de las tarjetas */
+    .sara-btn {
+        background-color: #D9D7C7; /* Botón claro */
+        color: #2D4832;
+        font-weight: 800;
+        border: 3px solid #2D4832;
+        border-radius: 50px;
+        width: 100%;
+        padding: 6px 0;
+        margin-bottom: 10px;
+        text-decoration: none;
+        display: block;
+        transition: all 0.2s;
+        font-size: 1rem;
+    }
+
+    .sara-btn:hover {
+        background-color: #2D4832;
+        color: #FFFFFF;
+    }
+
+    .sara-btn-danger {
+        background-color: #A34848; /* Botón rojo para eliminar */
+        color: #FFFFFF;
+    }
+
+    .sara-btn-danger:hover {
+        background-color: #722626;
+        color: #FFFFFF;
+    }
+
+    /* ESTILOS DE LAS VENTANAS EMERGENTES (Según tu imagen 1) */
+    .sara-modal .modal-content {
+        background-color: #558257; /* Fondo verde */
+        border: 4px solid #2D4832; /* Borde oscuro */
+        border-radius: 25px; /* Bordes muy redondeados */
+        color: white;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .sara-modal .modal-body {
+        padding: 40px 30px;
+    }
+
+    .sara-modal-title {
+        font-weight: 900;
+        font-size: 1.4rem;
+        text-align: center;
+        margin-bottom: 30px;
+        line-height: 1.4;
+    }
+
+    .sara-modal-btn {
+        background-color: #D9D7C7;
+        color: #1A3020;
+        font-weight: 800;
+        border-radius: 50px;
+        border: 3px solid #2D4832;
+        padding: 8px 0;
+        width: 45%; /* Ancho de los botones */
+        font-size: 1rem;
+    }
+
+    .sara-modal-btn:hover {
+        background-color: #2D4832;
+        color: white;
+    }
+</style>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold" style="color: #2D4832;">GESTIÓN DE DUEÑOS</h3>
+        <a asp-action="Crear" class="btn btn-success rounded-pill fw-bold px-4">+ Registrar Nuevo Dueño</a>
+    </div>
+
+    @if (TempData["MensajeExito"] != null) { <div class="alert alert-success fw-bold shadow-sm">@TempData["MensajeExito"]</div> }
+    @if (TempData["MensajeError"] != null) { <div class="alert alert-danger fw-bold shadow-sm">@TempData["MensajeError"]</div> }
+
+    <div class="d-flex flex-wrap gap-4">
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var d in Model)
+            {
+                <!-- TARJETA DEL DUEÑO -->
+                <div class="sara-card-dueño @(d.EstadoUsuario ? "" : "inactivo")">
+                    <div class="sara-avatar"></div>
+                    <div class="sara-name">@d.NomUsuario <br /> @d.ApelliUsuario</div>
+                    <div class="sara-role">Dueño</div>
+                    
+                    <div class="w-100 mt-auto">
+                        <a asp-action="Consultar" asp-route-id="@d.IdUsuario" class="sara-btn">Consultar</a>
+                        <a asp-action="Editar" asp-route-id="@d.IdUsuario" class="sara-btn">Editar</a>
+                        
+                        <!-- Botón Inactivar/Activar -->
+                        <button type="button" class="sara-btn @(d.EstadoUsuario ? "" : "text-success")" 
+                                onclick="confirmarEstado(@d.IdUsuario, '@(d.EstadoUsuario ? "Inactivar" : "Activar")', '@d.NomUsuario')">
+                            @(d.EstadoUsuario ? "Inactivar" : "Activar")
+                        </button>
+
+                        <!-- Botón Eliminar (Solo si está Inactivo) -->
+                        @if (!d.EstadoUsuario)
+                        {
+                            <button type="button" class="sara-btn sara-btn-danger" onclick="confirmarEliminar(@d.IdUsuario, '@d.NomUsuario')">
+                                Eliminar
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="text-muted fs-5">No hay Dueños registrados en el sistema.</p>
+        }
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL PARA INACTIVAR/ACTIVAR (Igual a Imagen 1) -->
+<!-- ========================================== -->
+<div class="modal fade sara-modal" id="modalEstado" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <h4 class="sara-modal-title" id="textoEstado"></h4>
+                <form id="formEstado" method="post" asp-action="CambiarEstado">
+                    <input type="hidden" name="id" id="idEstado" />
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="submit" class="sara-modal-btn">Confirmar</button>
+                        <button type="button" class="sara-modal-btn" data-bs-dismiss="modal">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL PARA ELIMINAR -->
+<!-- ========================================== -->
+<div class="modal fade sara-modal" id="modalEliminar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <h4 class="sara-modal-title" id="textoEliminar"></h4>
+                <form id="formEliminar" method="post" asp-action="Eliminar">
+                    <input type="hidden" name="id" id="idEliminar" />
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="submit" class="sara-modal-btn text-danger">Confirmar</button>
+                        <button type="button" class="sara-modal-btn" data-bs-dismiss="modal">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Función para el modal de Inactivar/Activar
+        function confirmarEstado(id, accion, nombre) {
+            document.getElementById('idEstado').value = id;
+            document.getElementById('textoEstado').innerHTML = `¿Desea <strong>${accion.toLowerCase()}</strong><br>al Dueño<br><strong>${nombre}</strong>?`;
+            new bootstrap.Modal(document.getElementById('modalEstado')).show();
+        }
+
+        // Función para el modal de Eliminar
+        function confirmarEliminar(id, nombre) {
+            document.getElementById('idEliminar').value = id;
+            document.getElementById('textoEliminar').innerHTML = `¿Desea <strong>ELIMINAR</strong><br>permanentemente a<br><strong>${nombre}</strong>?`;
+            new bootstrap.Modal(document.getElementById('modalEliminar')).show();
+        }
+    </script>
+}

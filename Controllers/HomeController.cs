@@ -1,0 +1,32 @@
+using System.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
+using Software_SARA.Repositories;
+
+namespace Software_SARA.Controllers
+{
+    public class HomeController : Controller
+    {
+        public IActionResult Index()
+        {
+            return View();
+        }
+
+        public IActionResult Privacy()
+        {
+            return View();
+        }
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error()
+        {
+            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        [HttpGet]
+        public IActionResult GenerarHash()
+        {
+            string hash = Software_SARA.Utilities.PasswordHelper.Encriptar("admin123");
+            return Content(hash);
+        }
+    }
+}

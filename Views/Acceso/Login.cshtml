@@ -1,0 +1,59 @@
+﻿@model Software_SARA.Models.LoginViewModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Iniciar Sesión - SARA</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+</head>
+<body style="background-color: #31523E;" class="d-flex align-items-center justify-content-center vh-100 m-0">
+
+    <div class="card p-4 text-center shadow-lg" style="width: 380px; background-color: #DAD7CD; border-radius: 35px; border: none;">
+        
+        <!-- Logo SARA -->
+        <div class="mb-2">
+            <img src="~/images/logo.png?v=1" alt="Logo SARA" class="img-fluid" style="max-width: 320px; height: auto; " />
+        </div>
+
+        <h6 class="fw-bold mb-4 text-uppercase" style="color: #1E3A2F; letter-spacing: 1px;">INICIAR SESIÓN</h6>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger py-1 small mb-3">@ViewBag.Error</div>
+        }
+
+        <form asp-action="Login" method="post">
+            <!-- Selección y número de documento -->
+            <div class="mb-3 text-start">
+                <label class="form-label fw-bold small text-dark mb-1">Número de Documento</label>
+                <div class="input-group">
+                    <select asp-for="TipoDocumento" class="form-select text-white fw-bold" style="max-width: 85px; background-color: #4C7359; border-color: #4C7359; border-radius: 12px 0 0 12px;">
+                        <option value="CC">CC</option>
+                        <option value="CE">CE</option>
+                    </select>
+                    <input asp-for="NumeroDocumento" class="form-control text-white" style="background-color: #4C7359; border-color: #4C7359; border-radius: 0 12px 12px 0;" placeholder="Documento" />
+                </div>
+            </div>
+
+            <!-- Contraseña -->
+            <div class="mb-4 text-start">
+                <label class="form-label fw-bold small text-dark mb-1">Contraseña</label>
+                <input asp-for="Contrasena" type="password" class="form-control text-white" style="background-color: #4C7359; border-color: #4C7359; border-radius: 12px;" />
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="d-grid gap-2 col-10 mx-auto">
+                <button type="submit" class="btn text-white fw-bold py-2" style="background-color: #2E4E3B; border-radius: 20px;">INICIAR SESIÓN</button>
+                <button type="reset" class="btn text-white fw-bold py-2" style="background-color: #2E4E3B; border-radius: 20px;">CANCELAR</button>
+            </div>
+        </form>
+
+    </div>
+
+</body>
+</html>

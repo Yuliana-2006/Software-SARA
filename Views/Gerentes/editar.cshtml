@@ -1,0 +1,186 @@
+﻿@model Software_SARA.Controllers.GerenteViewModel
+
+@{
+    ViewData["Title"] = "Editar Gerente - SARA";
+}
+
+<style>
+    body {
+        background-color: #E6E4DC;
+        margin: 0;
+        padding: 0;
+    }
+
+    .header-banner {
+        background-color: #385E42;
+        color: white;
+        padding: 15px 40px;
+        margin-bottom: 30px;
+    }
+
+    .header-banner h1 {
+        font-size: 2.2rem;
+        font-weight: 900;
+        margin: 0;
+    }
+
+    .form-container {
+        display: flex;
+        justify-content: center;
+        padding: 20px 15px;
+    }
+
+    .card-form-sara {
+        width: 100%;
+        max-width: 550px;
+        background-color: #2D4A36;
+        border-radius: 25px;
+        padding: 30px 25px;
+        box-shadow: 0 8px 18px rgba(0,0,0,0.2);
+    }
+
+    .form-group-sara {
+        margin-bottom: 15px;
+    }
+
+    .form-label-sara {
+        color: #E6E4DC;
+        font-weight: 700;
+        font-size: 0.95rem;
+        margin-bottom: 5px;
+        display: block;
+    }
+
+    .form-control-sara {
+        width: 100%;
+        background-color: #587B58;
+        border: 2px solid #385E42;
+        border-radius: 12px;
+        padding: 10px 15px;
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+        outline: none;
+    }
+
+    .form-control-sara:focus {
+        background-color: #496849;
+        border-color: #E6E4DC;
+        box-shadow: none;
+        color: white;
+    }
+
+    .btn-container-actions {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-top: 30px;
+    }
+
+    .btn-pill-guardar {
+        background-color: #E6E4DC;
+        color: #2D4A36;
+        border: 2px solid #2D4A36;
+        border-radius: 20px;
+        padding: 8px 30px;
+        font-weight: 800;
+        font-size: 1.05rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-pill-guardar:hover {
+        background-color: #2D4A36;
+        color: white;
+        border-color: #E6E4DC;
+    }
+
+    .btn-pill-cancelar {
+        background-color: #E6E4DC;
+        color: #2D4A36;
+        border: 2px solid #2D4A36;
+        border-radius: 20px;
+        padding: 8px 30px;
+        font-weight: 800;
+        font-size: 1.05rem;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.2s ease;
+    }
+
+    .btn-pill-cancelar:hover {
+        background-color: #2D4A36;
+        color: white;
+        border-color: #E6E4DC;
+    }
+</style>
+
+<div class="header-banner">
+    <h1>Editar Gerente</h1>
+</div>
+
+<div class="form-container">
+    <div class="card-form-sara">
+        <form asp-controller="Gerentes" asp-action="Editar" method="post">
+            
+            <input type="hidden" asp-for="Id" />
+
+            <div class="form-group-sara">
+                <label class="form-label-sara">Nombres</label>
+                <input asp-for="Nombres" class="form-control-sara" required />
+            </div>
+
+            <div class="form-group-sara">
+                <label class="form-label-sara">Apellidos</label>
+                <input asp-for="Apellidos" class="form-control-sara" required />
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 form-group-sara">
+                    <label class="form-label-sara">Tipo Doc.</label>
+                    <select asp-for="TipoDocumento" class="form-control-sara">
+                        <option value="CC">CC</option>
+                        <option value="CE">CE</option>
+                        <option value="PASAPORTE">Pasaporte</option>
+                    </select>
+                </div>
+                <div class="col-md-8 form-group-sara">
+                    <label class="form-label-sara">Número de Documento</label>
+                    <input asp-for="NumeroDocumento" class="form-control-sara" required />
+                </div>
+            </div>
+
+            <div class="form-group-sara">
+                <label class="form-label-sara">Correo electrónico</label>
+                <input asp-for="Correo" type="email" class="form-control-sara" required />
+            </div>
+
+            <div class="form-group-sara">
+                <label class="form-label-sara">Teléfono</label>
+                <input asp-for="Telefono" class="form-control-sara" />
+            </div>
+
+            <div class="form-group-sara">
+                <label class="form-label-sara">Dirección</label>
+                <input asp-for="Direccion" class="form-control-sara" />
+            </div>
+
+            <div class="form-group-sara">
+                <label class="form-label-sara">Sede</label>
+                <input asp-for="Sede" class="form-control-sara" />
+            </div>
+
+            <div class="form-group-sara">
+                <label class="form-label-sara">Fecha de Nacimiento</label>
+                <input asp-for="FechaNacimiento" type="date" class="form-control-sara" 
+                       value="@(Model.FechaNacimiento?.ToString("yyyy-MM-dd"))" />
+            </div>
+
+            <div class="btn-container-actions">
+                <button type="submit" class="btn-pill-guardar">Guardar cambios</button>
+                <a asp-controller="Gerentes" asp-action="Index" class="btn-pill-cancelar">Cancelar</a>
+            </div>
+
+        </form>
+    </div>
+</div>
