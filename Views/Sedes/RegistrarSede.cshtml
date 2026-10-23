@@ -1,4 +1,4 @@
-﻿@model List<Software_SARA.Controllers.SedeViewModel>
+﻿@model IEnumerable<Software_SARA.Dtos.SedeDto>
 
 @{ 
     ViewData["Title"] = "Sedes";
@@ -15,33 +15,31 @@
             </div>
 
             <div class="sede-name">
-                <h2>@sede.Nombre</h2>
+                <h2>@sede.NomSede</h2>
             </div>
 
             <button class="sede-button"
                     onclick="mostrarSede(
-                        '@sede.Nombre',
-                        '@sede.Codigo',
-                        '@sede.CorreoElectronico',
-                        '@sede.Departamento',
-                        '@sede.CiudadMunicipio',
-                        '@sede.Barrio',
-                        '@sede.Direccion',
-                        '@sede.Telefono'
+                        '@sede.NomSede',
+                        '@sede.DepSede',
+                        '@sede.CiuSede',
+                        '@sede.BarrioSede',
+                        '@sede.DirSede',
+                        '@sede.TelSede'
                     )">
                 Consultar
             </button>
 
                 <a asp-controller="Sedes"
                    asp-action="EditarSede"
-                   asp-route-id="@sede.Id"
+                   asp-route-id="@sede.IdSede"
                    class="sede-button">
                    Editar
                 </a>
 
                 <a asp-controller="Sedes"
                    asp-action="ConfirmarEliminarSede"
-                   asp-route-id="@sede.Id"
+                   asp-route-id="@sede.IdSede"
                    class="sede-button">
                    Eliminar
                 </a>
@@ -98,16 +96,6 @@
             <div class="dato-sede">
                 <span>Nombre</span>
                 <strong id="datoNombre"></strong>
-            </div>
-
-            <div class="dato-sede">
-                <span>Código</span>
-                <strong id="datoCodigo"></strong>
-            </div>
-
-            <div class="dato-sede">
-                <span>Correo electrónico</span>
-                <strong id="datoCorreo"></strong>
             </div>
 
             <div class="dato-sede">
@@ -399,7 +387,7 @@
     }
 
 
-    /* SIGNO + MÁS GRUESO */
+    /* SIGNO + */
 
     .sede-plus {
         color: #2E4F3E;
@@ -728,8 +716,6 @@
 
     function mostrarSede(
         nombre,
-        codigo,
-        correo,
         departamento,
         ciudad,
         barrio,
@@ -738,10 +724,6 @@
     ) {
 
         document.getElementById("datoNombre").textContent = nombre;
-
-        document.getElementById("datoCodigo").textContent = codigo;
-
-        document.getElementById("datoCorreo").textContent = correo;
 
         document.getElementById("datoDepartamento").textContent = departamento;
 

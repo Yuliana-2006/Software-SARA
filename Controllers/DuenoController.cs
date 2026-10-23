@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Software_SARA.Dtos;
 using Software_SARA.Repositories.Models;
 using Software_SARA.Services;
 using Software_SARA.Utilities;
@@ -29,69 +30,73 @@ namespace Software_SARA.Controllers
         public IActionResult Crear()
         {
             if (HttpContext.Session.GetString("UsuarioRol") != "Administrador") return RedirectToAction("Login", "Acceso");
-            return View(new Usuario());
+            return View(new DuenoDTO());
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Crear(Usuario usuario, string tipoDocString)
+        public async Task<IActionResult> Crear(DuenoDTO dto)
         {
             if (HttpContext.Session.GetString("UsuarioRol") != "Administrador") return RedirectToAction("Login", "Acceso");
 
-            // 👇 EL TRUCO PARA QUE NO PIDA CONTRASEÑA 👇
-            ModelState.Remove("Contraseña");
-
-            // Validaciones exactas
-            if (usuario.NumDoc.ToString().Length < 8 || usuario.NumDoc.ToString().Length > 10)
-                ModelState.AddModelError("NumDoc", "El documento debe tener entre 8 y 10 números.");
-
-            if (usuario.Telefono == null || usuario.Telefono.Length != 10)
-                ModelState.AddModelError("Telefono", "El teléfono debe tener exactamente 10 números.");
-
+            // Validar edad (Mayor de 18)
             var hoy = DateTime.Today;
-            var edad = hoy.Year - usuario.FechaNaci.Year;
-            if (usuario.FechaNaci > DateOnly.FromDateTime(hoy.AddYears(-edad))) edad--;
+            var edad = hoy.Year - dto.FechaNaci.Year;
+            if (dto.FechaNaci > DateOnly.FromDateTime(hoy.AddYears(-edad))) edad--;
             if (edad < 18)
+            {
                 ModelState.AddModelError("FechaNaci", "El Dueño debe ser mayor de 18 años.");
+            }
 
-            // Validar Duplicados en Base de Datos
-            if (_context.Usuarios.Any(u => u.NumDoc == usuario.NumDoc))
-                ModelState.AddModelError("NumDoc", "Este documento ya existe en el sistema.");
-            if (_context.Usuarios.Any(u => u.Correo == usuario.Correo))
-                ModelState.AddModelError("Correo", "Este correo ya está registrado.");
-            if (_context.Usuarios.Any(u => u.Telefono == usuario.Telefono))
-                ModelState.AddModelError("Telefono", "Este teléfono ya está registrado.");
+            // Validar duplicados
+            if (_context.Usuarios.Any(u => u.NumDoc.ToString() == dto.NumDoc))
+                ModelState.AddModelError("NumDoc", $"El documento {dto.NumDoc} ya existe en SARA.");
+            if (_context.Usuarios.Any(u => u.Correo == dto.Correo))
+                ModelState.AddModelError("Correo", $"El correo {dto.Correo} ya está registrado.");
+            if (_context.Usuarios.Any(u => u.Telefono == dto.Telefono))
+                ModelState.AddModelError("Telefono", $"El teléfono {dto.Telefono} ya está registrado.");
 
-            if (!ModelState.IsValid) return View(usuario);
+            if (!ModelState.IsValid) return View(dto);
 
-            // Guardar
+            // Mapeo de DTO a Entidad
+            var nuevoUsuario = new Usuario
+            {
+                TipDoc = dto.TipoDoc == "CC",
+                NumDoc = int.Parse(dto.NumDoc),
+                NomUsuario = dto.NomUsuario,
+                ApelliUsuario = dto.ApelliUsuario,
+                Correo = dto.Correo,
+                Telefono = dto.Telefono,
+                DirUsuario = dto.DirUsuario,
+                FechaNaci = dto.FechaNaci,
+                IdRol = 1, // Dueño
+                IdSede = 1,
+                EstadoUsuario = true
+            };
+
             string passwordPlano = PasswordHelper.GenerarPassword(8);
-            usuario.TipDoc = tipoDocString == "CC";
-            usuario.IdRol = 1;
-            usuario.IdSede = 1;
-            usuario.Contraseña = PasswordHelper.Encriptar(passwordPlano);
-            usuario.EstadoUsuario = true;
+            nuevoUsuario.Contraseña = PasswordHelper.Encriptar(passwordPlano);
 
             try
             {
-                _context.Usuarios.Add(usuario);
+                _context.Usuarios.Add(nuevoUsuario);
                 _context.SaveChanges();
             }
             catch (Exception ex)
             {
                 ModelState.AddModelError("", "Error en BD: " + (ex.InnerException?.Message ?? ex.Message));
-                return View(usuario);
+                return View(dto);
             }
 
-            // Enviar Correo
             try
             {
-                await _emailService.EnviarPasswordAsync(usuario.Correo, usuario.NomUsuario, passwordPlano);
-                TempData["MensajeExito"] = $"Dueño {usuario.NomUsuario} registrado y correo enviado.";
+                // Aquí ya enviamos el cuarto parámetro "Dueño" para el correo
+                await _emailService.EnviarPasswordAsync(nuevoUsuario.Correo, nuevoUsuario.NomUsuario, passwordPlano, "Dueño");
+                TempData["MensajeExito"] = $"Dueño registrado y correo enviado a {nuevoUsuario.Correo}.";
             }
             catch (Exception ex)
             {
-                TempData["MensajeExito"] = $"Registrado. Falló el correo. Clave: {passwordPlano}";
+                TempData["MensajeExito"] = $"Dueño registrado. Falló el correo: {ex.Message}. Clave: {passwordPlano}";
             }
 
             return RedirectToAction("Index");
@@ -110,54 +115,71 @@ namespace Software_SARA.Controllers
         {
             var usuario = _context.Usuarios.Find(id);
             if (usuario == null) return NotFound();
-            return View(usuario);
+
+            // Mapeamos la entidad al DTO para la vista
+            var dto = new DuenoDTO
+            {
+                TipoDoc = usuario.TipDoc ? "CC" : "CE",
+                NumDoc = usuario.NumDoc.ToString(),
+                NomUsuario = usuario.NomUsuario,
+                ApelliUsuario = usuario.ApelliUsuario,
+                Correo = usuario.Correo,
+                Telefono = usuario.Telefono,
+                DirUsuario = usuario.DirUsuario,
+                FechaNaci = usuario.FechaNaci
+            };
+            ViewBag.IdUsuario = id;
+            return View(dto);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Editar(Usuario usuario, string tipoDocString)
+        public IActionResult Editar(int id, DuenoDTO dto)
         {
-            var usuarioDb = _context.Usuarios.AsNoTracking().FirstOrDefault(u => u.IdUsuario == usuario.IdUsuario);
+            var usuarioDb = _context.Usuarios.AsNoTracking().FirstOrDefault(u => u.IdUsuario == id);
             if (usuarioDb == null) return NotFound();
 
-            ModelState.Remove("Contraseña");
+            // Validar duplicados (excluyendo el actual)
+            if (_context.Usuarios.Any(u => u.NumDoc.ToString() == dto.NumDoc && u.IdUsuario != id))
+                ModelState.AddModelError("NumDoc", "El documento ya pertenece a otro usuario.");
+            if (_context.Usuarios.Any(u => u.Correo == dto.Correo && u.IdUsuario != id))
+                ModelState.AddModelError("Correo", "El correo ya pertenece a otro usuario.");
+            if (_context.Usuarios.Any(u => u.Telefono == dto.Telefono && u.IdUsuario != id))
+                ModelState.AddModelError("Telefono", "El teléfono ya pertenece a otro usuario.");
 
-            // Validaciones (excluyendo al usuario actual)
-            if (usuario.NumDoc.ToString().Length < 8 || usuario.NumDoc.ToString().Length > 10)
-                ModelState.AddModelError("NumDoc", "El documento debe tener entre 8 y 10 números.");
-            if (usuario.Telefono == null || usuario.Telefono.Length != 10)
-                ModelState.AddModelError("Telefono", "El teléfono debe tener 10 números.");
-
+            // Validar edad
             var hoy = DateTime.Today;
-            var edad = hoy.Year - usuario.FechaNaci.Year;
-            if (usuario.FechaNaci > DateOnly.FromDateTime(hoy.AddYears(-edad))) edad--;
+            var edad = hoy.Year - dto.FechaNaci.Year;
+            if (dto.FechaNaci > DateOnly.FromDateTime(hoy.AddYears(-edad))) edad--;
             if (edad < 18) ModelState.AddModelError("FechaNaci", "Debe ser mayor de 18 años.");
 
-            if (_context.Usuarios.Any(u => u.NumDoc == usuario.NumDoc && u.IdUsuario != usuario.IdUsuario))
-                ModelState.AddModelError("NumDoc", "Este documento ya pertenece a otro usuario.");
-            if (_context.Usuarios.Any(u => u.Correo == usuario.Correo && u.IdUsuario != usuario.IdUsuario))
-                ModelState.AddModelError("Correo", "Este correo ya pertenece a otro usuario.");
-            if (_context.Usuarios.Any(u => u.Telefono == usuario.Telefono && u.IdUsuario != usuario.IdUsuario))
-                ModelState.AddModelError("Telefono", "Este teléfono ya pertenece a otro usuario.");
+            if (!ModelState.IsValid)
+            {
+                ViewBag.IdUsuario = id;
+                return View(dto);
+            }
 
-            if (!ModelState.IsValid) return View(usuario);
-
-            usuario.TipDoc = tipoDocString == "CC";
-            usuario.IdRol = 1;
-            usuario.IdSede = usuarioDb.IdSede;
-            usuario.Contraseña = usuarioDb.Contraseña;
-            usuario.EstadoUsuario = usuarioDb.EstadoUsuario;
+            // Actualizamos la entidad con los datos del DTO
+            usuarioDb.TipDoc = dto.TipoDoc == "CC";
+            usuarioDb.NumDoc = int.Parse(dto.NumDoc);
+            usuarioDb.NomUsuario = dto.NomUsuario;
+            usuarioDb.ApelliUsuario = dto.ApelliUsuario;
+            usuarioDb.Correo = dto.Correo;
+            usuarioDb.Telefono = dto.Telefono;
+            usuarioDb.DirUsuario = dto.DirUsuario;
+            usuarioDb.FechaNaci = dto.FechaNaci;
 
             try
             {
-                _context.Usuarios.Update(usuario);
+                _context.Usuarios.Update(usuarioDb);
                 _context.SaveChanges();
-                TempData["MensajeExito"] = "Datos actualizados correctamente.";
+                TempData["MensajeExito"] = "Datos del Dueño actualizados.";
             }
             catch (Exception ex)
             {
                 ModelState.AddModelError("", "Error al actualizar: " + ex.Message);
-                return View(usuario);
+                ViewBag.IdUsuario = id;
+                return View(dto);
             }
             return RedirectToAction("Index");
         }
@@ -171,7 +193,7 @@ namespace Software_SARA.Controllers
             {
                 usuario.EstadoUsuario = !usuario.EstadoUsuario;
                 _context.SaveChanges();
-                TempData["MensajeExito"] = $"Usuario {(usuario.EstadoUsuario ? "Activado" : "Inactivado")} correctamente.";
+                TempData["MensajeExito"] = $"El usuario ahora está {(usuario.EstadoUsuario ? "ACTIVO" : "INACTIVO")}.";
             }
             return RedirectToAction("Index");
         }
@@ -183,8 +205,8 @@ namespace Software_SARA.Controllers
             var usuario = _context.Usuarios.Find(id);
             if (usuario != null)
             {
-                if (usuario.EstadoUsuario)
-                    TempData["MensajeError"] = "Debe inactivar al usuario antes de eliminarlo.";
+                if (usuario.EstadoUsuario == true)
+                    TempData["MensajeError"] = "No se puede eliminar un usuario ACTIVO. Primero debe inactivarlo.";
                 else
                 {
                     _context.Usuarios.Remove(usuario);
