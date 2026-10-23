@@ -28,7 +28,7 @@ namespace Software_SARA.Repositories
         {
             //Consulta SQL para insertar una nueva sede en la base de datos
             bool result = false;
-            string SQL = "INSERT INTO SARABD.dbo.Sede (NomSede, DirSede, TelSede, EstadoSede, CiuSede, DepSede, BarrioSede) VALUES ('" + sedeDto.NomSede + "', '" + sedeDto.DirSede + "', '" + sedeDto.TelSede + "', '" + sedeDto.EstadoSede + "', '" + sedeDto.CiuSede + "', '" + sedeDto.DepSede + "', '" + sedeDto.BarrioSede + "');";
+            string SQL = "INSERT INTO SARABD.dbo.Sede (nom_sede, dir_sede, tel_sede, estado_sede, ciu_sede, dep_sede, barrio_sede) VALUES ('" + sedeDto.NomSede + "', '" + sedeDto.DirSede + "', '" + sedeDto.TelSede + "', '" + sedeDto.EstadoSede + "', '" + sedeDto.CiuSede + "', '" + sedeDto.DepSede + "', '" + sedeDto.BarrioSede + "');";
             DBSaraUtility Connection = new DBSaraUtility();
             Connection.Connect();
             using (SqlCommand command = new SqlCommand(SQL, Connection.CONN()))

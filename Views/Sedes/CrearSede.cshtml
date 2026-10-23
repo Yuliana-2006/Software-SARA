@@ -24,6 +24,12 @@
 
             @Html.AntiForgeryToken()
 
+            @if (ViewData["Mensaje"] != null)
+            {
+                <div style="color: white; background-color: #8B3A3A; padding: 10px; border-radius: 10px; margin-bottom: 15px;">
+                    @ViewData["Mensaje"]
+                </div>
+            }
         <!-- FILA 1 -->
         <div class="form-row">
 
@@ -91,12 +97,6 @@
 
         </div>
 
-        <!-- ESTADO (Campo incluido en el DTO) -->
-        <div class="form-group full-width" style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
-            <input asp-for="EstadoSede" type="checkbox" style="width: 20px; height: 20px;" />
-            <label style="margin-bottom: 0; cursor: pointer; color: white;">Sede Activa</label>
-        </div>
-
 
         <!-- BOTONES -->
         <div class="buttons">
@@ -112,6 +112,7 @@
             </a>
 
         </div>
+
 
     </form>
 

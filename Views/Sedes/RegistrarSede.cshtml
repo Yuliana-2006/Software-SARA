@@ -99,16 +99,6 @@
             </div>
 
             <div class="dato-sede">
-                <span>Código</span>
-                <strong id="datoCodigo"></strong>
-            </div>
-
-            <div class="dato-sede">
-                <span>Correo electrónico</span>
-                <strong id="datoCorreo"></strong>
-            </div>
-
-            <div class="dato-sede">
                 <span>Departamento</span>
                 <strong id="datoDepartamento"></strong>
             </div>
@@ -726,8 +716,6 @@
 
     function mostrarSede(
         nombre,
-        codigo,
-        correo,
         departamento,
         ciudad,
         barrio,
@@ -736,10 +724,6 @@
     ) {
 
         document.getElementById("datoNombre").textContent = nombre;
-
-        document.getElementById("datoCodigo").textContent = codigo;
-
-        document.getElementById("datoCorreo").textContent = correo;
 
         document.getElementById("datoDepartamento").textContent = departamento;
 

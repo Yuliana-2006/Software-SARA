@@ -12,7 +12,7 @@ namespace Software_SARA.Utilities
 
         static string DB_PASSWORD = "123";
 
-        static string Conn = "Server=" + SERVER + ";Database=" + DB_NAME + ";User Id=" + DB_USER + ";Password=" + DB_PASSWORD + ";MultiActiveResultSets=true;TrustServerCertificate=true;";
+        static string Conn = "Server=" + SERVER + ";Database=" + DB_NAME + ";User Id=" + DB_USER + ";Password=" + DB_PASSWORD + ";MultipleActiveResultSets=true;TrustServerCertificate=true;";
 
         //mi conxion:
 
