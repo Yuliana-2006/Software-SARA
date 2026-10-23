@@ -13,6 +13,16 @@ builder.Services.AddDbContext<SarabdContext>(options =>
 builder.Services.AddScoped<SedeRepository>();
 builder.Services.AddScoped<SedesServices>();
 
+// ==========================================
+// REGISTRAR EL SERVICIO DE CORREO (NUEVA LÍNEA)
+// ==========================================
+builder.Services.AddScoped<Software_SARA.Services.EmailService>();
+
+// ==========================================
+// REGISTRAR EL SERVICIO DE GERENTES (NUEVA LÍNEA)
+// ==========================================
+builder.Services.AddScoped<Software_SARA.Services.GerenteService>();
+
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
