@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using Software_SARA.Repositories.Models; // Namespace del SarabdContext
+using Software_SARA.Repositories.Models; // <-- Namespace del SarabdContext
+using Software_SARA.Repositories;
+using Software_SARA.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,11 +10,18 @@ builder.Services.AddControllersWithViews();
 // Usar el contexto del profesor
 builder.Services.AddDbContext<SarabdContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddScoped<SedeRepository>();
+builder.Services.AddScoped<SedesServices>();
 
 // ==========================================
 // REGISTRAR EL SERVICIO DE CORREO (NUEVA LÍNEA)
 // ==========================================
 builder.Services.AddScoped<Software_SARA.Services.EmailService>();
+
+// ==========================================
+// REGISTRAR EL SERVICIO DE GERENTES (NUEVA LÍNEA)
+// ==========================================
+builder.Services.AddScoped<Software_SARA.Services.GerenteService>();
 
 builder.Services.AddSession(options =>
 {

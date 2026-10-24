@@ -1,4 +1,4 @@
-﻿@model Software_SARA.Controllers.SedeViewModel
+﻿@model Software_SARA.Dtos.SedeDto
 
 @{
     ViewData["Title"] = "Eliminar Sede";
@@ -34,7 +34,7 @@
 
                     <input type="hidden"
                            name="id"
-                           value="@Model.Id" />
+                           value="@Model.IdSede" />
 
                     <button type="submit"
                             class="confirmacion-button">
