@@ -19,6 +19,9 @@
               asp-action="EditarSede"
               method="post">
 
+            @Html.AntiForgeryToken()
+
+            <input type="hidden" asp-for="IdSede" />
 
             <!-- FILA 1 -->
 

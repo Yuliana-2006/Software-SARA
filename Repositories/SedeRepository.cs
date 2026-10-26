@@ -46,5 +46,51 @@ namespace Software_SARA.Repositories
             Connection.Disconnect();
             return result;
         }
+
+        public async Task<Boolean> EditarSede(SedeDto sedeDto)
+        {
+            //Consulta SQL para editar una sede en la base de datos
+            bool result = false;
+            string SQL = "UPDATE SARABD.dbo.Sede SET nom_sede = '" + sedeDto.NomSede + "', dir_sede = '" + sedeDto.DirSede + "', tel_sede = '" + sedeDto.TelSede + "', estado_sede = '" + sedeDto.EstadoSede + "', ciu_sede = '" + sedeDto.CiuSede + "', dep_sede = '" + sedeDto.DepSede + "', barrio_sede = '" + sedeDto.BarrioSede + "' WHERE id_sede = " + sedeDto.IdSede + ";";
+            DBSaraUtility Connection = new DBSaraUtility();
+            Connection.Connect();
+            using (SqlCommand command = new SqlCommand(SQL, Connection.CONN()))
+            {
+                int comando = command.ExecuteNonQuery();
+                if (comando != 0)
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = false;
+                }
+            }
+            Connection.Disconnect();
+            return result;
+        }
+
+        public async Task<Boolean> EliminarSede(int idSede)
+        {
+            //Consulta SQL para eliminar una sede en la base de datos
+            bool result = false;
+            string SQL = "UPDATE SARABD.dbo.sede SET estado_sede = 0 WHERE id_sede = " + idSede + ";";
+            DBSaraUtility Connection = new DBSaraUtility();
+            Connection.Connect();
+            using (SqlCommand command = new SqlCommand(SQL, Connection.CONN()))
+            {
+                int comando = command.ExecuteNonQuery();
+                if (comando != 0)
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = false;
+                }
+            }
+            Connection.Disconnect();
+            return result;
+        }
     }
 }

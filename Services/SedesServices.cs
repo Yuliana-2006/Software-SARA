@@ -47,5 +47,47 @@ namespace Software_SARA.Services
                 BarrioSede = sede.BarrioSede
             }).ToList();
         }
+
+        public async Task<SedeDto> ObtenerSedePorId(int id)
+        {
+            // Obtiene la lista completa usando la función 
+            var listaSedes = await ObtenerTodasLasSedes();
+
+            // Retorna la sede que coincida con el ID
+            return listaSedes.FirstOrDefault(s => s.IdSede == id);
+        }
+
+        public async Task<SedeDto> EditarSede(SedeDto sedeDto)
+        {
+            var result = await _sedeRepository.EditarSede(sedeDto);
+            if (result)
+            {
+                sedeDto.Reponse = 1;
+                sedeDto.Message = "Sede editada correctamente.";
+            }
+            else
+            {
+                sedeDto.Reponse = 0;
+                sedeDto.Message = "Error al editar la Sede.";
+            }
+            return sedeDto;
+        }
+
+        public async Task<SedeDto> EliminarSede(int idSede)
+        {
+            var sedeDto = new SedeDto { IdSede = idSede };
+            var result = await _sedeRepository.EliminarSede(idSede);
+            if (result)
+            {
+                sedeDto.Reponse = 1;
+                sedeDto.Message = "Sede eliminada correctamente.";
+            }
+            else
+            {
+                sedeDto.Reponse = 0;
+                sedeDto.Message = "Error al eliminar la Sede.";
+            }
+            return sedeDto;
+        }
     }
 }
