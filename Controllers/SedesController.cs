@@ -2,131 +2,142 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Linq;
+using Software_SARA.Dtos;
+using Software_SARA.Services;
 
 namespace Software_SARA.Controllers
 {
-    public class SedeViewModel
-    {
-        public int Id { get; set; }
-
-        public string Nombre { get; set; } = "";
-
-        public string Codigo { get; set; } = "";
-
-        public string CorreoElectronico { get; set; } = "";
-
-        public string Departamento { get; set; } = "";
-
-        public string CiudadMunicipio { get; set; } = "";
-
-        public string Barrio { get; set; } = "";
-
-        public string Direccion { get; set; } = "";
-
-        public string Telefono { get; set; } = "";
-    }
-
-
     public class SedesController : Controller
     {
-        // Lista temporal de sedes
-        private static List<SedeViewModel> _listaSedes = new List<SedeViewModel>();
+        private readonly SedesServices _sedesServices;
 
+        public SedesController(SedesServices sedesServices)
+        {
+            _sedesServices = sedesServices;
+        }
 
         // GET: /Sedes/RegistrarSede
         [HttpGet]
-        public IActionResult RegistrarSede()
+        public async Task<IActionResult> RegistrarSede()
         {
-            return View(_listaSedes);
+            var listaSedes = await _sedesServices.ObtenerTodasLasSedes();
+            return View(listaSedes);
         }
 
 
         // GET: /Sedes/CrearSede
         [HttpGet]
-        public IActionResult CrearSede()
+        public ActionResult CrearSede()
         {
-            return View();
+            SedeDto sedeDto = new();
+            return View(sedeDto);
         }
 
 
         // POST: /Sedes/CrearSede
         [HttpPost]
         [ValidateAntiForgeryToken]
-
-        public IActionResult CrearSede(SedeViewModel sede)
+        public async Task<ActionResult> CrearSede(SedeDto sedeDto)
         {
-            if (!ModelState.IsValid)
+            try
             {
-                return View(sede);
-            }
-
-            sede.Id = _listaSedes.Count + 1;
-
-            _listaSedes.Add(sede);
-
-            TempData["MensajeExito"] = "¡Sede registrada exitosamente!";
-
-            return RedirectToAction(nameof(RegistrarSede));
-        }
-
-        [HttpGet]
-        public IActionResult EditarSede(int id)
-        {
-            var sede = _listaSedes
-                .FirstOrDefault(s => s.Id == id);
-
-            if (sede == null)
-            {
-                return RedirectToAction("RegistrarSede");
-            }
-
-            return View(sede);
-        }
-
-
-        // POST: /Sedes/Editar
-        [HttpPost]
-        public IActionResult EditarSede(SedeViewModel sedeActualizada)
-        {
-            if (ModelState.IsValid)
-            {
-                var sedeExistente = _listaSedes
-                    .FirstOrDefault(s => s.Id == sedeActualizada.Id);
-
-                if (sedeExistente != null)
+                // Validar el modelo
+                if (!ModelState.IsValid)
                 {
-                    sedeExistente.Nombre =
-                        sedeActualizada.Nombre;
-
-                    sedeExistente.Codigo =
-                        sedeActualizada.Codigo;
-
-                    sedeExistente.CorreoElectronico =
-                        sedeActualizada.CorreoElectronico;
-
-                    sedeExistente.Departamento =
-                        sedeActualizada.Departamento;
-
-                    sedeExistente.CiudadMunicipio =
-                        sedeActualizada.CiudadMunicipio;
-
-                    sedeExistente.Barrio =
-                        sedeActualizada.Barrio;
-
-                    sedeExistente.Direccion =
-                        sedeActualizada.Direccion;
-
-                    sedeExistente.Telefono =
-                        sedeActualizada.Telefono;
-
-                    TempData["MensajeExito"] =
-                        "¡Sede modificada exitosamente!";
-
-                    return RedirectToAction("RegistrarSede");
+                    // Si el modelo no es válido, devolver la vista con los errores
+                    var errors = ModelState.Values.SelectMany(v => v.Errors);
+                    ViewData["Message"] = string.Join("; ", errors.Select(e => e.ErrorMessage));
+                    return View(sedeDto);
                 }
+
+                var resultado = await _sedesServices.CreateSede(sedeDto);
+                TempData["MensajeExito"] = resultado.Message;
+                return RedirectToAction(nameof(RegistrarSede));
+            }
+            catch (Exception ex)
+            {
+                // Manejar cualquier excepción que ocurra durante la validación
+                ViewData["Mensaje"] = "Error al crear sede: " + ex.Message;
+                return View(sedeDto);
             }
 
-            return View(sedeActualizada);
+        }
+
+        // GET: /Sedes/EditarSede
+        [HttpGet]
+        public async Task<ActionResult> EditarSede(int id)
+        {
+            var sedeDto = await _sedesServices.ObtenerSedePorId(id);
+
+            if (sedeDto == null)
+            {
+                return NotFound(); // Si no existe la sede retorna error
+            }
+
+            return View(sedeDto);
+        }
+
+        // POST: /Sedes/EditarSede
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> EditarSede(SedeDto sedeDto)
+        {
+            try
+            {
+                // Validar el modelo
+                if (!ModelState.IsValid)
+                {
+                    // Si el modelo no es válido, devolver la vista con los errores
+                    var errors = ModelState.Values.SelectMany(v => v.Errors);
+                    ViewData["Message"] = string.Join("; ", errors.Select(e => e.ErrorMessage));
+                    return View(sedeDto);
+                }
+
+                var resultado = await _sedesServices.EditarSede(sedeDto);
+                TempData["MensajeExito"] = resultado.Message;
+                return RedirectToAction(nameof(RegistrarSede));
+            }
+            catch (Exception ex)
+            {
+                // Manejar cualquier excepción que ocurra durante la validación
+                ViewData["Mensaje"] = "Error al editar sede: " + ex.Message;
+                return View(sedeDto);
+            }
+
+        }
+
+        // GET: /Sedes/EliminarSede
+        [HttpGet]
+        public async Task<ActionResult> EliminarSede(int id)
+        {
+            var sedeDto = await _sedesServices.ObtenerSedePorId(id);
+
+            if (sedeDto == null)
+            {
+                return NotFound(); // Si no existe la sede retorna error
+            }
+
+            return View(sedeDto);
+        }
+
+        // POST: /Sedes/EliminarSede
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> EliminarSede(SedeDto sedeDto)
+        {
+            try
+            {
+                var resultado = await _sedesServices.EliminarSede(sedeDto.IdSede);
+                TempData["MensajeExito"] = resultado.Message;
+                return RedirectToAction(nameof(RegistrarSede));
+            }
+            catch (Exception ex)
+            {
+                // Manejar cualquier excepción que ocurra durante la validación
+                ViewData["Mensaje"] = "Error al eliminar sede: " + ex.Message;
+                return View(sedeDto);
+            }
+
         }
     }
 }
