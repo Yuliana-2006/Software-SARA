@@ -1,4 +1,4 @@
-﻿@model Software_SARA.Controllers.SedeViewModel
+﻿@model Software_SARA.Dtos.SedeDto
 
 @{
     ViewData["Title"] = "Editar Sede";
@@ -19,11 +19,9 @@
               asp-action="EditarSede"
               method="post">
 
-            <!-- ID OCULTO -->
+            @Html.AntiForgeryToken()
 
-            <input type="hidden"
-                   asp-for="Id" />
-
+            <input type="hidden" asp-for="IdSede" />
 
             <!-- FILA 1 -->
 
@@ -33,7 +31,7 @@
 
                     <label>Nombre</label>
 
-                    <input asp-for="Nombre"
+                    <input asp-for="NomSede"
                            type="text"
                            class="form-control"
                            placeholder="Nombre" />
@@ -43,12 +41,12 @@
 
                 <div class="form-group">
 
-                    <label>Código</label>
+                    <label>Departamento</label>
 
-                    <input asp-for="Codigo"
+                    <input asp-for="DepSede"
                            type="text"
                            class="form-control"
-                           placeholder="Código" />
+                           placeholder="Departamento" />
 
                 </div>
 
@@ -61,39 +59,9 @@
 
                 <div class="form-group">
 
-                    <label>Correo Electrónico</label>
-
-                    <input asp-for="CorreoElectronico"
-                           type="email"
-                           class="form-control"
-                           placeholder="Correo" />
-
-                </div>
-
-
-                <div class="form-group">
-
-                    <label>Departamento</label>
-
-                    <input asp-for="Departamento"
-                           type="text"
-                           class="form-control"
-                           placeholder="Departamento" />
-
-                </div>
-
-            </div>
-
-
-            <!-- FILA 3 -->
-
-            <div class="form-row">
-
-                <div class="form-group">
-
                     <label>Ciudad/Municipio</label>
 
-                    <input asp-for="CiudadMunicipio"
+                    <input asp-for="CiuSede"
                            type="text"
                            class="form-control"
                            placeholder="Ciudad/Municipio" />
@@ -105,7 +73,7 @@
 
                     <label>Barrio</label>
 
-                    <input asp-for="Barrio"
+                    <input asp-for="BarrioSede"
                            type="text"
                            class="form-control"
                            placeholder="Barrio" />
@@ -121,7 +89,7 @@
 
                 <label>Dirección</label>
 
-                <input asp-for="Direccion"
+                <input asp-for="DirSede"
                        type="text"
                        class="form-control"
                        placeholder="Dirección" />
@@ -135,7 +103,7 @@
 
                 <label>Teléfono</label>
 
-                <input asp-for="Telefono"
+                <input asp-for="TelSede"
                        type="tel"
                        class="form-control"
                        placeholder="Teléfono" />

@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
+using Software_SARA.Services;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading.Tasks;
 
 namespace Software_SARA.Controllers
 {
+    // ViewModel necesario para que las vistas y el controlador compartan los datos del Gerente
     public class GerenteViewModel
     {
         public int Id { get; set; }
@@ -21,13 +23,26 @@ namespace Software_SARA.Controllers
 
     public class GerentesController : Controller
     {
-        // Lista temporal en memoria
-        private static List<GerenteViewModel> _listaGerentes = new List<GerenteViewModel>();
+        private readonly GerenteService _gerenteService;
+
+        public GerentesController(GerenteService gerenteService)
+        {
+            _gerenteService = gerenteService;
+        }
 
         // GET: /Gerentes
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View(_listaGerentes);
+            try
+            {
+                var listaGerentes = await _gerenteService.ObtenerGerentesAsync();
+                return View(listaGerentes);
+            }
+            catch (Exception ex)
+            {
+                TempData["MensajeError"] = "Error al conectar con la base de datos: " + ex.Message;
+                return View(new List<GerenteViewModel>());
+            }
         }
 
         // GET: /Gerentes/Crear
@@ -37,161 +52,109 @@ namespace Software_SARA.Controllers
             var model = new GerenteViewModel
             {
                 Sede = "Sede Principal",
-                TipoDocumento = "CC"
+                TipoDocumento = "1"
             };
             return View(model);
         }
 
         // POST: /Gerentes/Crear
         [HttpPost]
-        public IActionResult Crear(GerenteViewModel gerente)
+        public async Task<IActionResult> Crear(GerenteViewModel gerente)
         {
-            // --- VALIDACIÓN DE FECHA DE NACIMIENTO VÁLIDA ---
-            if (gerente.FechaNacimiento.HasValue)
+            try
             {
-                var hoy = DateTime.Today;
-                var fecha = gerente.FechaNacimiento.Value;
-
-                // Calcular edad exacta
-                int edad = hoy.Year - fecha.Year;
-                if (fecha.Date > hoy.AddYears(-edad)) edad--;
-
-                if (fecha > hoy)
+                string? error = await _gerenteService.ValidarYCrearGerenteAsync(gerente);
+                if (error != null)
                 {
-                    TempData["MensajeError"] = "La fecha de nacimiento no puede ser una fecha futura.";
+                    TempData["MensajeError"] = error;
                     return RedirectToAction("Index");
                 }
-                if (edad < 18)
-                {
-                    TempData["MensajeError"] = "El gerente debe ser mayor de edad (mínimo 18 años).";
-                    return RedirectToAction("Index");
-                }
-                if (edad > 100)
-                {
-                    TempData["MensajeError"] = "Por favor ingrese una fecha de nacimiento válida (edad mayor a 100 años no permitida).";
-                    return RedirectToAction("Index");
-                }
-            }
-            else
-            {
-                TempData["MensajeError"] = "Por favor ingrese una fecha de nacimiento válida.";
-                return RedirectToAction("Index");
-            }
-
-            // Validar duplicados por Nombre/Apellido o por Documento
-            bool yaExiste = _listaGerentes.Any(g =>
-                (!string.IsNullOrEmpty(g.Nombres) && g.Nombres.Trim().Equals(gerente.Nombres?.Trim(), StringComparison.OrdinalIgnoreCase) &&
-                 !string.IsNullOrEmpty(g.Apellidos) && g.Apellidos.Trim().Equals(gerente.Apellidos?.Trim(), StringComparison.OrdinalIgnoreCase))
-                ||
-                (!string.IsNullOrEmpty(g.NumeroDocumento) && g.NumeroDocumento.Trim() == gerente.NumeroDocumento?.Trim())
-            );
-
-            if (yaExiste)
-            {
-                TempData["MensajeError"] = "No se puede registrar el gerente. La persona o número de documento ya existe en el sistema.";
-                return RedirectToAction("Index");
-            }
-
-            if (ModelState.IsValid)
-            {
-                gerente.Id = _listaGerentes.Count > 0 ? _listaGerentes.Max(g => g.Id) + 1 : 1;
-                _listaGerentes.Add(gerente);
 
                 TempData["MensajeExito"] = "¡Gerente registrado exitosamente!";
-                return RedirectToAction("Index");
+            }
+            catch (Exception ex)
+            {
+                TempData["MensajeError"] = "Ocurrió un error al intentar guardar el gerente: " + ex.Message;
             }
 
-            return View(gerente);
+            return RedirectToAction("Index");
         }
 
         // GET: /Gerentes/Editar/5
         [HttpGet]
-        public IActionResult Editar(int id)
+        public async Task<IActionResult> Editar(int id)
         {
-            var gerente = _listaGerentes.FirstOrDefault(g => g.Id == id);
-            if (gerente == null)
+            try
             {
+                var gerente = await _gerenteService.ObtenerGerentePorIdAsync(id);
+                if (gerente == null)
+                {
+                    return RedirectToAction("Index");
+                }
+                return View(gerente);
+            }
+            catch (Exception ex)
+            {
+                TempData["MensajeError"] = "Error al consultar el gerente: " + ex.Message;
                 return RedirectToAction("Index");
             }
-            return View(gerente);
         }
 
         // POST: /Gerentes/Editar/5
         [HttpPost]
-        public IActionResult Editar(GerenteViewModel gerente)
+        public async Task<IActionResult> Editar(GerenteViewModel gerente)
         {
-            // --- VALIDACIÓN DE FECHA DE NACIMIENTO EN EDICIÓN ---
-            if (gerente.FechaNacimiento.HasValue)
+            try
             {
-                var hoy = DateTime.Today;
-                var fecha = gerente.FechaNacimiento.Value;
-
-                int edad = hoy.Year - fecha.Year;
-                if (fecha.Date > hoy.AddYears(-edad)) edad--;
-
-                if (fecha > hoy || edad < 18 || edad > 100)
+                string? error = await _gerenteService.ValidarYActualizarGerenteAsync(gerente);
+                if (error != null)
                 {
-                    TempData["MensajeError"] = "Por favor ingrese una fecha de nacimiento válida para un gerente (entre 18 y 100 años).";
+                    TempData["MensajeError"] = error;
                     return RedirectToAction("Index");
                 }
+
+                TempData["MensajeExito"] = "¡Gerente actualizado exitosamente!";
             }
-
-            bool documentoDuplicado = _listaGerentes.Any(g =>
-                g.Id != gerente.Id &&
-                !string.IsNullOrEmpty(g.NumeroDocumento) &&
-                g.NumeroDocumento.Trim() == gerente.NumeroDocumento?.Trim()
-            );
-
-            if (documentoDuplicado)
+            catch (Exception ex)
             {
-                TempData["MensajeError"] = "No se puede guardar los cambios. El número de documento pertenece a otro gerente.";
-                return RedirectToAction("Index");
+                TempData["MensajeError"] = "Ocurrió un error al actualizar los datos: " + ex.Message;
             }
 
-            if (ModelState.IsValid)
-            {
-                var existente = _listaGerentes.FirstOrDefault(g => g.Id == gerente.Id);
-                if (existente != null)
-                {
-                    existente.Nombres = gerente.Nombres;
-                    existente.Apellidos = gerente.Apellidos;
-                    existente.TipoDocumento = gerente.TipoDocumento;
-                    existente.NumeroDocumento = gerente.NumeroDocumento;
-                    existente.Correo = gerente.Correo;
-                    existente.Telefono = gerente.Telefono;
-                    existente.Direccion = gerente.Direccion;
-                    existente.Sede = gerente.Sede;
-                    existente.FechaNacimiento = gerente.FechaNacimiento;
-
-                    TempData["MensajeExito"] = "¡Gerente actualizado exitosamente!";
-                }
-                return RedirectToAction("Index");
-            }
-
-            return View(gerente);
+            return RedirectToAction("Index");
         }
 
         // GET: /Gerentes/Eliminar/5
         [HttpGet]
-        public IActionResult Eliminar(int id)
+        public async Task<IActionResult> Eliminar(int id)
         {
-            var gerente = _listaGerentes.FirstOrDefault(g => g.Id == id);
-            if (gerente == null)
+            try
             {
+                var gerente = await _gerenteService.ObtenerGerentePorIdAsync(id);
+                if (gerente == null)
+                {
+                    return RedirectToAction("Index");
+                }
+                return View(gerente);
+            }
+            catch (Exception ex)
+            {
+                TempData["MensajeError"] = "Error al intentar consultar el registro a eliminar: " + ex.Message;
                 return RedirectToAction("Index");
             }
-            return View(gerente);
         }
 
         // POST: /Gerentes/Eliminar
         [HttpPost, ActionName("Eliminar")]
-        public IActionResult EliminarConfirmado(int id)
+        public async Task<IActionResult> EliminarConfirmado(int id)
         {
-            var gerente = _listaGerentes.FirstOrDefault(g => g.Id == id);
-            if (gerente != null)
+            try
             {
-                _listaGerentes.Remove(gerente);
+                await _gerenteService.EliminarGerenteAsync(id);
                 TempData["MensajeExito"] = "¡Gerente eliminado exitosamente!";
+            }
+            catch (Exception ex)
+            {
+                TempData["MensajeError"] = "No se pudo eliminar el gerente: " + ex.Message;
             }
 
             return RedirectToAction("Index");
