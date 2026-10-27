@@ -5,24 +5,22 @@
     <div class="card shadow mx-auto" style="max-width: 700px; background-color: #3B6146; color: white; border-radius: 30px;">
         <div class="card-body p-4">
             <h3 class="text-center fw-bold mb-4 text-white">EDITAR DUEÑO</h3>
-            
-            <div asp-validation-summary="ModelOnly" class="alert alert-danger fw-bold" style="color: #721c24; background-color: #f8d7da;"></div>
+            <div asp-validation-summary="All" class="alert alert-danger fw-bold" style="color: #721c24; background-color: #f8d7da;"></div>
 
-            <!-- AQUÍ ESTÁ EL TRUCO: Enviamos el ID oculto -->
             <form asp-action="Editar" method="post">
                 <input type="hidden" name="id" value="@ViewBag.IdUsuario" />
-
+                
                 <div class="row mb-3">
                     <div class="col-4">
                         <label class="fw-bold">Tipo Doc.</label>
-                        <select name="tipoDocString" class="form-control rounded-pill">
-                            <option value="CC" selected="@(Model.TipoDoc == "CC")">CC</option>
-                            <option value="CE" selected="@(Model.TipoDoc == "CE")">CE</option>
+                        <select asp-for="TipoDoc" class="form-select rounded-pill">
+                            <option value="CC">CC</option>
+                            <option value="CE">CE</option>
                         </select>
                     </div>
                     <div class="col-8">
-                        <label class="fw-bold">Documento (8 a 10 números)</label>
-                        <input asp-for="NumDoc" type="text" id="inputDocumento" class="form-control rounded-pill" minlength="8" maxlength="10" />
+                        <label class="fw-bold">Documento (8 a 10)</label>
+                        <input asp-for="NumDoc" type="text" id="inputDocumento" class="form-control rounded-pill" maxlength="10" />
                         <span asp-validation-for="NumDoc" class="text-danger fw-bold d-block mt-1" style="font-size: 0.85rem;"></span>
                     </div>
                 </div>
@@ -55,12 +53,12 @@
 
                 <div class="row mb-4">
                     <div class="col-6">
-                        <label class="fw-bold">Dirección de Vivienda</label>
+                        <label class="fw-bold">Dirección</label>
                         <input asp-for="DirUsuario" class="form-control rounded-pill" />
                         <span asp-validation-for="DirUsuario" class="text-danger fw-bold d-block mt-1" style="font-size: 0.85rem;"></span>
                     </div>
                     <div class="col-6">
-                        <label class="fw-bold">Fecha de Nacimiento</label>
+                        <label class="fw-bold">Fecha Nacimiento</label>
                         <input asp-for="FechaNaci" type="date" class="form-control rounded-pill" />
                         <span asp-validation-for="FechaNaci" class="text-danger fw-bold d-block mt-1" style="font-size: 0.85rem;"></span>
                     </div>
@@ -76,9 +74,7 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        function soloNumeros(input) {
-            input.addEventListener('input', function () { this.value = this.value.replace(/[^0-9]/g, ''); });
-        }
+        function soloNumeros(input) { input.addEventListener('input', function () { this.value = this.value.replace(/[^0-9]/g, ''); }); }
         soloNumeros(document.getElementById('inputDocumento'));
         soloNumeros(document.getElementById('inputTelefono'));
     </script>
