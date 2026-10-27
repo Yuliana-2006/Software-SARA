@@ -1,4 +1,4 @@
-﻿@model Software_SARA.Repositories.Models.Usuario
+﻿@model Software_SARA.Dtos.DuenoDTO
 @{ ViewData["Title"] = "Editar Dueño"; }
 
 <div class="container py-4">
@@ -6,19 +6,18 @@
         <div class="card-body p-4">
             <h3 class="text-center fw-bold mb-4 text-white">EDITAR DUEÑO</h3>
             
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger fw-bold" style="color: #721c24; background-color: #f8d7da;"></div>
+
+            <!-- AQUÍ ESTÁ EL TRUCO: Enviamos el ID oculto -->
             <form asp-action="Editar" method="post">
-                <input type="hidden" asp-for="IdUsuario" />
-                <input type="hidden" asp-for="Contraseña" />
-                <input type="hidden" asp-for="EstadoUsuario" />
-                <input type="hidden" asp-for="IdSede" />
-                <input type="hidden" asp-for="IdRol" />
+                <input type="hidden" name="id" value="@ViewBag.IdUsuario" />
 
                 <div class="row mb-3">
                     <div class="col-4">
                         <label class="fw-bold">Tipo Doc.</label>
                         <select name="tipoDocString" class="form-control rounded-pill">
-                            <option value="CC" selected="@(Model.TipDoc)">CC</option>
-                            <option value="CE" selected="@(!Model.TipDoc)">CE</option>
+                            <option value="CC" selected="@(Model.TipoDoc == "CC")">CC</option>
+                            <option value="CE" selected="@(Model.TipoDoc == "CE")">CE</option>
                         </select>
                     </div>
                     <div class="col-8">
@@ -27,6 +26,7 @@
                         <span asp-validation-for="NumDoc" class="text-danger fw-bold d-block mt-1" style="font-size: 0.85rem;"></span>
                     </div>
                 </div>
+
                 <div class="row mb-3">
                     <div class="col-6">
                         <label class="fw-bold">Nombres</label>
@@ -39,6 +39,7 @@
                         <span asp-validation-for="ApelliUsuario" class="text-danger fw-bold d-block mt-1" style="font-size: 0.85rem;"></span>
                     </div>
                 </div>
+
                 <div class="row mb-3">
                     <div class="col-6">
                         <label class="fw-bold">Teléfono (10 números)</label>
@@ -51,6 +52,7 @@
                         <span asp-validation-for="Correo" class="text-danger fw-bold d-block mt-1" style="font-size: 0.85rem;"></span>
                     </div>
                 </div>
+
                 <div class="row mb-4">
                     <div class="col-6">
                         <label class="fw-bold">Dirección de Vivienda</label>
@@ -63,6 +65,7 @@
                         <span asp-validation-for="FechaNaci" class="text-danger fw-bold d-block mt-1" style="font-size: 0.85rem;"></span>
                     </div>
                 </div>
+
                 <button type="submit" class="btn btn-light w-100 rounded-pill fw-bold mb-2">GUARDAR CAMBIOS</button>
                 <a asp-action="Index" class="btn btn-outline-light w-100 rounded-pill">CANCELAR</a>
             </form>
