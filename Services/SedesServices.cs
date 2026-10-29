@@ -17,7 +17,31 @@ namespace Software_SARA.Services
         public async Task<SedeDto> CreateSede(SedeDto sedeDto)
         {
             sedeDto.EstadoSede = true; // Set EstadoSede to true (1) when creating a new Sede
+
+            // Obtenemos todas las sedes actuales para validar las reglas de negocio
+            var listaSedesExistentes = await ObtenerTodasLasSedes();
+
+            // RN02-CU03: Validar que el nombre de la sede y la dirección física sean únicos
+            bool nombreExiste = listaSedesExistentes.Any(s => s.NomSede.Trim().ToLower() == sedeDto.NomSede.Trim().ToLower());
+            bool direccionExiste = listaSedesExistentes.Any(s => s.DirSede.Trim().ToLower() == sedeDto.DirSede.Trim().ToLower());
+
+            if (nombreExiste)
+            {
+                sedeDto.Reponse = 0;
+                sedeDto.Message = "Ya existe una sede registrada con ese nombre.";
+                return sedeDto;
+            }
+
+            if (direccionExiste)
+            {
+                sedeDto.Reponse = 0;
+                sedeDto.Message = "Ya existe una sede registrada con esa dirección física.";
+                return sedeDto;
+            }
+
+            // Si pasa las validaciones de negocio, pasa a registrar en el repositorio
             var result = await _sedeRepository.CreateSede(sedeDto);
+
             if (result)
             {
                 sedeDto.Reponse = 1;
@@ -59,6 +83,29 @@ namespace Software_SARA.Services
 
         public async Task<SedeDto> EditarSede(SedeDto sedeDto)
         {
+            // Obtenemos la lista de todas las sedes para validar contra registros existentes
+            var listaSedesExistentes = await ObtenerTodasLasSedes();
+
+            // RN02-CU04: Si el Dueño cambia el nombre o la dirección, valida que no entre en conflicto con otra sede existente para ello, filtra descartando la sede que se está editando comparando el IdSede.
+            bool nombreConflicto = listaSedesExistentes.Any(s => s.IdSede != sedeDto.IdSede && s.NomSede.Trim().ToLower() == sedeDto.NomSede.Trim().ToLower());
+
+            bool direccionConflicto = listaSedesExistentes.Any(s => s.IdSede != sedeDto.IdSede && s.DirSede.Trim().ToLower() == sedeDto.DirSede.Trim().ToLower());
+
+            if (nombreConflicto)
+            {
+                sedeDto.Reponse = 0;
+                sedeDto.Message = "El nombre de la sede ya pertenece a otra sede existente.";
+                return sedeDto;
+            }
+
+            if (direccionConflicto)
+            {
+                sedeDto.Reponse = 0;
+                sedeDto.Message = "La dirección física ya pertenece a otra sede existente.";
+                return sedeDto;
+            }
+
+            // Si pasa las validaciones de negocio, pasa a actualizar en el repositorio
             var result = await _sedeRepository.EditarSede(sedeDto);
             if (result)
             {
