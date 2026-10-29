@@ -132,7 +132,6 @@
                     @if (rol == "Gerente")
                     {
                         <a asp-controller="Personal" asp-action="Index" title="Personal"><i class="bi bi-people-fill"></i> <span class="sidebar-text">Personal</span></a>
-                        <!-- AQUÍ CAMBIAMOS EL CONTROLADOR A CAJA -->
                         <a asp-controller="Caja" asp-action="Index" title="Caja"><i class="bi bi-cash-stack"></i> <span class="sidebar-text">Caja</span></a>
                         <a asp-controller="Home" asp-action="Index" title="Facturas"><i class="bi bi-receipt"></i> <span class="sidebar-text">Facturas</span></a>
                         <a asp-controller="Home" asp-action="Index" title="Pedidos"><i class="bi bi-cart-check-fill"></i> <span class="sidebar-text">Pedidos</span></a>
@@ -144,7 +143,6 @@
                     @if (rol == "Tesorero")
                     {
                         <a asp-controller="Home" asp-action="Index" title="Facturas"><i class="bi bi-receipt"></i> <span class="sidebar-text">Facturas</span></a>
-                        <!-- AQUÍ TAMBIÉN APUNTAMOS A CAJA -->
                         <a asp-controller="Caja" asp-action="Index" title="Apertura Caja"><i class="bi bi-box-arrow-in-right"></i> <span class="sidebar-text">Apertura Caja</span></a>
                         <a asp-controller="Home" asp-action="Index" title="Cierre Caja"><i class="bi bi-box-arrow-left"></i> <span class="sidebar-text">Cierre Caja</span></a>
                     }
@@ -152,7 +150,7 @@
                     <!-- 6. MENÚ EXCLUSIVO DEL EMPLEADO -->
                     @if (rol == "Empleado")
                     {
-                        <a asp-controller="Home" asp-action="Index" title="Apertura Caja"><i class="bi bi-box-arrow-in-right"></i> <span class="sidebar-text">Apertura Caja</span></a>
+                        <a asp-controller="Caja" asp-action="Index" title="Apertura Caja"><i class="bi bi-box-arrow-in-right"></i> <span class="sidebar-text">Apertura Caja</span></a>
                         <a asp-controller="Home" asp-action="Index" title="Cierre Caja"><i class="bi bi-box-arrow-left"></i> <span class="sidebar-text">Cierre Caja</span></a>
                     }
                 </div>

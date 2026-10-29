@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Linq;
-using System.Collections.Generic;
 
 namespace Software_SARA.Controllers
 {
@@ -40,7 +39,7 @@ namespace Software_SARA.Controllers
 
             if (usuarioActual == null) return RedirectToAction("Login", "Acceso");
 
-            // TRUCO: Buscamos los usuarios de la misma sede para validar si alguno tiene caja abierta
+            // Validar que no haya caja abierta en esta sede (buscando a los usuarios de la misma sede)
             var usuariosSede = _context.Usuarios.Where(u => u.IdSede == usuarioActual.IdSede).Select(u => u.IdUsuario).ToList();
             bool cajaAbierta = _context.DiaCajas.Any(c => usuariosSede.Contains(c.IdUsuario) && c.EstadoDia == true);
 
@@ -53,6 +52,7 @@ namespace Software_SARA.Controllers
             var sede = _context.Sedes.Find(usuarioActual.IdSede);
             ViewBag.NombreSede = sede?.NomSede ?? "Sede Principal";
 
+            // Obtener responsables (Tesoreros y Empleados activos de esa misma sede)
             var responsables = _context.Usuarios
                 .Where(u => u.IdSede == usuarioActual.IdSede &&
                            (u.IdRol == 3 || u.IdRol == 4) &&
@@ -84,6 +84,7 @@ namespace Software_SARA.Controllers
                 return View(dto);
             }
 
+            // Validar nuevamente por seguridad (Caja ya abierta)
             var usuariosSede = _context.Usuarios.Where(u => u.IdSede == usuarioActual.IdSede).Select(u => u.IdUsuario).ToList();
             bool cajaAbierta = _context.DiaCajas.Any(c => usuariosSede.Contains(c.IdUsuario) && c.EstadoDia == true);
 
@@ -101,7 +102,7 @@ namespace Software_SARA.Controllers
                 FechaHoraCierre = DateTime.Now,
                 MontoFinal = 0,
                 EstadoDia = true, // Abierta
-                IdUsuario = dto.IdResponsable // Se lo asignamos al responsable
+                IdUsuario = dto.IdResponsable // Se lo asignamos al responsable seleccionado
             };
 
             try
