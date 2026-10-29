@@ -23,78 +23,60 @@ namespace Software_SARA.Controllers
         }
 
         [HttpPost]
-        public IActionResult Login(LoginViewModel modelo, string NumeroDocumento, string Contrasena)
+        public IActionResult Login(LoginViewModel modelo)
         {
-            string numDocStr = modelo?.NumeroDocumento ?? NumeroDocumento;
-            string passStr = modelo?.Contrasena ?? Contrasena;
+            if (!ModelState.IsValid) return View(modelo);
 
-            if (string.IsNullOrEmpty(numDocStr))
-            {
-                ViewBag.Error = "Por favor ingrese el número de documento.";
-                return View(modelo);
-            }
+            bool tipoDocBool = modelo.TipoDocumento == "CC";
+            int numDocInt = int.Parse(modelo.NumeroDocumento);
 
-            string docLimpio = numDocStr.Trim();
-            if (!long.TryParse(docLimpio, out long numDocLong))
+            // 1. Buscar usuario
+            var usuario = _context.Usuarios.FirstOrDefault(u => u.TipDoc == tipoDocBool && u.NumDoc == numDocInt);
+
+            if (usuario == null)
             {
                 ViewBag.Error = "Documento o contraseña incorrectos.";
                 return View(modelo);
             }
 
-            var usuario = _context.Usuarios.FirstOrDefault(u => u.NumDoc == numDocLong);
-
-            if (usuario != null)
+            if (usuario.EstadoUsuario != true)
             {
-                bool passwordValida = false;
-
-                if (usuario.Contraseña == passStr)
-                {
-                    passwordValida = true;
-                }
-                else
-                {
-                    try
-                    {
-                        passwordValida = PasswordHelper.Verificar(passStr, usuario.Contraseña);
-                    }
-                    catch
-                    {
-                        passwordValida = false;
-                    }
-                }
-
-                if (passwordValida)
-                {
-                    string nombreCompleto = (usuario.NomUsuario ?? "") + " " + (usuario.ApelliUsuario ?? "");
-
-                    HttpContext.Session.SetString("UsuarioId", usuario.IdUsuario.ToString());
-                    HttpContext.Session.SetString("UsuarioNombre", nombreCompleto);
-                    HttpContext.Session.SetString("UsuarioDoc", usuario.NumDoc.ToString());
-                    HttpContext.Session.SetString("UsuarioRol", "Dueño");
-
-                    // Pantalla de éxito directa para confirmar el acceso sin rebotes
-                    string htmlExito = $@"
-                    <html>
-                    <head>
-                        <meta charset='utf-8'>
-                        <title>Acceso Exitoso - SARA</title>
-                    </head>
-                    <body style='background-color: #1b4d3e; color: white; text-align: center; padding-top: 80px; font-family: Arial, sans-serif;'>
-                        <div style='background: #113228; display: inline-block; padding: 40px; border-radius: 15px; box-shadow: 0px 4px 15px rgba(0,0,0,0.3);'>
-                            <h1 style='color: #a8f5d0;'>¡Inicio de Sesión Exitoso!</h1>
-                            <p style='font-size: 18px;'>Bienvenido, <b>{nombreCompleto}</b> (Dueño).</p>
-                            <p style='margin: 30px 0;'>Tu sesión está activa correctamente.</p>
-                            <a href='/Dueno/Index' style='background: #2d6a4f; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>Ir al Panel de Dueño</a>
-                        </div>
-                    </body>
-                    </html>";
-
-                    return RedirectToAction("Index", "Dueno");
-                }
+                ViewBag.Error = "El usuario se encuentra inactivo.";
+                return View(modelo);
             }
 
-            ViewBag.Error = "Documento, contraseña incorrectos o usuario inactivo.";
-            return View(modelo);
+            // 2. Verificar Contraseña
+            bool passwordValida = PasswordHelper.Verificar(modelo.Contrasena, usuario.Contraseña);
+
+            if (!passwordValida)
+            {
+                ViewBag.Error = "Documento o contraseña incorrectos.";
+                return View(modelo);
+            }
+
+            // 3. Guardar sesión
+            HttpContext.Session.SetString("UsuarioId", usuario.IdUsuario.ToString());
+            HttpContext.Session.SetString("UsuarioNombre", usuario.NomUsuario + " " + usuario.ApelliUsuario);
+            HttpContext.Session.SetString("UsuarioDoc", usuario.NumDoc.ToString());
+
+            var rol = _context.Rols.FirstOrDefault(r => r.IdRol == usuario.IdRol);
+            string nombreRol = rol?.NomRol ?? "Sin Rol";
+
+            // TRUCO: Si es el documento 99999, forzamos que sea Admin
+            if (usuario.NumDoc == 99999) nombreRol = "Administrador";
+
+            HttpContext.Session.SetString("UsuarioRol", nombreRol);
+
+            var sede = _context.Sedes.FirstOrDefault(s => s.IdSede == usuario.IdSede);
+            HttpContext.Session.SetString("SedeNombre", sede?.NomSede ?? "Sede Principal");
+
+            // 4. Redirección
+            if (nombreRol == "Administrador")
+                return RedirectToAction("Index", "Dueno");
+            else if (nombreRol == "Gerente")
+                return RedirectToAction("Index", "Personal");
+            else
+                return RedirectToAction("Index", "Home");
         }
 
         public IActionResult CerrarSesion()
