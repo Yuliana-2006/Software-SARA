@@ -4,6 +4,7 @@ using Software_SARA.Repositories.Models;
 using Software_SARA.Services;
 using Software_SARA.Utilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc.Rendering; // Necesario para SelectList
 using System.Text.RegularExpressions;
 using System;
 using System.Linq;
@@ -34,14 +35,19 @@ namespace Software_SARA.Controllers
             return View(duenos);
         }
 
-        // 2. CREAR
+        // 2. CREAR (GET)
         [HttpGet]
         public IActionResult Crear()
         {
             if (HttpContext.Session.GetString("UsuarioRol") != "Administrador") return RedirectToAction("Login", "Acceso");
+
+            // Cargamos las sedes activas para el menú desplegable de la vista
+            ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede");
+
             return View(new DuenoDTO());
         }
 
+        // 2. CREAR (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Crear(DuenoDTO dto)
@@ -78,7 +84,12 @@ namespace Software_SARA.Controllers
             if (_context.Usuarios.Any(u => u.Telefono == dto.Telefono))
                 ModelState.AddModelError("Telefono", $"El teléfono {dto.Telefono} ya está registrado.");
 
-            if (!ModelState.IsValid) return View(dto);
+            if (!ModelState.IsValid)
+            {
+                // Recargar sedes si la validación falla para que no se caiga la vista
+                ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede", dto.IdSede);
+                return View(dto);
+            }
 
             var nuevoUsuario = new Usuario
             {
@@ -91,7 +102,7 @@ namespace Software_SARA.Controllers
                 DirUsuario = dto.DirUsuario,
                 FechaNaci = dto.FechaNaci,
                 IdRol = 1,
-                IdSede = 1,
+                IdSede = dto.IdSede > 0 ? dto.IdSede : 1, // Asigna la sede seleccionada o por defecto 1
                 EstadoUsuario = true
             };
 
@@ -106,12 +117,12 @@ namespace Software_SARA.Controllers
             catch (Exception ex)
             {
                 ModelState.AddModelError("", "Error en BD: " + (ex.InnerException?.Message ?? ex.Message));
+                ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede", dto.IdSede);
                 return View(dto);
             }
 
             try
             {
-                // Envío de correo con los parámetros requeridos
                 await _emailService.EnviarPasswordAsync(
                     nuevoUsuario.Correo,
                     nuevoUsuario.NomUsuario,
@@ -154,9 +165,14 @@ namespace Software_SARA.Controllers
                 Correo = usuario.Correo,
                 Telefono = usuario.Telefono,
                 DirUsuario = usuario.DirUsuario,
-                FechaNaci = usuario.FechaNaci
+                FechaNaci = usuario.FechaNaci,
+                IdSede = usuario.IdSede // Cargamos la sede actual del dueño
             };
+
             ViewBag.IdUsuario = id;
+            // Cargamos la lista de sedes activas manteniendo la sede actual seleccionada
+            ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede", usuario.IdSede);
+
             return View(dto);
         }
 
@@ -201,6 +217,7 @@ namespace Software_SARA.Controllers
             if (!ModelState.IsValid)
             {
                 ViewBag.IdUsuario = id;
+                ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede", dto.IdSede);
                 return View(dto);
             }
 
@@ -212,6 +229,7 @@ namespace Software_SARA.Controllers
             usuarioDb.Telefono = dto.Telefono;
             usuarioDb.DirUsuario = dto.DirUsuario;
             usuarioDb.FechaNaci = dto.FechaNaci;
+            usuarioDb.IdSede = dto.IdSede; // Actualizamos la sede
 
             try
             {
@@ -223,6 +241,7 @@ namespace Software_SARA.Controllers
             {
                 ModelState.AddModelError("", "Error al actualizar: " + (ex.InnerException?.Message ?? ex.Message));
                 ViewBag.IdUsuario = id;
+                ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede", dto.IdSede);
                 return View(dto);
             }
             return RedirectToAction("Index");

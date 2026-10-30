@@ -67,12 +67,6 @@
             box-shadow: 0 0 0 3px rgba(230, 228, 220, 0.5);
         }
 
-    .input-readonly {
-        background-color: #ffffff;
-        color: #25402D;
-        font-weight: 700;
-    }
-
     .select-doc {
         border-radius: 20px 0 0 20px;
         width: 35%;
@@ -129,7 +123,7 @@
     <div class="card-registrar">
 
         <div class="title-registrar">Registrar Gerente</div>
-        <div class="subtitle-registrar">Sede asignada: <strong>@Model?.Sede</strong></div>
+        <div class="subtitle-registrar">Gestión de SARA</div>
 
         <form asp-controller="Gerentes" asp-action="Crear" method="post">
             @Html.AntiForgeryToken()
@@ -137,10 +131,13 @@
             <!-- Resumen general de errores por si hay alguno global -->
             <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3 py-2" role="alert" style="font-size: 0.85rem; border-radius: 15px;"></div>
 
-            <!-- Sede de Registro -->
+            <!-- Sede Asignada (Desplegable dinámico) -->
             <div class="mb-3">
-                <label class="form-label-custom">Sede de Registro</label>
-                <input asp-for="Sede" class="input-pill-sara input-readonly" readonly />
+                <label class="form-label-custom">Sede Asignada</label>
+                <select asp-for="IdSede" class="input-pill-sara" asp-items="ViewBag.ListaSedes">
+                    <option value="">-- Seleccione una Sede --</option>
+                </select>
+                <span asp-validation-for="IdSede" class="text-danger fw-bold" style="font-size: 0.8rem; display: block; margin-top: 4px; padding-left: 10px; color: #ffcccc !important;"></span>
             </div>
 
             <!-- Documento: Tipo y Número -->
@@ -157,7 +154,6 @@
                     </select>
                     <input asp-for="NumeroDocumento" class="input-pill-sara input-doc" placeholder="Número de Documento" />
                 </div>
-                <!-- 💡 Error en rojo para el número de documento -->
                 <span asp-validation-for="NumeroDocumento" class="text-danger fw-bold" style="font-size: 0.8rem; display: block; margin-top: 4px; padding-left: 10px; color: #ffcccc !important;"></span>
             </div>
 
@@ -180,13 +176,11 @@
                 <div class="col-6">
                     <label class="form-label-custom">Teléfono</label>
                     <input asp-for="Telefono" class="input-pill-sara" placeholder="Teléfono" />
-                    <!-- 💡 Error en rojo para el teléfono -->
                     <span asp-validation-for="Telefono" class="text-danger fw-bold" style="font-size: 0.8rem; color: #ffcccc !important;"></span>
                 </div>
                 <div class="col-6">
                     <label class="form-label-custom">Correo Electrónico</label>
                     <input asp-for="Correo" type="email" class="input-pill-sara" placeholder="Correo" />
-                    <!-- 💡 Error en rojo para el correo -->
                     <span asp-validation-for="Correo" class="text-danger fw-bold" style="font-size: 0.8rem; color: #ffcccc !important;"></span>
                 </div>
             </div>
