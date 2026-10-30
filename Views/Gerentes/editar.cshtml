@@ -70,7 +70,7 @@
             color: white;
         }
 
-    /* 💡 Estilo para el cuadro de error principal (igual al de registrar) */
+    /* 💡 Estilo para el cuadro de error principal */
     .alert-sara-error {
         background-color: #f8d7da;
         color: #842029;
@@ -201,10 +201,13 @@
                 <span asp-validation-for="Direccion" class="text-danger-sara"></span>
             </div>
 
+            <!-- Sede Asignada (Desplegable dinámico) -->
             <div class="form-group-sara">
-                <label class="form-label-sara">Sede</label>
-                <input asp-for="Sede" class="form-control-sara" />
-                <span asp-validation-for="Sede" class="text-danger-sara"></span>
+                <label class="form-label-sara">Sede Asignada</label>
+                <select asp-for="IdSede" class="form-control-sara" asp-items="ViewBag.ListaSedes">
+                    <option value="">-- Seleccione una Sede --</option>
+                </select>
+                <span asp-validation-for="IdSede" class="text-danger-sara"></span>
             </div>
 
             <div class="form-group-sara">
@@ -222,3 +225,9 @@
         </form>
     </div>
 </div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

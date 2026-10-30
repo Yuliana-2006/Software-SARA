@@ -5,10 +5,16 @@
 }
 
 <div class="eliminar-page">
+    @if (ViewData["Mensaje"] != null) 
+    {
+    <div style="color: white; background-color: #8B3A3A; padding: 10px; border-radius: 10px; margin-bottom: 15px;">
+    @ViewData["Mensaje"]
+    </div> 
+    }
 
     <!-- ENCABEZADO -->
     <div class="eliminar-header">
-        <h1>Eliminar Sede</h1>
+        <h1>ELIMINAR SEDE</h1>
     </div>
 
 
@@ -32,9 +38,9 @@
                       asp-action="EliminarSede"
                       method="post">
 
-                    <input type="hidden"
-                           name="id"
-                           value="@Model.IdSede" />
+                    @Html.AntiForgeryToken()
+                    <!-- Usamos asp-for para asegurar el ID correcto -->
+                    <input type="hidden" asp-for="IdSede" />
 
                     <button type="submit"
                             class="confirmacion-button">

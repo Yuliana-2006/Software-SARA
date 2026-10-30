@@ -1,10 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Software_SARA.Dtos;
 using Software_SARA.Repositories.Models;
 using Software_SARA.Services;
 using Software_SARA.Utilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc.Rendering; // Necesario para SelectList
 using System.Text.RegularExpressions;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Software_SARA.Controllers
 {
@@ -19,21 +23,31 @@ namespace Software_SARA.Controllers
             _emailService = emailService;
         }
 
+        // 1. LISTAR DUEÑOS
         [HttpGet]
         public IActionResult Index()
         {
-            if (HttpContext.Session.GetString("UsuarioRol") != "Administrador") return RedirectToAction("Login", "Acceso");
+            var rol = HttpContext.Session.GetString("UsuarioRol");
+            var doc = HttpContext.Session.GetString("UsuarioDoc");
+            if (rol != "Administrador" && doc != "99999") return RedirectToAction("Login", "Acceso");
+
             var duenos = _context.Usuarios.Where(u => u.IdRol == 1).ToList();
             return View(duenos);
         }
 
+        // 2. CREAR (GET)
         [HttpGet]
         public IActionResult Crear()
         {
             if (HttpContext.Session.GetString("UsuarioRol") != "Administrador") return RedirectToAction("Login", "Acceso");
+
+            // Cargamos las sedes activas para el menú desplegable de la vista
+            ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede");
+
             return View(new DuenoDTO());
         }
 
+        // 2. CREAR (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Crear(DuenoDTO dto)
@@ -55,10 +69,7 @@ namespace Software_SARA.Controllers
             var hoy = DateTime.Today;
             var edad = hoy.Year - dto.FechaNaci.Year;
             if (dto.FechaNaci > DateOnly.FromDateTime(hoy.AddYears(-edad))) edad--;
-            if (edad < 18)
-            {
-                ModelState.AddModelError("FechaNaci", "El Dueño debe ser mayor de 18 años.");
-            }
+            if (edad < 18) ModelState.AddModelError("FechaNaci", "El Dueño debe ser mayor de 18 años.");
 
             // 3. Validar duplicados en la Base de Datos (Documento, Correo y Teléfono)
             if (!string.IsNullOrEmpty(dto.NumDoc) && int.TryParse(dto.NumDoc, out int numDocParsed))
@@ -73,9 +84,13 @@ namespace Software_SARA.Controllers
             if (_context.Usuarios.Any(u => u.Telefono == dto.Telefono))
                 ModelState.AddModelError("Telefono", $"El teléfono {dto.Telefono} ya está registrado.");
 
-            if (!ModelState.IsValid) return View(dto);
+            if (!ModelState.IsValid)
+            {
+                // Recargar sedes si la validación falla para que no se caiga la vista
+                ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede", dto.IdSede);
+                return View(dto);
+            }
 
-            // Mapeo de DTO a Entidad
             var nuevoUsuario = new Usuario
             {
                 TipDoc = dto.TipoDoc == "CC",
@@ -86,8 +101,8 @@ namespace Software_SARA.Controllers
                 Telefono = dto.Telefono,
                 DirUsuario = dto.DirUsuario,
                 FechaNaci = dto.FechaNaci,
-                IdRol = 1, // Dueño
-                IdSede = 1,
+                IdRol = 1,
+                IdSede = dto.IdSede > 0 ? dto.IdSede : 1, // Asigna la sede seleccionada o por defecto 1
                 EstadoUsuario = true
             };
 
@@ -102,12 +117,12 @@ namespace Software_SARA.Controllers
             catch (Exception ex)
             {
                 ModelState.AddModelError("", "Error en BD: " + (ex.InnerException?.Message ?? ex.Message));
+                ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede", dto.IdSede);
                 return View(dto);
             }
 
             try
             {
-                // Envío de correo con los 5 parámetros requeridos
                 await _emailService.EnviarPasswordAsync(
                     nuevoUsuario.Correo,
                     nuevoUsuario.NomUsuario,
@@ -117,14 +132,15 @@ namespace Software_SARA.Controllers
                 );
                 TempData["MensajeExito"] = $"Dueño registrado y correo enviado a {nuevoUsuario.Correo}.";
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                TempData["MensajeExito"] = $"Dueño registrado. Falló el correo: {ex.Message}. Clave: {passwordPlano}";
+                TempData["MensajeExito"] = $"Dueño registrado. (El correo falló). Su contraseña temporal es: {passwordPlano}";
             }
 
             return RedirectToAction("Index");
         }
 
+        // 3. CONSULTAR
         [HttpGet]
         public IActionResult Consultar(int id)
         {
@@ -133,6 +149,7 @@ namespace Software_SARA.Controllers
             return View(usuario);
         }
 
+        // 4. EDITAR (GET)
         [HttpGet]
         public IActionResult Editar(int id)
         {
@@ -148,12 +165,18 @@ namespace Software_SARA.Controllers
                 Correo = usuario.Correo,
                 Telefono = usuario.Telefono,
                 DirUsuario = usuario.DirUsuario,
-                FechaNaci = usuario.FechaNaci
+                FechaNaci = usuario.FechaNaci,
+                IdSede = usuario.IdSede // Cargamos la sede actual del dueño
             };
+
             ViewBag.IdUsuario = id;
+            // Cargamos la lista de sedes activas manteniendo la sede actual seleccionada
+            ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede", usuario.IdSede);
+
             return View(dto);
         }
 
+        // 5. EDITAR (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Editar(int id, DuenoDTO dto)
@@ -185,7 +208,7 @@ namespace Software_SARA.Controllers
             if (_context.Usuarios.Any(u => u.Telefono == dto.Telefono && u.IdUsuario != id))
                 ModelState.AddModelError("Telefono", "El teléfono ya pertenece a otro usuario.");
 
-            // Validar edad
+            // Validar Edad en Edición
             var hoy = DateTime.Today;
             var edad = hoy.Year - dto.FechaNaci.Year;
             if (dto.FechaNaci > DateOnly.FromDateTime(hoy.AddYears(-edad))) edad--;
@@ -194,10 +217,10 @@ namespace Software_SARA.Controllers
             if (!ModelState.IsValid)
             {
                 ViewBag.IdUsuario = id;
+                ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede", dto.IdSede);
                 return View(dto);
             }
 
-            // Actualizamos la entidad con los datos del DTO
             usuarioDb.TipDoc = dto.TipoDoc == "CC";
             usuarioDb.NumDoc = int.Parse(dto.NumDoc);
             usuarioDb.NomUsuario = dto.NomUsuario;
@@ -206,51 +229,81 @@ namespace Software_SARA.Controllers
             usuarioDb.Telefono = dto.Telefono;
             usuarioDb.DirUsuario = dto.DirUsuario;
             usuarioDb.FechaNaci = dto.FechaNaci;
+            usuarioDb.IdSede = dto.IdSede; // Actualizamos la sede
 
             try
             {
                 _context.Usuarios.Update(usuarioDb);
                 _context.SaveChanges();
-                TempData["MensajeExito"] = "Datos del Dueño actualizados.";
+                TempData["MensajeExito"] = "Datos actualizados correctamente en la Base de Datos.";
             }
             catch (Exception ex)
             {
-                ModelState.AddModelError("", "Error al actualizar: " + ex.Message);
+                ModelState.AddModelError("", "Error al actualizar: " + (ex.InnerException?.Message ?? ex.Message));
                 ViewBag.IdUsuario = id;
+                ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede", dto.IdSede);
                 return View(dto);
             }
             return RedirectToAction("Index");
         }
 
+        // 6. INACTIVAR / ACTIVAR
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult CambiarEstado(int id)
         {
-            var usuario = _context.Usuarios.Find(id);
-            if (usuario != null)
+            try
             {
-                usuario.EstadoUsuario = !usuario.EstadoUsuario;
-                _context.SaveChanges();
-                TempData["MensajeExito"] = $"El usuario ahora está {(usuario.EstadoUsuario ? "ACTIVO" : "INACTIVO")}.";
+                var usuario = _context.Usuarios.Find(id);
+                if (usuario != null)
+                {
+                    usuario.EstadoUsuario = !usuario.EstadoUsuario;
+                    _context.SaveChanges();
+                    TempData["MensajeExito"] = $"Usuario {(usuario.EstadoUsuario ? "Activado" : "Inactivado")} en la Base de Datos.";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["MensajeError"] = "Error al cambiar estado: " + (ex.InnerException?.Message ?? ex.Message);
             }
             return RedirectToAction("Index");
         }
 
+        // 7. ELIMINAR
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Eliminar(int id)
         {
-            var usuario = _context.Usuarios.Find(id);
-            if (usuario != null)
+            try
             {
-                if (usuario.EstadoUsuario == true)
-                    TempData["MensajeError"] = "No se puede eliminar un usuario ACTIVO. Primero debe inactivarlo.";
-                else
+                var usuario = _context.Usuarios.Find(id);
+                if (usuario != null)
                 {
-                    _context.Usuarios.Remove(usuario);
-                    _context.SaveChanges();
-                    TempData["MensajeExito"] = "Usuario eliminado permanentemente.";
+                    if (usuario.EstadoUsuario == true)
+                    {
+                        TempData["MensajeError"] = "No se puede eliminar un usuario ACTIVO. Primero inactívelo.";
+                    }
+                    else
+                    {
+                        var cajas = _context.DiaCajas.Where(c => c.IdUsuario == id).ToList();
+                        if (cajas.Any()) _context.DiaCajas.RemoveRange(cajas);
+
+                        var recordatorios = _context.Recordatorios.Where(r => r.IdUsuario == id).ToList();
+                        if (recordatorios.Any()) _context.Recordatorios.RemoveRange(recordatorios);
+
+                        var facturas = _context.Facturas.Where(f => f.IdUsuario == id).ToList();
+                        if (facturas.Any()) _context.Facturas.RemoveRange(facturas);
+
+                        _context.Usuarios.Remove(usuario);
+                        _context.SaveChanges();
+
+                        TempData["MensajeExito"] = "Usuario eliminado permanentemente de la Base de Datos.";
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                TempData["MensajeError"] = "Error al eliminar: " + (ex.InnerException?.Message ?? ex.Message);
             }
             return RedirectToAction("Index");
         }

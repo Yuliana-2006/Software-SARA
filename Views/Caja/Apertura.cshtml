@@ -1,0 +1,60 @@
+﻿@model Software_SARA.Dtos.AperturaCajaDTO
+@{
+    ViewData["Title"] = "Registrar Apertura";
+    var responsables = ViewBag.Responsables as List<Software_SARA.Repositories.Models.Usuario>;
+}
+
+<div class="container py-4">
+    <div class="card shadow mx-auto" style="max-width: 600px; background-color: #3B6146; color: white; border-radius: 30px;">
+        <div class="card-body p-4">
+            <h3 class="text-center fw-bold mb-4 text-white">REGISTRAR APERTURA DE CAJA</h3>
+            
+            <div asp-validation-summary="All" class="alert alert-danger fw-bold" style="color: #721c24; background-color: #f8d7da;"></div>
+
+            <form asp-action="Apertura" method="post">
+                
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label class="fw-bold">Sede</label>
+                        <input value="@ViewBag.NombreSede" class="form-control rounded-pill" readonly style="background-color: #D9D7C7; color: #2D4832; font-weight: bold;" />
+                    </div>
+                    <div class="col-6">
+                        <label class="fw-bold">Fecha de Registro</label>
+                        <input type="text" value="@DateTime.Now.ToString("dd/MM/yyyy HH:mm")" class="form-control rounded-pill" readonly style="background-color: #D9D7C7; color: #2D4832; font-weight: bold;" />
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-6">
+                        <label class="fw-bold">Monto Inicial ($)</label>
+                        <input asp-for="MontoInicial" type="number" step="0.01" min="1" class="form-control rounded-pill" placeholder="Ej: 500000" />
+                        <span asp-validation-for="MontoInicial" class="text-danger fw-bold d-block mt-1" style="font-size: 0.85rem;"></span>
+                    </div>
+                    <div class="col-6">
+                        <label class="fw-bold">Responsable</label>
+                        <select asp-for="IdResponsable" class="form-select rounded-pill">
+                            <option value="">-- Seleccione --</option>
+                            @if (responsables != null)
+                            {
+                                foreach (var resp in responsables)
+                                {
+                                    <option value="@resp.IdUsuario">@resp.NomUsuario @resp.ApelliUsuario</option>
+                                }
+                            }
+                        </select>
+                        <span asp-validation-for="IdResponsable" class="text-danger fw-bold d-block mt-1" style="font-size: 0.85rem;"></span>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 col-10 mx-auto mt-4">
+                    <button type="submit" class="btn btn-light w-100 rounded-pill fw-bold">REGISTRAR</button>
+                    <a asp-action="Index" class="btn btn-outline-light w-100 rounded-pill">CANCELAR</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

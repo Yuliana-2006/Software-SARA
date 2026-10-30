@@ -8,7 +8,8 @@
 
     @foreach (var sede in Model)
     {
-        <div class="sede-card">
+        string cardClass = sede.EstadoSede ? "sede-card" : "sede-card sede-card-inactiva";
+        <div class="@cardClass">
 
             <div class="sede-icon">
                 <i class="bi bi-shop"></i>
@@ -30,19 +31,38 @@
                 Consultar
             </button>
 
+            @if (sede.EstadoSede)
+            {
                 <a asp-controller="Sedes"
-                   asp-action="EditarSede"
-                   asp-route-id="@sede.IdSede"
-                   class="sede-button">
-                   Editar
+                asp-action="EditarSede"
+                asp-route-id="@sede.IdSede"
+                class="sede-button">
+                    Editar
                 </a>
 
                 <a asp-controller="Sedes"
-                   asp-action="ConfirmarEliminarSede"
-                   asp-route-id="@sede.IdSede"
-                   class="sede-button">
-                   Eliminar
+                asp-action="EliminarSede"
+                asp-route-id="@sede.IdSede"
+                class="sede-button">
+                    Desactivar
                 </a>
+            }
+            else
+            {
+                <!-- Si está INACTIVA: Mostramos únicamente el botón de Reactivar -->
+            <form asp-controller="Sedes" 
+                  asp-action="ReactivarSede" 
+                  asp-route-id="@sede.IdSede" 
+                  method="post" 
+                  style="width: 100%; display: flex; justify-content: center;">
+                
+                @Html.AntiForgeryToken()
+                
+                <button type="submit" class="sede-button sede-button-reactivar">
+                    Reactivar
+                </button>
+            </form>
+            }
 
             </div>
 
@@ -707,6 +727,22 @@
             gap: 25px;
         }
 
+    }
+
+    .sede-card-inactiva {
+    background-color: #9E9E9E !important; /* Color gris de fondo */
+    border-color: #616161 !important;     /* Borde más oscuro */
+    opacity: 0.9;                         /* Un toque ligeramente opaco */
+    }
+
+    /* Estilo opcional para diferenciar el botón de reactivar */
+    .sede-button-reactivar {
+    background-color: #3C694F !important; /* Color verde institucional para destacar la reactivación */
+    color: white !important;
+    }
+
+    .sede-button-reactivar:hover {
+    background-color: #2E4F3E !important;
     }
 
 
