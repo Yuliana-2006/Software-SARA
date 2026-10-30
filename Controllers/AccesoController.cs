@@ -29,9 +29,15 @@ namespace Software_SARA.Controllers
                 return View(modelo);
 
             bool tipoDocBool = modelo.TipoDocumento == "CC";
-            int numDocInt = int.Parse(modelo.NumeroDocumento);
 
-            // Buscar al usuario por documento (sin comparar contraseña aún)
+            // Validamos que el número de documento sea un entero válido
+            if (!int.TryParse(modelo.NumeroDocumento, out int numDocInt))
+            {
+                ViewBag.Error = "Número de documento inválido.";
+                return View(modelo);
+            }
+
+            // Buscar al usuario por documento y estado activo
             var usuario = _context.Usuarios.FirstOrDefault(u =>
                 u.TipDoc == tipoDocBool &&
                 u.NumDoc == numDocInt &&
@@ -39,8 +45,23 @@ namespace Software_SARA.Controllers
 
             if (usuario != null)
             {
-                // Verificar contraseña ENCRIPTADA
-                bool passwordValida = (modelo.Contrasena == "1234");
+                bool passwordValida = false;
+
+                try
+                {
+                    // 1. Intentar verificar si la contraseña usa el hash seguro de BCrypt
+                    passwordValida = PasswordHelper.Verificar(modelo.Contrasena, usuario.Contraseña);
+                }
+                catch
+                {
+                    passwordValida = false;
+                }
+
+                // 2. Si no pasó por BCrypt (cuentas antiguas de texto plano), comprobamos si coincide directo
+                if (!passwordValida)
+                {
+                    passwordValida = (modelo.Contrasena == usuario.Contraseña);
+                }
 
                 if (passwordValida)
                 {
@@ -50,31 +71,31 @@ namespace Software_SARA.Controllers
                     HttpContext.Session.SetString("UsuarioDoc", usuario.NumDoc.ToString());
 
                     var rol = _context.Rols.FirstOrDefault(r => r.IdRol == usuario.IdRol);
-                    HttpContext.Session.SetString("UsuarioRol", rol?.NomRol ?? "Sin Rol");
+                    string nombreRol = rol?.NomRol?.Trim() ?? "Sin Rol";
+                    HttpContext.Session.SetString("UsuarioRol", nombreRol);
 
                     var sede = _context.Sedes.FirstOrDefault(s => s.IdSede == usuario.IdSede);
                     HttpContext.Session.SetString("SedeNombre", sede?.NomSede ?? "Sede Principal");
+
                     HttpContext.Session.SetString("SedeId", usuario.IdSede.ToString());
 
-                    // Redirigir según el rol
-                    string nombreRol = rol?.NomRol ?? "";
-
-                    if (nombreRol == "Administrador")
+                    // Redirigir según el rol de forma segura
+                    if (nombreRol.Equals("Administrador", StringComparison.OrdinalIgnoreCase))
                         return RedirectToAction("Index", "Dueno");
-                    else if (nombreRol == "Dueño")
+                    else if (nombreRol.Equals("Dueño", StringComparison.OrdinalIgnoreCase))
                         return RedirectToAction("Index", "Home");
-                    else if (nombreRol == "Gerente")
-                        return RedirectToAction("Index", "Personal");
-                    else if (nombreRol == "Tesorero")
+                    else if (nombreRol.Equals("Gerente", StringComparison.OrdinalIgnoreCase))
                         return RedirectToAction("Index", "Home");
-                    else if (nombreRol == "Empleado")
+                    else if (nombreRol.Equals("Tesorero", StringComparison.OrdinalIgnoreCase))
+                        return RedirectToAction("Index", "Home");
+                    else if (nombreRol.Equals("Empleado", StringComparison.OrdinalIgnoreCase))
                         return RedirectToAction("Index", "Home");
 
                     return RedirectToAction("Index", "Home");
                 }
             }
 
-            ViewBag.Error = "Documento,contraseña incorrectos o usuario inactivo.";
+            ViewBag.Error = "Documento, contraseña incorrectos o usuario inactivo.";
             return View(modelo);
         }
 
