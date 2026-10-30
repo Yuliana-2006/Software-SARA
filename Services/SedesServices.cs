@@ -123,17 +123,56 @@ namespace Software_SARA.Services
         public async Task<SedeDto> EliminarSede(int idSede)
         {
             var sedeDto = new SedeDto { IdSede = idSede };
+
+            var listaSedes = await ObtenerTodasLasSedes();
+            var sedeAInactivar = listaSedes.FirstOrDefault(s => s.IdSede == idSede);
+
+            if (sedeAInactivar == null)
+            {
+                sedeDto.Reponse = 0;
+                sedeDto.Message = "La sede seleccionada no se encuentra registrada en el sistema.";
+                return sedeDto;
+            }
+
+            // RN-5-CU06: Una sede que se encuentre inactiva no podrá ser inactivada nuevamente
+            if (!sedeAInactivar.EstadoSede)
+            {
+                sedeDto.Reponse = 0;
+                sedeDto.Message = "La sede ya se encuentra inactiva y no puede ser procesada nuevamente.";
+                return sedeDto;
+            }
+
             var result = await _sedeRepository.EliminarSede(idSede);
+
             if (result)
             {
                 sedeDto.Reponse = 1;
-                sedeDto.Message = "Sede eliminada correctamente.";
+                sedeDto.Message = "Sede desactivada correctamente.";
             }
             else
             {
                 sedeDto.Reponse = 0;
-                sedeDto.Message = "Error al eliminar la Sede.";
+                sedeDto.Message = "Error al desactivar la Sede.";
             }
+            return sedeDto;
+        }
+
+        public async Task<SedeDto> ReactivarSede(int idSede)
+        {
+            var sedeDto = new SedeDto { IdSede = idSede };
+            var result = await _sedeRepository.ReactivarSede(idSede);
+
+            if (result)
+            {
+                sedeDto.Reponse = 1;
+                sedeDto.Message = "Sede reactivada correctamente.";
+            }
+            else
+            {
+                sedeDto.Reponse = 0;
+                sedeDto.Message = "No se pudo reactivar la sede.";
+            }
+
             return sedeDto;
         }
     }

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Software_SARA.Dtos;
@@ -166,6 +167,24 @@ namespace Software_SARA.Controllers
                 return View(sedeDto);
             }
 
+        }
+
+        // POST: /Sedes/ReactivarSede/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> ReactivarSede(int id)
+        {
+            try
+            {
+                var resultado = await _sedesServices.ReactivarSede(id);
+                TempData["MensajeExito"] = resultado.Message;
+                return RedirectToAction(nameof(RegistrarSede));
+            }
+            catch (Exception ex)
+            {
+                TempData["Mensaje"] = "Error al reactivar la sede: " + ex.Message;
+                return RedirectToAction(nameof(RegistrarSede));
+            }
         }
     }
 }
