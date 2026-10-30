@@ -4,6 +4,7 @@ using Software_SARA.Repositories.Models;
 using Software_SARA.Services;
 using Software_SARA.Utilities;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 namespace Software_SARA.Controllers
 {
@@ -39,7 +40,18 @@ namespace Software_SARA.Controllers
         {
             if (HttpContext.Session.GetString("UsuarioRol") != "Administrador") return RedirectToAction("Login", "Acceso");
 
-            // Validar edad (Mayor de 18)
+            // 1. Validar que el documento y el teléfono SOLO contengan números (sin letras)
+            if (!string.IsNullOrEmpty(dto.NumDoc) && !Regex.IsMatch(dto.NumDoc, @"^\d+$"))
+            {
+                ModelState.AddModelError("NumDoc", "El número de documento solo debe contener números (sin letras).");
+            }
+
+            if (!string.IsNullOrEmpty(dto.Telefono) && !Regex.IsMatch(dto.Telefono, @"^\d+$"))
+            {
+                ModelState.AddModelError("Telefono", "El teléfono solo debe contener números (sin letras).");
+            }
+
+            // 2. Validar edad (Mayor de 18)
             var hoy = DateTime.Today;
             var edad = hoy.Year - dto.FechaNaci.Year;
             if (dto.FechaNaci > DateOnly.FromDateTime(hoy.AddYears(-edad))) edad--;
@@ -48,11 +60,16 @@ namespace Software_SARA.Controllers
                 ModelState.AddModelError("FechaNaci", "El Dueño debe ser mayor de 18 años.");
             }
 
-            // Validar duplicados
-            if (_context.Usuarios.Any(u => u.NumDoc.ToString() == dto.NumDoc))
-                ModelState.AddModelError("NumDoc", $"El documento {dto.NumDoc} ya existe en SARA.");
+            // 3. Validar duplicados en la Base de Datos (Documento, Correo y Teléfono)
+            if (!string.IsNullOrEmpty(dto.NumDoc) && int.TryParse(dto.NumDoc, out int numDocParsed))
+            {
+                if (_context.Usuarios.Any(u => u.NumDoc == numDocParsed))
+                    ModelState.AddModelError("NumDoc", $"El documento {dto.NumDoc} ya existe en SARA.");
+            }
+
             if (_context.Usuarios.Any(u => u.Correo == dto.Correo))
                 ModelState.AddModelError("Correo", $"El correo {dto.Correo} ya está registrado.");
+
             if (_context.Usuarios.Any(u => u.Telefono == dto.Telefono))
                 ModelState.AddModelError("Telefono", $"El teléfono {dto.Telefono} ya está registrado.");
 
@@ -90,8 +107,14 @@ namespace Software_SARA.Controllers
 
             try
             {
-                // Aquí ya enviamos el cuarto parámetro "Dueño" para el correo
-                await _emailService.EnviarPasswordAsync(nuevoUsuario.Correo, nuevoUsuario.NomUsuario, passwordPlano, "Dueño");
+                // Envío de correo con los 5 parámetros requeridos
+                await _emailService.EnviarPasswordAsync(
+                    nuevoUsuario.Correo,
+                    nuevoUsuario.NomUsuario,
+                    passwordPlano,
+                    "Dueño",
+                    dto.NumDoc
+                );
                 TempData["MensajeExito"] = $"Dueño registrado y correo enviado a {nuevoUsuario.Correo}.";
             }
             catch (Exception ex)
@@ -116,7 +139,6 @@ namespace Software_SARA.Controllers
             var usuario = _context.Usuarios.Find(id);
             if (usuario == null) return NotFound();
 
-            // Mapeamos la entidad al DTO para la vista
             var dto = new DuenoDTO
             {
                 TipoDoc = usuario.TipDoc ? "CC" : "CE",
@@ -139,11 +161,27 @@ namespace Software_SARA.Controllers
             var usuarioDb = _context.Usuarios.AsNoTracking().FirstOrDefault(u => u.IdUsuario == id);
             if (usuarioDb == null) return NotFound();
 
+            // Validar que el documento y el teléfono SOLO contengan números en edición
+            if (!string.IsNullOrEmpty(dto.NumDoc) && !Regex.IsMatch(dto.NumDoc, @"^\d+$"))
+            {
+                ModelState.AddModelError("NumDoc", "El número de documento solo debe contener números (sin letras).");
+            }
+
+            if (!string.IsNullOrEmpty(dto.Telefono) && !Regex.IsMatch(dto.Telefono, @"^\d+$"))
+            {
+                ModelState.AddModelError("Telefono", "El teléfono solo debe contener números (sin letras).");
+            }
+
             // Validar duplicados (excluyendo el actual)
-            if (_context.Usuarios.Any(u => u.NumDoc.ToString() == dto.NumDoc && u.IdUsuario != id))
-                ModelState.AddModelError("NumDoc", "El documento ya pertenece a otro usuario.");
+            if (!string.IsNullOrEmpty(dto.NumDoc) && int.TryParse(dto.NumDoc, out int numDocParsed))
+            {
+                if (_context.Usuarios.Any(u => u.NumDoc == numDocParsed && u.IdUsuario != id))
+                    ModelState.AddModelError("NumDoc", "El documento ya pertenece a otro usuario.");
+            }
+
             if (_context.Usuarios.Any(u => u.Correo == dto.Correo && u.IdUsuario != id))
                 ModelState.AddModelError("Correo", "El correo ya pertenece a otro usuario.");
+
             if (_context.Usuarios.Any(u => u.Telefono == dto.Telefono && u.IdUsuario != id))
                 ModelState.AddModelError("Telefono", "El teléfono ya pertenece a otro usuario.");
 
