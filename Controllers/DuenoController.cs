@@ -1,9 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Software_SARA.Dtos;
 using Software_SARA.Repositories.Models;
 using Software_SARA.Services;
 using Software_SARA.Utilities;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Software_SARA.Controllers
 {
@@ -26,7 +30,6 @@ namespace Software_SARA.Controllers
             var doc = HttpContext.Session.GetString("UsuarioDoc");
             if (rol != "Administrador" && doc != "99999") return RedirectToAction("Login", "Acceso");
 
-            // Trae TODOS los dueños (activos e inactivos). Si quieres que los inactivos desaparezcan, cambia esto por: .Where(u => u.IdRol == 1 && u.EstadoUsuario == true)
             var duenos = _context.Usuarios.Where(u => u.IdRol == 1).ToList();
             return View(duenos);
         }
@@ -45,16 +48,35 @@ namespace Software_SARA.Controllers
         {
             if (HttpContext.Session.GetString("UsuarioRol") != "Administrador") return RedirectToAction("Login", "Acceso");
 
-            // Validar Edad
+            // 1. Validar que el documento y el teléfono SOLO contengan números (sin letras)
+            if (!string.IsNullOrEmpty(dto.NumDoc) && !Regex.IsMatch(dto.NumDoc, @"^\d+$"))
+            {
+                ModelState.AddModelError("NumDoc", "El número de documento solo debe contener números (sin letras).");
+            }
+
+            if (!string.IsNullOrEmpty(dto.Telefono) && !Regex.IsMatch(dto.Telefono, @"^\d+$"))
+            {
+                ModelState.AddModelError("Telefono", "El teléfono solo debe contener números (sin letras).");
+            }
+
+            // 2. Validar edad (Mayor de 18)
             var hoy = DateTime.Today;
             var edad = hoy.Year - dto.FechaNaci.Year;
             if (dto.FechaNaci > DateOnly.FromDateTime(hoy.AddYears(-edad))) edad--;
             if (edad < 18) ModelState.AddModelError("FechaNaci", "El Dueño debe ser mayor de 18 años.");
 
-            // Validar Duplicados
-            if (_context.Usuarios.Any(u => u.NumDoc.ToString() == dto.NumDoc)) ModelState.AddModelError("NumDoc", $"El documento {dto.NumDoc} ya existe.");
-            if (_context.Usuarios.Any(u => u.Correo == dto.Correo)) ModelState.AddModelError("Correo", $"El correo {dto.Correo} ya está registrado.");
-            if (_context.Usuarios.Any(u => u.Telefono == dto.Telefono)) ModelState.AddModelError("Telefono", $"El teléfono {dto.Telefono} ya está registrado.");
+            // 3. Validar duplicados en la Base de Datos (Documento, Correo y Teléfono)
+            if (!string.IsNullOrEmpty(dto.NumDoc) && int.TryParse(dto.NumDoc, out int numDocParsed))
+            {
+                if (_context.Usuarios.Any(u => u.NumDoc == numDocParsed))
+                    ModelState.AddModelError("NumDoc", $"El documento {dto.NumDoc} ya existe en SARA.");
+            }
+
+            if (_context.Usuarios.Any(u => u.Correo == dto.Correo))
+                ModelState.AddModelError("Correo", $"El correo {dto.Correo} ya está registrado.");
+
+            if (_context.Usuarios.Any(u => u.Telefono == dto.Telefono))
+                ModelState.AddModelError("Telefono", $"El teléfono {dto.Telefono} ya está registrado.");
 
             if (!ModelState.IsValid) return View(dto);
 
@@ -89,8 +111,15 @@ namespace Software_SARA.Controllers
 
             try
             {
-                await _emailService.EnviarPasswordAsync(nuevoUsuario.Correo, nuevoUsuario.NomUsuario, passwordPlano, "Dueño", nuevoUsuario.NumDoc.ToString());
-                TempData["MensajeExito"] = $"Dueño registrado. Correo enviado a {nuevoUsuario.Correo}.";
+                // Envío de correo con los parámetros requeridos
+                await _emailService.EnviarPasswordAsync(
+                    nuevoUsuario.Correo,
+                    nuevoUsuario.NomUsuario,
+                    passwordPlano,
+                    "Dueño",
+                    dto.NumDoc
+                );
+                TempData["MensajeExito"] = $"Dueño registrado y correo enviado a {nuevoUsuario.Correo}.";
             }
             catch (Exception)
             {
@@ -139,18 +168,35 @@ namespace Software_SARA.Controllers
             var usuarioDb = _context.Usuarios.AsNoTracking().FirstOrDefault(u => u.IdUsuario == id);
             if (usuarioDb == null) return NotFound();
 
+            // Validar que el documento y el teléfono SOLO contengan números en edición
+            if (!string.IsNullOrEmpty(dto.NumDoc) && !Regex.IsMatch(dto.NumDoc, @"^\d+$"))
+            {
+                ModelState.AddModelError("NumDoc", "El número de documento solo debe contener números (sin letras).");
+            }
+
+            if (!string.IsNullOrEmpty(dto.Telefono) && !Regex.IsMatch(dto.Telefono, @"^\d+$"))
+            {
+                ModelState.AddModelError("Telefono", "El teléfono solo debe contener números (sin letras).");
+            }
+
+            // Validar duplicados (excluyendo el actual)
+            if (!string.IsNullOrEmpty(dto.NumDoc) && int.TryParse(dto.NumDoc, out int numDocParsed))
+            {
+                if (_context.Usuarios.Any(u => u.NumDoc == numDocParsed && u.IdUsuario != id))
+                    ModelState.AddModelError("NumDoc", "El documento ya pertenece a otro usuario.");
+            }
+
+            if (_context.Usuarios.Any(u => u.Correo == dto.Correo && u.IdUsuario != id))
+                ModelState.AddModelError("Correo", "El correo ya pertenece a otro usuario.");
+
+            if (_context.Usuarios.Any(u => u.Telefono == dto.Telefono && u.IdUsuario != id))
+                ModelState.AddModelError("Telefono", "El teléfono ya pertenece a otro usuario.");
+
+            // Validar Edad en Edición
             var hoy = DateTime.Today;
             var edad = hoy.Year - dto.FechaNaci.Year;
             if (dto.FechaNaci > DateOnly.FromDateTime(hoy.AddYears(-edad))) edad--;
             if (edad < 18) ModelState.AddModelError("FechaNaci", "Debe ser mayor de 18 años.");
-
-            // Validar duplicados excluyendo al usuario actual
-            if (_context.Usuarios.Any(u => u.NumDoc.ToString() == dto.NumDoc && u.IdUsuario != id))
-                ModelState.AddModelError("NumDoc", "El documento ya pertenece a otro usuario.");
-            if (_context.Usuarios.Any(u => u.Correo == dto.Correo && u.IdUsuario != id))
-                ModelState.AddModelError("Correo", "El correo ya pertenece a otro usuario.");
-            if (_context.Usuarios.Any(u => u.Telefono == dto.Telefono && u.IdUsuario != id))
-                ModelState.AddModelError("Telefono", "El teléfono ya pertenece a otro usuario.");
 
             if (!ModelState.IsValid)
             {
@@ -220,7 +266,6 @@ namespace Software_SARA.Controllers
                     }
                     else
                     {
-                        // Borrar dependencias para que SQL Server no bloquee la eliminación
                         var cajas = _context.DiaCajas.Where(c => c.IdUsuario == id).ToList();
                         if (cajas.Any()) _context.DiaCajas.RemoveRange(cajas);
 

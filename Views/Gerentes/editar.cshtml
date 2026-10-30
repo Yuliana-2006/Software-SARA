@@ -18,11 +18,11 @@
         margin-bottom: 30px;
     }
 
-    .header-banner h1 {
-        font-size: 2.2rem;
-        font-weight: 900;
-        margin: 0;
-    }
+        .header-banner h1 {
+            font-size: 2.2rem;
+            font-weight: 900;
+            margin: 0;
+        }
 
     .form-container {
         display: flex;
@@ -63,11 +63,37 @@
         outline: none;
     }
 
-    .form-control-sara:focus {
-        background-color: #496849;
-        border-color: #E6E4DC;
-        box-shadow: none;
-        color: white;
+        .form-control-sara:focus {
+            background-color: #496849;
+            border-color: #E6E4DC;
+            box-shadow: none;
+            color: white;
+        }
+
+    /* 💡 Estilo para el cuadro de error principal (igual al de registrar) */
+    .alert-sara-error {
+        background-color: #f8d7da;
+        color: #842029;
+        border: 1px solid #f5c2c7;
+        border-radius: 12px;
+        padding: 12px 15px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        margin-bottom: 20px;
+    }
+
+        .alert-sara-error ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+    /* 💡 Estilo para las alertas de texto en rojo debajo de cada campo */
+    .text-danger-sara {
+        color: #ff9999;
+        font-size: 0.85rem;
+        font-weight: 700;
+        margin-top: 4px;
+        display: block;
     }
 
     .btn-container-actions {
@@ -89,11 +115,11 @@
         transition: all 0.2s ease;
     }
 
-    .btn-pill-guardar:hover {
-        background-color: #2D4A36;
-        color: white;
-        border-color: #E6E4DC;
-    }
+        .btn-pill-guardar:hover {
+            background-color: #2D4A36;
+            color: white;
+            border-color: #E6E4DC;
+        }
 
     .btn-pill-cancelar {
         background-color: #E6E4DC;
@@ -108,11 +134,11 @@
         transition: all 0.2s ease;
     }
 
-    .btn-pill-cancelar:hover {
-        background-color: #2D4A36;
-        color: white;
-        border-color: #E6E4DC;
-    }
+        .btn-pill-cancelar:hover {
+            background-color: #2D4A36;
+            color: white;
+            border-color: #E6E4DC;
+        }
 </style>
 
 <div class="header-banner">
@@ -122,17 +148,23 @@
 <div class="form-container">
     <div class="card-form-sara">
         <form asp-controller="Gerentes" asp-action="Editar" method="post">
-            
+            @Html.AntiForgeryToken()
+
             <input type="hidden" asp-for="Id" />
+
+            <!-- 💡 AVISO PRINCIPAL DE ERROR (Caja Roja) -->
+            <div asp-validation-summary="ModelOnly" class="alert-sara-error"></div>
 
             <div class="form-group-sara">
                 <label class="form-label-sara">Nombres</label>
-                <input asp-for="Nombres" class="form-control-sara" required />
+                <input asp-for="Nombres" class="form-control-sara" />
+                <span asp-validation-for="Nombres" class="text-danger-sara"></span>
             </div>
 
             <div class="form-group-sara">
                 <label class="form-label-sara">Apellidos</label>
-                <input asp-for="Apellidos" class="form-control-sara" required />
+                <input asp-for="Apellidos" class="form-control-sara" />
+                <span asp-validation-for="Apellidos" class="text-danger-sara"></span>
             </div>
 
             <div class="row">
@@ -146,34 +178,40 @@
                 </div>
                 <div class="col-md-8 form-group-sara">
                     <label class="form-label-sara">Número de Documento</label>
-                    <input asp-for="NumeroDocumento" class="form-control-sara" required />
+                    <input asp-for="NumeroDocumento" class="form-control-sara" />
+                    <span asp-validation-for="NumeroDocumento" class="text-danger-sara"></span>
                 </div>
             </div>
 
             <div class="form-group-sara">
                 <label class="form-label-sara">Correo electrónico</label>
-                <input asp-for="Correo" type="email" class="form-control-sara" required />
+                <input asp-for="Correo" class="form-control-sara" />
+                <span asp-validation-for="Correo" class="text-danger-sara"></span>
             </div>
 
             <div class="form-group-sara">
                 <label class="form-label-sara">Teléfono</label>
                 <input asp-for="Telefono" class="form-control-sara" />
+                <span asp-validation-for="Telefono" class="text-danger-sara"></span>
             </div>
 
             <div class="form-group-sara">
                 <label class="form-label-sara">Dirección</label>
                 <input asp-for="Direccion" class="form-control-sara" />
+                <span asp-validation-for="Direccion" class="text-danger-sara"></span>
             </div>
 
             <div class="form-group-sara">
                 <label class="form-label-sara">Sede</label>
                 <input asp-for="Sede" class="form-control-sara" />
+                <span asp-validation-for="Sede" class="text-danger-sara"></span>
             </div>
 
             <div class="form-group-sara">
                 <label class="form-label-sara">Fecha de Nacimiento</label>
-                <input asp-for="FechaNacimiento" type="date" class="form-control-sara" 
+                <input asp-for="FechaNacimiento" type="date" class="form-control-sara"
                        value="@(Model.FechaNacimiento?.ToString("yyyy-MM-dd"))" />
+                <span asp-validation-for="FechaNacimiento" class="text-danger-sara"></span>
             </div>
 
             <div class="btn-container-actions">
