@@ -15,7 +15,6 @@
 
     <div class="card p-4 text-center shadow-lg" style="width: 380px; background-color: #DAD7CD; border-radius: 35px; border: none;">
         
-        <!-- Logo SARA -->
         <div class="mb-2">
             <img src="~/images/logo.png?v=1" alt="Logo SARA" class="img-fluid" style="max-width: 320px; height: auto; " />
         </div>
@@ -24,11 +23,10 @@
 
         @if (ViewBag.Error != null)
         {
-            <div class="alert alert-danger py-1 small mb-3">@ViewBag.Error</div>
+            <div class="alert alert-danger py-2 small mb-3 fw-bold">@ViewBag.Error</div>
         }
 
         <form asp-action="Login" method="post">
-            <!-- Selección y número de documento -->
             <div class="mb-3 text-start">
                 <label class="form-label fw-bold small text-dark mb-1">Número de Documento</label>
                 <div class="input-group">
@@ -36,24 +34,20 @@
                         <option value="CC">CC</option>
                         <option value="CE">CE</option>
                     </select>
-                    <input asp-for="NumeroDocumento" class="form-control text-white" style="background-color: #4C7359; border-color: #4C7359; border-radius: 0 12px 12px 0;" placeholder="Documento" />
+                    <input asp-for="NumeroDocumento" class="form-control text-white" style="background-color: #4C7359; border-color: #4C7359; border-radius: 0 12px 12px 0;" placeholder="Documento" required />
                 </div>
             </div>
 
-            <!-- Contraseña -->
             <div class="mb-4 text-start">
                 <label class="form-label fw-bold small text-dark mb-1">Contraseña</label>
-                <input asp-for="Contrasena" type="password" class="form-control text-white" style="background-color: #4C7359; border-color: #4C7359; border-radius: 12px;" />
+                <input asp-for="Contrasena" type="password" class="form-control text-white" style="background-color: #4C7359; border-color: #4C7359; border-radius: 12px;" required />
             </div>
 
-            <!-- Botones de Acción -->
             <div class="d-grid gap-2 col-10 mx-auto">
                 <button type="submit" class="btn text-white fw-bold py-2" style="background-color: #2E4E3B; border-radius: 20px;">INICIAR SESIÓN</button>
                 <button type="reset" class="btn text-white fw-bold py-2" style="background-color: #2E4E3B; border-radius: 20px;">CANCELAR</button>
             </div>
         </form>
-
     </div>
-
 </body>
 </html>

@@ -33,17 +33,14 @@
             white-space: nowrap;
         }
 
-        /* Clase para colapsar la barra lateral */
         .sidebar.collapsed {
             width: 70px;
         }
 
-        /* Ocultar el texto cuando está colapsado */
         .sidebar.collapsed .sidebar-text {
             display: none;
         }
 
-        /* Centrar íconos y ajustar espacios al colapsar */
         .sidebar.collapsed .sidebar-header {
             justify-content: center !important;
             padding-left: 0 !important;
@@ -109,11 +106,13 @@
 
                 <!-- Lista de Acciones según el Rol -->
                 <div class="sidebar-menu mt-2">
-                    <!-- 1. INICIO (Bienvenida) - Visible para todos -->
+
+                    <!-- 1. INICIO (Visible para todos) -->
                     <a asp-controller="Home" asp-action="Index" title="Inicio">
                         <i class="bi bi-house-door-fill"></i> <span class="sidebar-text">Inicio</span>
                     </a>
 
+                    <!-- 2. MENÚ EXCLUSIVO DEL ADMINISTRADOR -->
                     @if (rol == "Administrador")
                     {
                         <a asp-controller="Dueno" asp-action="Index" title="Dueños">
@@ -121,6 +120,7 @@
                         </a>
                     }
 
+                    <!-- 3. MENÚ EXCLUSIVO DEL DUEÑO -->
                     @if (rol == "Dueño")
                     {
                         <a asp-controller="Sedes" asp-action="RegistrarSede" title="Sedes"><i class="bi bi-building"></i> <span class="sidebar-text">Sedes</span></a>
@@ -128,26 +128,29 @@
                         <a asp-controller="Home" asp-action="Index" title="Informes"><i class="bi bi-bar-chart-line-fill"></i> <span class="sidebar-text">Informes</span></a>
                     }
 
+                    <!-- 4. MENÚ EXCLUSIVO DEL GERENTE -->
                     @if (rol == "Gerente")
                     {
                         <a asp-controller="Personal" asp-action="Index" title="Personal"><i class="bi bi-people-fill"></i> <span class="sidebar-text">Personal</span></a>
-                        <a asp-controller="Home" asp-action="Index" title="Caja"><i class="bi bi-cash-stack"></i> <span class="sidebar-text">Caja</span></a>
+                        <a asp-controller="Caja" asp-action="Index" title="Caja"><i class="bi bi-cash-stack"></i> <span class="sidebar-text">Caja</span></a>
                         <a asp-controller="Home" asp-action="Index" title="Facturas"><i class="bi bi-receipt"></i> <span class="sidebar-text">Facturas</span></a>
                         <a asp-controller="Home" asp-action="Index" title="Pedidos"><i class="bi bi-cart-check-fill"></i> <span class="sidebar-text">Pedidos</span></a>
                         <a asp-controller="Home" asp-action="Index" title="Recordatorios"><i class="bi bi-bell-fill"></i> <span class="sidebar-text">Recordatorios</span></a>
                         <a asp-controller="Home" asp-action="Index" title="Informes"><i class="bi bi-bar-chart-line-fill"></i> <span class="sidebar-text">Informes</span></a>
                     }
 
+                    <!-- 5. MENÚ EXCLUSIVO DEL TESORERO -->
                     @if (rol == "Tesorero")
                     {
                         <a asp-controller="Home" asp-action="Index" title="Facturas"><i class="bi bi-receipt"></i> <span class="sidebar-text">Facturas</span></a>
-                        <a asp-controller="Home" asp-action="Index" title="Apertura Caja"><i class="bi bi-box-arrow-in-right"></i> <span class="sidebar-text">Apertura Caja</span></a>
+                        <a asp-controller="Caja" asp-action="Index" title="Apertura Caja"><i class="bi bi-box-arrow-in-right"></i> <span class="sidebar-text">Apertura Caja</span></a>
                         <a asp-controller="Home" asp-action="Index" title="Cierre Caja"><i class="bi bi-box-arrow-left"></i> <span class="sidebar-text">Cierre Caja</span></a>
                     }
 
+                    <!-- 6. MENÚ EXCLUSIVO DEL EMPLEADO -->
                     @if (rol == "Empleado")
                     {
-                        <a asp-controller="Home" asp-action="Index" title="Apertura Caja"><i class="bi bi-box-arrow-in-right"></i> <span class="sidebar-text">Apertura Caja</span></a>
+                        <a asp-controller="Caja" asp-action="Index" title="Apertura Caja"><i class="bi bi-box-arrow-in-right"></i> <span class="sidebar-text">Apertura Caja</span></a>
                         <a asp-controller="Home" asp-action="Index" title="Cierre Caja"><i class="bi bi-box-arrow-left"></i> <span class="sidebar-text">Cierre Caja</span></a>
                     }
                 </div>
@@ -188,7 +191,7 @@
     </div>
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- SCRIPT PARA COLAPSAR/DESPLEGAR EL MENÚ -->
     <script>
         document.addEventListener("DOMContentLoaded", function () {
@@ -208,7 +211,7 @@
         });
     </script>
 
-    <!-- ESTA ES LA LÍNEA QUE FALTABA Y SOLUCIONA EL ERROR -->
-      @await RenderSectionAsync("Scripts", required: false)
+    <!-- IMPORTANTE PARA QUE FUNCIONEN LOS SCRIPTS DE VALIDACIÓN -->
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

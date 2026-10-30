@@ -42,11 +42,13 @@
             </div>
 
             <div class="form-group">
-                <label>Departamento</label>
-                <input asp-for="DepSede"
-                       type="text"
-                       class="form-control"
-                       placeholder="Departamento" />
+                <label asp-for="DepSede" class="control-label">Departamento</label>
+
+                  <select asp-for="DepSede" asp-items="ViewBag.Departamentos" class="form-control">
+                      <option value="">-- Seleccione un departamento --</option>
+                  </select>
+
+                  <span asp-validation-for="DepSede" class="text-danger"></span>
             </div>
 
         </div>
