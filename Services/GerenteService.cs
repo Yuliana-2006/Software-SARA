@@ -22,6 +22,8 @@ namespace Software_SARA.Services
         public async Task<List<Software_SARA.Controllers.GerenteViewModel>> ObtenerGerentesAsync()
         {
             var gerentes = await _context.Usuarios.Where(u => u.IdRol == 2).ToListAsync();
+            var sedesDict = _context.Sedes.ToDictionary(s => s.IdSede, s => s.NomSede);
+
             return gerentes.Select(g => new Software_SARA.Controllers.GerenteViewModel
             {
                 Id = g.IdUsuario,
@@ -31,6 +33,8 @@ namespace Software_SARA.Services
                 Correo = g.Correo ?? string.Empty,
                 Telefono = g.Telefono ?? string.Empty,
                 Direccion = g.DirUsuario ?? string.Empty,
+                IdSede = g.IdSede,
+                Sede = sedesDict.ContainsKey(g.IdSede) ? sedesDict[g.IdSede] : string.Empty, // <--- Asigna el nombre de la sede
                 FechaNacimiento = g.FechaNaci.ToDateTime(TimeOnly.MinValue)
             }).ToList();
         }
@@ -39,6 +43,10 @@ namespace Software_SARA.Services
         {
             var g = await _context.Usuarios.FindAsync(id);
             if (g == null) return null;
+
+            // Buscamos el nombre de la sede correspondiente
+            var nombreSede = _context.Sedes.Where(s => s.IdSede == g.IdSede).Select(s => s.NomSede).FirstOrDefault() ?? string.Empty;
+
             return new Software_SARA.Controllers.GerenteViewModel
             {
                 Id = g.IdUsuario,
@@ -48,6 +56,8 @@ namespace Software_SARA.Services
                 Correo = g.Correo ?? string.Empty,
                 Telefono = g.Telefono ?? string.Empty,
                 Direccion = g.DirUsuario ?? string.Empty,
+                IdSede = g.IdSede,
+                Sede = nombreSede, // <--- Asigna el nombre de la sede para que se muestre al consultar/editar
                 FechaNacimiento = g.FechaNaci.ToDateTime(TimeOnly.MinValue)
             };
         }
@@ -61,7 +71,6 @@ namespace Software_SARA.Services
 
             var nuevoUsuario = new Usuario
             {
-                // 💡 Corregido aquí: Acepta tanto "CC" como "1"
                 TipDoc = (gerente.TipoDocumento == "CC" || gerente.TipoDocumento == "1"),
                 NumDoc = int.Parse(gerente.NumeroDocumento ?? "0"),
                 NomUsuario = gerente.Nombres ?? string.Empty,
@@ -71,7 +80,7 @@ namespace Software_SARA.Services
                 DirUsuario = gerente.Direccion ?? string.Empty,
                 FechaNaci = DateOnly.FromDateTime(gerente.FechaNacimiento ?? DateTime.Now.AddYears(-18)),
                 IdRol = 2,
-                IdSede = 1,
+                IdSede = gerente.IdSede,
                 EstadoUsuario = true
             };
 
@@ -88,7 +97,6 @@ namespace Software_SARA.Services
                 return "Error al guardar en BD: " + (ex.InnerException?.Message ?? ex.Message);
             }
 
-            // Llamada con los 5 parámetros, incluyendo el número de documento
             try
             {
                 await _emailService.EnviarPasswordAsync(
@@ -117,7 +125,6 @@ namespace Software_SARA.Services
             if (_context.Usuarios.Any(u => u.Correo == gerente.Correo && u.IdUsuario != gerente.Id))
                 return "El correo electrónico ya pertenece a otro usuario.";
 
-            // 💡 Corregido también en la actualización
             usuarioDb.TipDoc = (gerente.TipoDocumento == "CC" || gerente.TipoDocumento == "1");
             usuarioDb.NumDoc = int.Parse(gerente.NumeroDocumento ?? "0");
             usuarioDb.NomUsuario = gerente.Nombres ?? string.Empty;
@@ -125,6 +132,8 @@ namespace Software_SARA.Services
             usuarioDb.Correo = gerente.Correo ?? string.Empty;
             usuarioDb.Telefono = gerente.Telefono ?? string.Empty;
             usuarioDb.DirUsuario = gerente.Direccion ?? string.Empty;
+            usuarioDb.IdSede = gerente.IdSede;
+
             if (gerente.FechaNacimiento.HasValue)
                 usuarioDb.FechaNaci = DateOnly.FromDateTime(gerente.FechaNacimiento.Value);
 

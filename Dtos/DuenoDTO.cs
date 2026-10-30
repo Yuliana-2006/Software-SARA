@@ -33,5 +33,8 @@ namespace Software_SARA.Dtos
 
         [Required(ErrorMessage = "La fecha de nacimiento es obligatoria")]
         public DateOnly FechaNaci { get; set; }
+
+        [Required(ErrorMessage = "La sede es obligatoria")]
+        public int IdSede { get; set; }
     }
 }
