@@ -17,17 +17,15 @@ namespace Software_SARA.Controllers
             _context = context;
         }
 
-        // 1. PANTALLA PRINCIPAL DE CAJA (Las dos tarjetas)
         [HttpGet]
         public IActionResult Index()
         {
             var rol = HttpContext.Session.GetString("UsuarioRol");
             if (rol != "Gerente" && rol != "Tesorero") return RedirectToAction("Login", "Acceso");
-
             return View();
         }
 
-        // 2. FORMULARIO DE APERTURA (GET)
+        // --- CU-15 APERTURA ---
         [HttpGet]
         public IActionResult Apertura()
         {
@@ -36,10 +34,8 @@ namespace Software_SARA.Controllers
 
             int usuarioId = int.Parse(HttpContext.Session.GetString("UsuarioId") ?? "0");
             var usuarioActual = _context.Usuarios.Find(usuarioId);
-
             if (usuarioActual == null) return RedirectToAction("Login", "Acceso");
 
-            // Validar que no haya caja abierta en esta sede (buscando a los usuarios de la misma sede)
             var usuariosSede = _context.Usuarios.Where(u => u.IdSede == usuarioActual.IdSede).Select(u => u.IdUsuario).ToList();
             bool cajaAbierta = _context.DiaCajas.Any(c => usuariosSede.Contains(c.IdUsuario) && c.EstadoDia == true);
 
@@ -51,19 +47,12 @@ namespace Software_SARA.Controllers
 
             var sede = _context.Sedes.Find(usuarioActual.IdSede);
             ViewBag.NombreSede = sede?.NomSede ?? "Sede Principal";
+            ViewBag.NombreResponsable = usuarioActual.NomUsuario + " " + usuarioActual.ApelliUsuario;
+            ViewBag.UsuarioActualId = usuarioId;
 
-            // Obtener responsables (Tesoreros y Empleados activos de esa misma sede)
-            var responsables = _context.Usuarios
-                .Where(u => u.IdSede == usuarioActual.IdSede &&
-                           (u.IdRol == 3 || u.IdRol == 4) &&
-                            u.EstadoUsuario == true)
-                .ToList();
-            ViewBag.Responsables = responsables;
-
-            return View(new AperturaCajaDTO());
+            return View(new AperturaCajaDTO { IdResponsable = usuarioId });
         }
 
-        // 3. GUARDAR APERTURA (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Apertura(AperturaCajaDTO dto)
@@ -73,18 +62,17 @@ namespace Software_SARA.Controllers
 
             int usuarioId = int.Parse(HttpContext.Session.GetString("UsuarioId") ?? "0");
             var usuarioActual = _context.Usuarios.Find(usuarioId);
-
             if (usuarioActual == null) return RedirectToAction("Login", "Acceso");
 
             if (!ModelState.IsValid)
             {
                 var sede = _context.Sedes.Find(usuarioActual.IdSede);
                 ViewBag.NombreSede = sede?.NomSede ?? "Sede Principal";
-                ViewBag.Responsables = _context.Usuarios.Where(u => u.IdSede == usuarioActual.IdSede && (u.IdRol == 3 || u.IdRol == 4) && u.EstadoUsuario == true).ToList();
+                ViewBag.NombreResponsable = usuarioActual.NomUsuario + " " + usuarioActual.ApelliUsuario;
+                ViewBag.UsuarioActualId = usuarioId;
                 return View(dto);
             }
 
-            // Validar nuevamente por seguridad (Caja ya abierta)
             var usuariosSede = _context.Usuarios.Where(u => u.IdSede == usuarioActual.IdSede).Select(u => u.IdUsuario).ToList();
             bool cajaAbierta = _context.DiaCajas.Any(c => usuariosSede.Contains(c.IdUsuario) && c.EstadoDia == true);
 
@@ -94,15 +82,14 @@ namespace Software_SARA.Controllers
                 return RedirectToAction("Index");
             }
 
-            // Crear registro (Sin IdSede, porque la tabla no lo tiene)
             var nuevaCaja = new DiaCaja
             {
                 MontoInicial = dto.MontoInicial,
                 FechaHoraApertura = DateTime.Now,
                 FechaHoraCierre = DateTime.Now,
                 MontoFinal = 0,
-                EstadoDia = true, // Abierta
-                IdUsuario = dto.IdResponsable // Se lo asignamos al responsable seleccionado
+                EstadoDia = true,
+                IdUsuario = usuarioId // Forzado al usuario actual
             };
 
             try
@@ -117,6 +104,116 @@ namespace Software_SARA.Controllers
             }
 
             return RedirectToAction("Index");
+        }
+
+        // --- CU-32 CIERRE ---
+        [HttpGet]
+        public IActionResult Cierre()
+        {
+            var rol = HttpContext.Session.GetString("UsuarioRol");
+            if (rol != "Tesorero")
+            {
+                TempData["MensajeError"] = "No tiene permisos para acceder a esta sección.";
+                return RedirectToAction("Index");
+            }
+
+            int usuarioId = int.Parse(HttpContext.Session.GetString("UsuarioId") ?? "0");
+            var tesorero = _context.Usuarios.Find(usuarioId);
+            if (tesorero == null) return RedirectToAction("Login", "Acceso");
+
+            var usuariosSede = _context.Usuarios.Where(u => u.IdSede == tesorero.IdSede).Select(u => u.IdUsuario).ToList();
+            var cajaActiva = _context.DiaCajas.FirstOrDefault(c => usuariosSede.Contains(c.IdUsuario) && c.EstadoDia == true);
+
+            if (cajaActiva == null)
+            {
+                TempData["MensajeError"] = "No se puede registrar el cierre porque no existe una apertura de caja activa en esta sede.";
+                return RedirectToAction("Index");
+            }
+
+            var sede = _context.Sedes.Find(tesorero.IdSede);
+            ViewBag.NombreSede = sede?.NomSede ?? "Sede Principal";
+
+            ViewBag.NombreResponsable = tesorero.NomUsuario + " " + tesorero.ApelliUsuario;
+            ViewBag.UsuarioActualId = usuarioId;
+
+            return View(new CierreCajaDTO { IdResponsable = usuarioId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Cierre(CierreCajaDTO dto)
+        {
+            var rol = HttpContext.Session.GetString("UsuarioRol");
+            if (rol != "Tesorero") return RedirectToAction("Index");
+
+            int usuarioId = int.Parse(HttpContext.Session.GetString("UsuarioId") ?? "0");
+            var tesorero = _context.Usuarios.Find(usuarioId);
+
+            if (!ModelState.IsValid)
+            {
+                var sede = _context.Sedes.Find(tesorero.IdSede);
+                ViewBag.NombreSede = sede?.NomSede ?? "Sede Principal";
+                ViewBag.NombreResponsable = tesorero.NomUsuario + " " + tesorero.ApelliUsuario;
+                ViewBag.UsuarioActualId = usuarioId;
+                return View(dto);
+            }
+
+            var usuariosSede = _context.Usuarios.Where(u => u.IdSede == tesorero.IdSede).Select(u => u.IdUsuario).ToList();
+            var cajaActiva = _context.DiaCajas.FirstOrDefault(c => usuariosSede.Contains(c.IdUsuario) && c.EstadoDia == true);
+
+            if (cajaActiva == null)
+            {
+                TempData["MensajeError"] = "No se encontró una caja abierta para cerrar.";
+                return RedirectToAction("Index");
+            }
+
+            try
+            {
+                cajaActiva.MontoFinal = dto.MontoFinal;
+                cajaActiva.FechaHoraCierre = DateTime.Now;
+                cajaActiva.EstadoDia = false;
+
+                // ¡AQUÍ ESTÁ EL CAMBIO! Guardamos al que cierra en la nueva columna, sin borrar al que abrió.
+                cajaActiva.IdUsuarioCierre = usuarioId;
+
+                _context.DiaCajas.Update(cajaActiva);
+                _context.SaveChanges();
+
+                TempData["MensajeExito"] = "Cierre de caja registrado exitosamente.";
+            }
+            catch (Exception ex)
+            {
+                TempData["MensajeError"] = "No fue posible registrar el cierre de caja. Intente nuevamente más tarde. (" + ex.Message + ")";
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        // --- HISTORIAL ---
+        [HttpGet]
+        public IActionResult Historial()
+        {
+            var rol = HttpContext.Session.GetString("UsuarioRol");
+            if (rol != "Gerente" && rol != "Tesorero") return RedirectToAction("Login", "Acceso");
+
+            int usuarioId = int.Parse(HttpContext.Session.GetString("UsuarioId") ?? "0");
+            var usuarioActual = _context.Usuarios.Find(usuarioId);
+            if (usuarioActual == null) return RedirectToAction("Login", "Acceso");
+
+            var usuariosSede = _context.Usuarios.Where(u => u.IdSede == usuarioActual.IdSede).Select(u => u.IdUsuario).ToList();
+
+            // IMPORTANTE: Incluir las DOS navegaciones para traer los nombres
+            var historial = _context.DiaCajas
+                .Include(c => c.IdUsuarioNavigation)
+                .Include(c => c.IdUsuarioCierreNavigation) // <-- Incluimos al que cierra
+                .Where(c => usuariosSede.Contains(c.IdUsuario))
+                .OrderByDescending(c => c.FechaHoraApertura)
+                .ToList();
+
+            var sede = _context.Sedes.Find(usuarioActual.IdSede);
+            ViewBag.NombreSede = sede?.NomSede ?? "Sede Principal";
+
+            return View(historial);
         }
     }
 }
