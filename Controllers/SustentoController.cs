@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Software_SARA.Dtos;
 using Software_SARA.Repositories.Models;
+using Software_SARA.Utilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
 using System;
@@ -8,6 +9,7 @@ using System.Linq;
 
 namespace Software_SARA.Controllers
 {
+    [AuthorizeRole("Tesorero")] // <--- ATRIBUTO DE SEGURIDAD
     public class SustentoController : Controller
     {
         private readonly SarabdContext _context;
@@ -17,23 +19,15 @@ namespace Software_SARA.Controllers
             _context = context;
         }
 
-        // 1. PANTALLA INICIAL (La tarjeta)
         [HttpGet]
         public IActionResult Index()
         {
-            var rol = HttpContext.Session.GetString("UsuarioRol");
-            if (rol != "Tesorero") return RedirectToAction("Login", "Acceso");
-
             return View();
         }
 
-        // 2. CÁLCULO Y RESULTADO
         [HttpGet]
         public IActionResult Calcular()
         {
-            var rol = HttpContext.Session.GetString("UsuarioRol");
-            if (rol != "Tesorero") return RedirectToAction("Login", "Acceso");
-
             int usuarioId = int.Parse(HttpContext.Session.GetString("UsuarioId") ?? "0");
             var tesorero = _context.Usuarios.Find(usuarioId);
 
@@ -41,26 +35,22 @@ namespace Software_SARA.Controllers
 
             try
             {
-                // Obtener todos los usuarios de la misma sede para filtrar sus facturas
                 var usuariosSede = _context.Usuarios.Where(u => u.IdSede == tesorero.IdSede).Select(u => u.IdUsuario).ToList();
-
-                // Obtener la fecha de hoy (solo el día, sin la hora)
                 DateOnly hoy = DateOnly.FromDateTime(DateTime.Today);
 
-                // Consultar facturas aplicando las Reglas de Negocio (RN-1, RN-3, RN-4)
                 var facturasHoy = _context.Facturas
                     .Include(f => f.IdProveedorNavigation)
                     .Include(f => f.IdServicioNavigation)
                     .Where(f => usuariosSede.Contains(f.IdUsuario) &&
-                                f.EstadoFactura == false && // Pendientes de pago (RN-3)
-                                f.FechaVencimiento == hoy && // Vencen HOY (RN-1)
-                                f.ValorFactura > 0) // Valor válido (RN-4)
+                                f.EstadoFactura == false &&
+                                f.FechaVencimiento == hoy &&
+                                f.ValorFactura > 0)
                     .ToList();
 
                 var dto = new SustentoDiarioDTO
                 {
                     Facturas = facturasHoy,
-                    TotalSustento = facturasHoy.Sum(f => f.ValorFactura), // RN-2: Sumar los valores
+                    TotalSustento = facturasHoy.Sum(f => f.ValorFactura),
                     FechaCalculo = hoy
                 };
 
@@ -68,7 +58,6 @@ namespace Software_SARA.Controllers
             }
             catch (Exception)
             {
-                // FE-01-CU16: Error en BD
                 TempData["MensajeError"] = "No fue posible consultar las facturas para calcular el sustento mínimo. Intenta nuevamente.";
                 return RedirectToAction("Index");
             }
