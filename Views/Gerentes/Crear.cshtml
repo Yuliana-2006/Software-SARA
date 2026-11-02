@@ -63,15 +63,9 @@
         outline: none;
     }
 
-    .input-pill-sara:focus {
-        box-shadow: 0 0 0 3px rgba(230, 228, 220, 0.5);
-    }
-
-    .input-readonly {
-        background-color: #ffffff;
-        color: #25402D;
-        font-weight: 700;
-    }
+        .input-pill-sara:focus {
+            box-shadow: 0 0 0 3px rgba(230, 228, 220, 0.5);
+        }
 
     .select-doc {
         border-radius: 20px 0 0 20px;
@@ -98,10 +92,10 @@
         text-transform: uppercase;
     }
 
-    .btn-pill-registrar:hover {
-        background-color: #25402D;
-        color: #ffffff;
-    }
+        .btn-pill-registrar:hover {
+            background-color: #25402D;
+            color: #ffffff;
+        }
 
     .btn-pill-cancelar-form {
         width: 100%;
@@ -119,24 +113,31 @@
         text-transform: uppercase;
     }
 
-    .btn-pill-cancelar-form:hover {
-        background-color: #ffffff;
-        color: #25402D;
-    }
+        .btn-pill-cancelar-form:hover {
+            background-color: #ffffff;
+            color: #25402D;
+        }
 </style>
 
 <div class="form-wrapper">
     <div class="card-registrar">
 
         <div class="title-registrar">Registrar Gerente</div>
-        <div class="subtitle-registrar">Sede asignada: <strong>@Model?.Sede</strong></div>
+        <div class="subtitle-registrar">Gestión de SARA</div>
 
         <form asp-controller="Gerentes" asp-action="Crear" method="post">
+            @Html.AntiForgeryToken()
 
-            <!-- Sede de Registro -->
+            <!-- Resumen general de errores por si hay alguno global -->
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3 py-2" role="alert" style="font-size: 0.85rem; border-radius: 15px;"></div>
+
+            <!-- Sede Asignada (Desplegable dinámico) -->
             <div class="mb-3">
-                <label class="form-label-custom">Sede de Registro</label>
-                <input asp-for="Sede" class="input-pill-sara input-readonly" readonly />
+                <label class="form-label-custom">Sede Asignada</label>
+                <select asp-for="IdSede" class="input-pill-sara" asp-items="ViewBag.ListaSedes">
+                    <option value="">-- Seleccione una Sede --</option>
+                </select>
+                <span asp-validation-for="IdSede" class="text-danger fw-bold" style="font-size: 0.8rem; display: block; margin-top: 4px; padding-left: 10px; color: #ffcccc !important;"></span>
             </div>
 
             <!-- Documento: Tipo y Número -->
@@ -151,19 +152,22 @@
                         <option value="CE">CE</option>
                         <option value="PAS">PAS</option>
                     </select>
-                    <input asp-for="NumeroDocumento" class="input-pill-sara input-doc" placeholder="Número de Documento" required />
+                    <input asp-for="NumeroDocumento" class="input-pill-sara input-doc" placeholder="Número de Documento" />
                 </div>
+                <span asp-validation-for="NumeroDocumento" class="text-danger fw-bold" style="font-size: 0.8rem; display: block; margin-top: 4px; padding-left: 10px; color: #ffcccc !important;"></span>
             </div>
 
             <!-- Nombres y Apellidos -->
             <div class="row g-2 mb-3">
                 <div class="col-6">
                     <label class="form-label-custom">Nombres</label>
-                    <input asp-for="Nombres" class="input-pill-sara" placeholder="Nombres" required />
+                    <input asp-for="Nombres" class="input-pill-sara" placeholder="Nombres" />
+                    <span asp-validation-for="Nombres" class="text-danger fw-bold" style="font-size: 0.8rem; color: #ffcccc !important;"></span>
                 </div>
                 <div class="col-6">
                     <label class="form-label-custom">Apellidos</label>
-                    <input asp-for="Apellidos" class="input-pill-sara" placeholder="Apellidos" required />
+                    <input asp-for="Apellidos" class="input-pill-sara" placeholder="Apellidos" />
+                    <span asp-validation-for="Apellidos" class="text-danger fw-bold" style="font-size: 0.8rem; color: #ffcccc !important;"></span>
                 </div>
             </div>
 
@@ -171,24 +175,28 @@
             <div class="row g-2 mb-3">
                 <div class="col-6">
                     <label class="form-label-custom">Teléfono</label>
-                    <input asp-for="Telefono" class="input-pill-sara" placeholder="Teléfono" required />
+                    <input asp-for="Telefono" class="input-pill-sara" placeholder="Teléfono" />
+                    <span asp-validation-for="Telefono" class="text-danger fw-bold" style="font-size: 0.8rem; color: #ffcccc !important;"></span>
                 </div>
                 <div class="col-6">
                     <label class="form-label-custom">Correo Electrónico</label>
-                    <input asp-for="Correo" type="email" class="input-pill-sara" placeholder="Correo" required />
+                    <input asp-for="Correo" type="email" class="input-pill-sara" placeholder="Correo" />
+                    <span asp-validation-for="Correo" class="text-danger fw-bold" style="font-size: 0.8rem; color: #ffcccc !important;"></span>
                 </div>
             </div>
 
             <!-- Dirección de Vivienda -->
             <div class="mb-3">
                 <label class="form-label-custom">Dirección de Vivienda</label>
-                <input asp-for="Direccion" class="input-pill-sara" placeholder="Dirección" required />
+                <input asp-for="Direccion" class="input-pill-sara" placeholder="Dirección" />
+                <span asp-validation-for="Direccion" class="text-danger fw-bold" style="font-size: 0.8rem; color: #ffcccc !important;"></span>
             </div>
 
             <!-- Fecha de Nacimiento -->
             <div class="mb-4">
                 <label class="form-label-custom">Fecha de Nacimiento</label>
-                <input asp-for="FechaNacimiento" type="date" class="input-pill-sara" required />
+                <input asp-for="FechaNacimiento" type="date" class="input-pill-sara" />
+                <span asp-validation-for="FechaNacimiento" class="text-danger fw-bold" style="font-size: 0.8rem; color: #ffcccc !important;"></span>
             </div>
 
             <!-- Botones -->
@@ -201,3 +209,9 @@
 
     </div>
 </div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

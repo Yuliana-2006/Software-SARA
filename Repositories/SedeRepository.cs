@@ -20,7 +20,7 @@ namespace Software_SARA.Repositories
         {
             return await _context.Sedes
                 .AsNoTracking()
-                .Where(sede => sede.EstadoSede)
+                
                 .ToListAsync();
         }
 
@@ -89,6 +89,27 @@ namespace Software_SARA.Repositories
                     result = false;
                 }
             }
+            Connection.Disconnect();
+            return result;
+        }
+
+        public async Task<bool> ReactivarSede(int idSede)
+        {
+            bool result = false;
+            string SQL = "UPDATE SARABD.dbo.sede SET estado_sede = 1 WHERE id_sede = " + idSede + ";";
+
+            DBSaraUtility Connection = new DBSaraUtility();
+            Connection.Connect();
+
+            using (SqlCommand command = new SqlCommand(SQL, Connection.CONN()))
+            {
+                int comando = command.ExecuteNonQuery();
+                if (comando != 0)
+                {
+                    result = true;
+                }
+            }
+
             Connection.Disconnect();
             return result;
         }

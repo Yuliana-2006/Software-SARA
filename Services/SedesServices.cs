@@ -17,7 +17,31 @@ namespace Software_SARA.Services
         public async Task<SedeDto> CreateSede(SedeDto sedeDto)
         {
             sedeDto.EstadoSede = true; // Set EstadoSede to true (1) when creating a new Sede
+
+            // Obtenemos todas las sedes actuales para validar las reglas de negocio
+            var listaSedesExistentes = await ObtenerTodasLasSedes();
+
+            // RN02-CU03: Validar que el nombre de la sede y la dirección física sean únicos
+            bool nombreExiste = listaSedesExistentes.Any(s => s.NomSede.Trim().ToLower() == sedeDto.NomSede.Trim().ToLower());
+            bool direccionExiste = listaSedesExistentes.Any(s => s.DirSede.Trim().ToLower() == sedeDto.DirSede.Trim().ToLower());
+
+            if (nombreExiste)
+            {
+                sedeDto.Reponse = 0;
+                sedeDto.Message = "Ya existe una sede registrada con ese nombre.";
+                return sedeDto;
+            }
+
+            if (direccionExiste)
+            {
+                sedeDto.Reponse = 0;
+                sedeDto.Message = "Ya existe una sede registrada con esa dirección física.";
+                return sedeDto;
+            }
+
+            // Si pasa las validaciones de negocio, pasa a registrar en el repositorio
             var result = await _sedeRepository.CreateSede(sedeDto);
+
             if (result)
             {
                 sedeDto.Reponse = 1;
@@ -59,6 +83,29 @@ namespace Software_SARA.Services
 
         public async Task<SedeDto> EditarSede(SedeDto sedeDto)
         {
+            // Obtenemos la lista de todas las sedes para validar contra registros existentes
+            var listaSedesExistentes = await ObtenerTodasLasSedes();
+
+            // RN02-CU04: Si el Dueño cambia el nombre o la dirección, valida que no entre en conflicto con otra sede existente para ello, filtra descartando la sede que se está editando comparando el IdSede.
+            bool nombreConflicto = listaSedesExistentes.Any(s => s.IdSede != sedeDto.IdSede && s.NomSede.Trim().ToLower() == sedeDto.NomSede.Trim().ToLower());
+
+            bool direccionConflicto = listaSedesExistentes.Any(s => s.IdSede != sedeDto.IdSede && s.DirSede.Trim().ToLower() == sedeDto.DirSede.Trim().ToLower());
+
+            if (nombreConflicto)
+            {
+                sedeDto.Reponse = 0;
+                sedeDto.Message = "El nombre de la sede ya pertenece a otra sede existente.";
+                return sedeDto;
+            }
+
+            if (direccionConflicto)
+            {
+                sedeDto.Reponse = 0;
+                sedeDto.Message = "La dirección física ya pertenece a otra sede existente.";
+                return sedeDto;
+            }
+
+            // Si pasa las validaciones de negocio, pasa a actualizar en el repositorio
             var result = await _sedeRepository.EditarSede(sedeDto);
             if (result)
             {
@@ -76,17 +123,56 @@ namespace Software_SARA.Services
         public async Task<SedeDto> EliminarSede(int idSede)
         {
             var sedeDto = new SedeDto { IdSede = idSede };
+
+            var listaSedes = await ObtenerTodasLasSedes();
+            var sedeAInactivar = listaSedes.FirstOrDefault(s => s.IdSede == idSede);
+
+            if (sedeAInactivar == null)
+            {
+                sedeDto.Reponse = 0;
+                sedeDto.Message = "La sede seleccionada no se encuentra registrada en el sistema.";
+                return sedeDto;
+            }
+
+            // RN-5-CU06: Una sede que se encuentre inactiva no podrá ser inactivada nuevamente
+            if (!sedeAInactivar.EstadoSede)
+            {
+                sedeDto.Reponse = 0;
+                sedeDto.Message = "La sede ya se encuentra inactiva y no puede ser procesada nuevamente.";
+                return sedeDto;
+            }
+
             var result = await _sedeRepository.EliminarSede(idSede);
+
             if (result)
             {
                 sedeDto.Reponse = 1;
-                sedeDto.Message = "Sede eliminada correctamente.";
+                sedeDto.Message = "Sede desactivada correctamente.";
             }
             else
             {
                 sedeDto.Reponse = 0;
-                sedeDto.Message = "Error al eliminar la Sede.";
+                sedeDto.Message = "Error al desactivar la Sede.";
             }
+            return sedeDto;
+        }
+
+        public async Task<SedeDto> ReactivarSede(int idSede)
+        {
+            var sedeDto = new SedeDto { IdSede = idSede };
+            var result = await _sedeRepository.ReactivarSede(idSede);
+
+            if (result)
+            {
+                sedeDto.Reponse = 1;
+                sedeDto.Message = "Sede reactivada correctamente.";
+            }
+            else
+            {
+                sedeDto.Reponse = 0;
+                sedeDto.Message = "No se pudo reactivar la sede.";
+            }
+
             return sedeDto;
         }
     }

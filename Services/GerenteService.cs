@@ -1,8 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Software_SARA.Controllers;
-using Software_SARA.Models;
-using Software_SARA.Repositories.Models;
+﻿using Software_SARA.Repositories.Models;
 using Software_SARA.Utilities;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,172 +11,141 @@ namespace Software_SARA.Services
     public class GerenteService
     {
         private readonly SarabdContext _context;
+        private readonly EmailService _emailService;
 
-        public GerenteService(SarabdContext context)
+        public GerenteService(SarabdContext context, EmailService emailService)
         {
             _context = context;
+            _emailService = emailService;
         }
 
-        public async Task<List<GerenteViewModel>> ObtenerGerentesAsync()
+        public async Task<List<Software_SARA.Controllers.GerenteViewModel>> ObtenerGerentesAsync()
         {
-            return await _context.Usuarios
-                .Include(u => u.IdSedeNavigation)
-                .Include(u => u.IdRolNavigation)
-                .Where(u => u.IdRolNavigation != null && u.IdRolNavigation.NomRol == "Gerente")
-                .Select(u => new GerenteViewModel
-                {
-                    Id = u.IdUsuario,
-                    Nombres = u.NomUsuario,
-                    Apellidos = u.ApelliUsuario,
-                    TipoDocumento = u.TipDoc ? "1" : "0",
-                    NumeroDocumento = u.NumDoc.ToString(),
-                    Correo = u.Correo,
-                    Telefono = u.Telefono,
-                    Direccion = u.DirUsuario,
-                    Sede = u.IdSedeNavigation != null ? u.IdSedeNavigation.NomSede : "Sede Principal",
-                    FechaNacimiento = u.FechaNaci.ToDateTime(TimeOnly.MinValue)
-                })
-                .ToListAsync();
+            var gerentes = await _context.Usuarios.Where(u => u.IdRol == 2).ToListAsync();
+            var sedesDict = _context.Sedes.ToDictionary(s => s.IdSede, s => s.NomSede);
+
+            return gerentes.Select(g => new Software_SARA.Controllers.GerenteViewModel
+            {
+                Id = g.IdUsuario,
+                Nombres = g.NomUsuario ?? string.Empty,
+                Apellidos = g.ApelliUsuario ?? string.Empty,
+                NumeroDocumento = g.NumDoc.ToString(),
+                Correo = g.Correo ?? string.Empty,
+                Telefono = g.Telefono ?? string.Empty,
+                Direccion = g.DirUsuario ?? string.Empty,
+                IdSede = g.IdSede,
+                Sede = sedesDict.ContainsKey(g.IdSede) ? sedesDict[g.IdSede] : string.Empty, // <--- Asigna el nombre de la sede
+                FechaNacimiento = g.FechaNaci.ToDateTime(TimeOnly.MinValue)
+            }).ToList();
         }
 
-        public async Task<string?> ValidarYCrearGerenteAsync(GerenteViewModel gerente)
+        public async Task<Software_SARA.Controllers.GerenteViewModel?> ObtenerGerentePorIdAsync(int id)
         {
-            // Validaciones de negocio
-            if (gerente.FechaNacimiento.HasValue)
+            var g = await _context.Usuarios.FindAsync(id);
+            if (g == null) return null;
+
+            // Buscamos el nombre de la sede correspondiente
+            var nombreSede = _context.Sedes.Where(s => s.IdSede == g.IdSede).Select(s => s.NomSede).FirstOrDefault() ?? string.Empty;
+
+            return new Software_SARA.Controllers.GerenteViewModel
             {
-                var hoy = DateTime.Today;
-                var fecha = gerente.FechaNacimiento.Value;
-                int edad = hoy.Year - fecha.Year;
-                if (fecha.Date > hoy.AddYears(-edad)) edad--;
+                Id = g.IdUsuario,
+                Nombres = g.NomUsuario ?? string.Empty,
+                Apellidos = g.ApelliUsuario ?? string.Empty,
+                NumeroDocumento = g.NumDoc.ToString(),
+                Correo = g.Correo ?? string.Empty,
+                Telefono = g.Telefono ?? string.Empty,
+                Direccion = g.DirUsuario ?? string.Empty,
+                IdSede = g.IdSede,
+                Sede = nombreSede, // <--- Asigna el nombre de la sede para que se muestre al consultar/editar
+                FechaNacimiento = g.FechaNaci.ToDateTime(TimeOnly.MinValue)
+            };
+        }
 
-                if (fecha > hoy || edad < 18 || edad > 100)
-                    return "Por favor ingrese una fecha de nacimiento válida (entre 18 y 100 años).";
-            }
-            else
-            {
-                return "Por favor ingrese una fecha de nacimiento válida.";
-            }
+        public async Task<string?> ValidarYCrearGerenteAsync(Software_SARA.Controllers.GerenteViewModel gerente)
+        {
+            if (_context.Usuarios.Any(u => u.NumDoc.ToString() == gerente.NumeroDocumento))
+                return "El número de documento ya está registrado en el sistema.";
+            if (_context.Usuarios.Any(u => u.Correo == gerente.Correo))
+                return "El correo electrónico ya está registrado en el sistema.";
 
-            if (string.IsNullOrEmpty(gerente.Telefono) || gerente.Telefono.Length != 10 || !gerente.Telefono.All(char.IsDigit))
-                return "El número de teléfono debe contener exactamente 10 dígitos numéricos.";
-
-            if (string.IsNullOrEmpty(gerente.NumeroDocumento) || gerente.NumeroDocumento.Length < 8 || gerente.NumeroDocumento.Length > 10 || !gerente.NumeroDocumento.All(char.IsDigit))
-                return "El número de documento debe contener entre 8 y 10 dígitos numéricos.";
-
-            if (string.IsNullOrEmpty(gerente.Correo) || !gerente.Correo.Contains("@"))
-                return "Por favor ingrese un correo electrónico válido (debe incluir '@').";
-
-            int.TryParse(gerente.NumeroDocumento, out int numDocParsed);
-
-            bool yaExiste = await _context.Usuarios.AnyAsync(g =>
-                (!string.IsNullOrEmpty(g.NomUsuario) && g.NomUsuario.ToLower().Trim() == gerente.Nombres!.ToLower().Trim() &&
-                 !string.IsNullOrEmpty(g.ApelliUsuario) && g.ApelliUsuario.ToLower().Trim() == gerente.Apellidos!.ToLower().Trim())
-                ||
-                g.NumDoc == numDocParsed
-            );
-
-            if (yaExiste)
-                return "No se puede registrar el gerente. La persona o número de documento ya existe en el sistema.";
-
-            var rolGerente = await _context.Rols.FirstOrDefaultAsync(r => r.NomRol == "Gerente");
-            var sedeDefault = await _context.Sedes.FirstOrDefaultAsync();
-            bool tipDocBool = gerente.TipoDocumento == "1" || gerente.TipoDocumento?.ToUpper() == "CC" || gerente.TipoDocumento?.ToLower() == "true";
-
-            // Usando el PasswordHelper de Utilities para encriptar la clave por defecto "123"
-            string contraseñaEncriptada = PasswordHelper.Encriptar("123");
-            
             var nuevoUsuario = new Usuario
             {
+                TipDoc = (gerente.TipoDocumento == "CC" || gerente.TipoDocumento == "1"),
+                NumDoc = int.Parse(gerente.NumeroDocumento ?? "0"),
                 NomUsuario = gerente.Nombres ?? string.Empty,
                 ApelliUsuario = gerente.Apellidos ?? string.Empty,
-                TipDoc = tipDocBool,
-                NumDoc = numDocParsed,
                 Correo = gerente.Correo ?? string.Empty,
                 Telefono = gerente.Telefono ?? string.Empty,
                 DirUsuario = gerente.Direccion ?? string.Empty,
-                Contraseña = contraseñaEncriptada,
-                EstadoUsuario = true,
-                FechaNaci = DateOnly.FromDateTime(gerente.FechaNacimiento.Value),
-                IdRol = rolGerente != null ? rolGerente.IdRol : 2,
-                IdSede = sedeDefault != null ? sedeDefault.IdSede : 1
+                FechaNaci = DateOnly.FromDateTime(gerente.FechaNacimiento ?? DateTime.Now.AddYears(-18)),
+                IdRol = 2,
+                IdSede = gerente.IdSede,
+                EstadoUsuario = true
             };
 
-            _context.Usuarios.Add(nuevoUsuario);
-            await _context.SaveChangesAsync();
-            return null; // Éxito (sin errores)
-        }
+            string passwordPlano = PasswordHelper.GenerarPassword(8);
+            nuevoUsuario.Contraseña = PasswordHelper.Encriptar(passwordPlano);
 
-        public async Task<GerenteViewModel?> ObtenerGerentePorIdAsync(int id)
-        {
-            var u = await _context.Usuarios.FindAsync(id);
-            if (u == null) return null;
-
-            return new GerenteViewModel
+            try
             {
-                Id = u.IdUsuario,
-                Nombres = u.NomUsuario,
-                Apellidos = u.ApelliUsuario,
-                TipoDocumento = u.TipDoc ? "1" : "0",
-                NumeroDocumento = u.NumDoc.ToString(),
-                Correo = u.Correo,
-                Telefono = u.Telefono,
-                Direccion = u.DirUsuario,
-                FechaNacimiento = u.FechaNaci.ToDateTime(TimeOnly.MinValue)
-            };
+                _context.Usuarios.Add(nuevoUsuario);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                return "Error al guardar en BD: " + (ex.InnerException?.Message ?? ex.Message);
+            }
+
+            try
+            {
+                await _emailService.EnviarPasswordAsync(
+                    nuevoUsuario.Correo,
+                    nuevoUsuario.NomUsuario,
+                    passwordPlano,
+                    "Gerente",
+                    nuevoUsuario.NumDoc.ToString()
+                );
+            }
+            catch (Exception ex)
+            {
+                return $"Gerente guardado en BD, pero falló el envío del correo: {ex.Message}. Clave: {passwordPlano}";
+            }
+
+            return null;
         }
 
-        public async Task<string?> ValidarYActualizarGerenteAsync(GerenteViewModel gerente)
+        public async Task<string?> ValidarYActualizarGerenteAsync(Software_SARA.Controllers.GerenteViewModel gerente)
         {
+            var usuarioDb = await _context.Usuarios.FindAsync(gerente.Id);
+            if (usuarioDb == null) return "El gerente no existe en la base de datos.";
+
+            if (_context.Usuarios.Any(u => u.NumDoc.ToString() == gerente.NumeroDocumento && u.IdUsuario != gerente.Id))
+                return "El número de documento ya pertenece a otro usuario.";
+            if (_context.Usuarios.Any(u => u.Correo == gerente.Correo && u.IdUsuario != gerente.Id))
+                return "El correo electrónico ya pertenece a otro usuario.";
+
+            usuarioDb.TipDoc = (gerente.TipoDocumento == "CC" || gerente.TipoDocumento == "1");
+            usuarioDb.NumDoc = int.Parse(gerente.NumeroDocumento ?? "0");
+            usuarioDb.NomUsuario = gerente.Nombres ?? string.Empty;
+            usuarioDb.ApelliUsuario = gerente.Apellidos ?? string.Empty;
+            usuarioDb.Correo = gerente.Correo ?? string.Empty;
+            usuarioDb.Telefono = gerente.Telefono ?? string.Empty;
+            usuarioDb.DirUsuario = gerente.Direccion ?? string.Empty;
+            usuarioDb.IdSede = gerente.IdSede;
+
             if (gerente.FechaNacimiento.HasValue)
+                usuarioDb.FechaNaci = DateOnly.FromDateTime(gerente.FechaNacimiento.Value);
+
+            try
             {
-                var hoy = DateTime.Today;
-                var fecha = gerente.FechaNacimiento.Value;
-                int edad = hoy.Year - fecha.Year;
-                if (fecha.Date > hoy.AddYears(-edad)) edad--;
-
-                if (fecha > hoy || edad < 18 || edad > 100)
-                    return "Por favor ingrese una fecha de nacimiento válida (entre 18 y 100 años).";
+                _context.Usuarios.Update(usuarioDb);
+                await _context.SaveChangesAsync();
             }
-            else
+            catch (Exception ex)
             {
-                return "Por favor ingrese una fecha de nacimiento válida.";
+                return "Error al actualizar en BD: " + ex.Message;
             }
-
-            if (string.IsNullOrEmpty(gerente.Telefono) || gerente.Telefono.Length != 10 || !gerente.Telefono.All(char.IsDigit))
-                return "El número de teléfono debe contener exactamente 10 dígitos numéricos.";
-
-            if (string.IsNullOrEmpty(gerente.NumeroDocumento) || gerente.NumeroDocumento.Length < 8 || gerente.NumeroDocumento.Length > 10 || !gerente.NumeroDocumento.All(char.IsDigit))
-                return "El número de documento debe contener entre 8 y 10 dígitos numéricos.";
-
-            if (string.IsNullOrEmpty(gerente.Correo) || !gerente.Correo.Contains("@"))
-                return "Por favor ingrese un correo electrónico válido (debe incluir '@').";
-
-            int.TryParse(gerente.NumeroDocumento, out int numDocParsed);
-
-            bool documentoDuplicado = await _context.Usuarios.AnyAsync(g =>
-                g.IdUsuario != gerente.Id &&
-                g.NumDoc == numDocParsed
-            );
-
-            if (documentoDuplicado)
-                return "No se puede guardar los cambios. El número de documento pertenece a otro gerente.";
-
-            var existente = await _context.Usuarios.FindAsync(gerente.Id);
-            if (existente == null) return "El gerente no fue encontrado.";
-
-            bool tipDocBool = gerente.TipoDocumento == "1" || gerente.TipoDocumento?.ToUpper() == "CC" || gerente.TipoDocumento?.ToLower() == "true";
-
-            existente.NomUsuario = gerente.Nombres ?? existente.NomUsuario;
-            existente.ApelliUsuario = gerente.Apellidos ?? existente.ApelliUsuario;
-            existente.TipDoc = tipDocBool;
-            existente.NumDoc = numDocParsed;
-            existente.Correo = gerente.Correo ?? existente.Correo;
-            existente.Telefono = gerente.Telefono ?? existente.Telefono;
-            existente.DirUsuario = gerente.Direccion ?? existente.DirUsuario;
-            existente.FechaNaci = DateOnly.FromDateTime(gerente.FechaNacimiento!.Value);
-
-            _context.Usuarios.Update(existente);
-            await _context.SaveChangesAsync();
             return null;
         }
 
