@@ -39,6 +39,17 @@ namespace Software_SARA.Controllers
         {
             try
             {
+                string usuarioIdString = HttpContext.Session.GetString("UsuarioId");
+
+                if (string.IsNullOrEmpty(usuarioIdString) || !int.TryParse(usuarioIdString, out int idUsuarioSesion))
+                {
+                    // Si no hay sesión o el ID no es válido, redirigimos al Login de Acceso
+                    return RedirectToAction("Login", "Acceso");
+                }
+
+                // Asignamos el ID convertido a entero
+                facProveedorDto.IdUsuario = idUsuarioSesion;
+
                 // Validar el modelo
                 if (!ModelState.IsValid)
                 {

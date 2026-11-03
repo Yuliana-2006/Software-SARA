@@ -29,7 +29,7 @@ namespace Software_SARA.Repositories
         {
             //Consulta SQL para insertar una nueva factura de proveedor en la base de datos
             bool result = false;
-            string SQL = "INSERT INTO SARABD.dbo.factura (id_usuario, tip_factura, id_proveedor, id_servicio, valor_factura, fecha_reg_factura, fecha_vencimiento, estado_factura) VALUES ('" + facProveedorDto.IdUsuario + "', '" + facProveedorDto.TipFactura + "', '" + facProveedorDto.IdProveedor + "', '" + facProveedorDto.IdServicio + "', '" + facProveedorDto.ValorFactura + "', '" + facProveedorDto.FechaRegFactura + "', '" + facProveedorDto.FechaVencimiento + "', '" + facProveedorDto.EstadoFactura + "');";
+            string SQL = "INSERT INTO SARABD.dbo.factura (id_usuario, tip_factura, id_proveedor, id_servicio, valor_factura, fecha_reg_factura, fecha_vencimiento, estado_factura) VALUES ('" + facProveedorDto.IdUsuario + "', '"     + (facProveedorDto.TipFactura ? 1 : 0) + "', '" + facProveedorDto.IdProveedor + "', " + (facProveedorDto.IdServicio.HasValue ? "'" + facProveedorDto.IdServicio.Value + "'" : "NULL") + ", '" + facProveedorDto.ValorFactura.ToString(System.Globalization.CultureInfo.InvariantCulture) + "', '" + facProveedorDto.FechaRegFactura.ToString("yyyy-MM-dd") + "', '" + facProveedorDto.FechaVencimiento.ToString("yyyy-MM-dd") + "', '" + (facProveedorDto.EstadoFactura ? 1 : 0) + "');";
             DBSaraUtility Connection = new DBSaraUtility();
             Connection.Connect();
             using (SqlCommand command = new SqlCommand(SQL, Connection.CONN()))
@@ -73,6 +73,32 @@ namespace Software_SARA.Repositories
 
             connectionUtility.Disconnect();
             return listaProveedores;
+        }
+
+        public async Task<Boolean> EditarFacturaProveedor(FacProveedorDto facProveedorDto)
+        {
+            // Consulta SQL para actualizar los datos de la factura de proveedor existente
+            bool result = false;
+            string SQL = @"UPDATE SARABD.dbo.factura SET id_usuario = '" + facProveedorDto.IdUsuario + "', " + "id_proveedor = '" + facProveedorDto.IdProveedor + "', " + "id_servicio = " + (facProveedorDto.IdServicio.HasValue ? "'" + facProveedorDto.IdServicio.Value + "'" : "NULL") + ", " + "valor_factura = '" + facProveedorDto.ValorFactura.ToString(System.Globalization.CultureInfo.InvariantCulture) + "', " + "fecha_reg_factura = '" + facProveedorDto.FechaRegFactura.ToString("yyyy-MM-dd") + "', " + "fecha_vencimiento = '" + facProveedorDto.FechaVencimiento.ToString("yyyy-MM-dd") + "', " + "estado_factura = '" + (facProveedorDto.EstadoFactura ? 1 : 0) + "' " + "WHERE id_factura = " + facProveedorDto.IdFactura + ";";
+
+            DBSaraUtility Connection = new DBSaraUtility();
+            Connection.Connect();
+
+            using (SqlCommand command = new SqlCommand(SQL, Connection.CONN()))
+            {
+                int comando = command.ExecuteNonQuery();
+                if (comando != 0)
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = false;
+                }
+            }
+
+            Connection.Disconnect();
+            return result;
         }
     }
 }

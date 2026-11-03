@@ -17,32 +17,53 @@
     <!-- Contenedor de las Tarjetas -->
     <div class="facturas-cards-wrapper">
 
-        <!-- Tarjeta 1: Proveedor (Con acciones Consultar, Editar, Confirmar Pago) -->
-        <div class="facturas-card">
+        @foreach (var factura in Model)
+        {
+            <div class="facturas-card">
 
-            <div class="facturas-icon">
-                <i class="bi bi-truck"></i>
+                <div class="facturas-icon">
+                    <i class="bi bi-truck"></i>
+                </div>
+
+                <div class="facturas-name">
+                    <!-- Muestra el ID o un texto representativo de la factura -->
+                    <h2>Factura #@factura.IdFactura</h2>
+                </div>
+
+                <!-- Opcional: Puedes mostrar información adicional como el valor o fecha si lo deseas -->
+                <div style="color: #ECE9DF; font-size: 14px; font-weight: 600; text-align: center; margin-top: 4px;">
+                    Valor: $@factura.ValorFactura
+                </div>
+
+                <div class="facturas-buttons">
+                    <button type="button" class="facturas-button"
+                            onclick="mostrarFactura(
+                        '@factura.IdFactura' ,
+                        '@factura.IdProveedor' , <!-- O el nombre del proveedor si lo tienes en el DTO -->
+                        '$@factura.ValorFactura',
+                        '@factura.FechaVencimiento.ToString("dd/MM/yyyy")',
+                        '@(factura.EstadoFactura ? "Activa" : "Inactiva")'
+                        )">
+                        Consultar
+                    </button>
+
+                    <a asp-controller="Proveedores"
+                       asp-action="EditarFacturaProveedor"
+                       asp-route-id="@factura.IdFactura"
+                       class="facturas-button">
+                        Editar
+                    </a>
+
+                    <a asp-controller="Proveedores"
+                       asp-action="ConfirmarPago"
+                       asp-route-id="@factura.IdFactura"
+                       class="facturas-button">
+                        Confirmar Pago
+                    </a>
+                </div>
+
             </div>
-
-            <div class="facturas-name">
-                <h2>Proveedor</h2>
-            </div>
-
-            <div class="facturas-buttons">
-                <button type="button" class="facturas-button" onclick="consultarProveedor()">
-                    Consultar
-                </button>
-
-                <a href="#" class="facturas-button">
-                    Editar
-                </a>
-
-                <a href="#" class="facturas-button">
-                    Confirmar Pago
-                </a>
-            </div>
-
-        </div>
+        }
 
         <!-- Tarjeta 2: Registrar Factura (Enlace para agregar) -->
         <a asp-controller="Proveedores" asp-action="CrearFacturaProveedor" class="facturas-link">
@@ -70,6 +91,55 @@
         @TempData["MensajeExito"]
     </div>
 }
+
+<!-- =========================================
+    MODAL DE CONSULTA DE FACTURA
+    ========================================= -->
+<div id="modalFactura" class="modal-facturaproveedor">
+    <div class="consulta-card">
+
+        <!-- ENCABEZADO -->
+        <div class="consulta-header">
+            <h2>Detalles de la Factura</h2>
+            <button type="button" class="btn-cerrar-x" onclick="cerrarFactura()">&times;</button>
+        </div>
+
+        <!-- INFORMACIÓN -->
+        <div class="informacion-facturaproveedor">
+
+            <div class="dato-facturaproveedor">
+                <span>ID Factura</span>
+                <strong id="datoIdFactura"></strong>
+            </div>
+
+            <div class="dato-facturaproveedor">
+                <span>Proveedor</span>
+                <strong id="datoProveedor"></strong>
+            </div>
+
+            <div class="dato-facturaproveedor">
+                <span>Valor de la Factura</span>
+                <strong id="datoValor"></strong>
+            </div>
+
+            <div class="dato-facturaproveedor">
+                <span>Fecha de Vencimiento</span>
+                <strong id="datoVencimiento"></strong>
+            </div>
+
+            <div class="dato-facturaproveedor">
+                <span>Estado</span>
+                <strong id="datoEstado"></strong>
+            </div>
+
+        </div>
+
+        <button type="button" class="btn-cerrar-consulta" onclick="cerrarFactura()">
+            Cerrar
+        </button>
+
+    </div>
+</div>
 
 <style>
 
@@ -358,4 +428,157 @@
         }
     }
 
+    /* =========================================
+           MODAL DE CONSULTA
+           ========================================= */
+
+    .modal-facturaproveedor {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: none;
+        justify-content: center;
+        align-items: flex-start;
+        overflow-y: auto;
+        padding: 30px 20px;
+        box-sizing: border-box;
+        z-index: 1000;
+    }
+
+
+    /* =========================================
+       TARJETA DE DETALLES
+       ========================================= */
+
+    .consulta-card {
+        width: 100%;
+        max-width: 600px;
+        background-color: #2E543D;
+        border-radius: 25px;
+        padding: 25px 35px 35px 35px;
+        box-sizing: border-box;
+        position: relative;
+        margin-top: 0;
+        max-height: none;
+    }
+
+
+    /* =========================================
+       ENCABEZADO
+       ========================================= */
+
+    .consulta-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+    }
+
+        .consulta-header h2 {
+            margin: 0;
+            color: white;
+            font-size: 28px;
+            font-weight: 800;
+        }
+
+
+    /* =========================================
+       BOTÓN X
+       ========================================= */
+
+    .btn-cerrar-x {
+        width: 38px;
+        height: 38px;
+        border: none;
+        background: transparent;
+        color: #DCD9CF;
+        font-size: 34px;
+        line-height: 1;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .btn-cerrar-x:hover {
+            color: white;
+            transform: scale(1.1);
+        }
+
+
+    /* =========================================
+       CAMPOS
+       ========================================= */
+
+    .dato-facturaproveedor {
+        background-color: #5E875E;
+        border-radius: 15px;
+        padding: 10px 16px;
+        margin-bottom: 10px;
+        color: white;
+        box-sizing: border-box;
+    }
+
+        .dato-facturaproveedor span {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+
+        .dato-facturaproveedor strong {
+            display: block;
+            font-size: 17px;
+            font-weight: 800;
+            color: white;
+            word-break: break-word;
+        }
+
+
+    /* =========================================
+       BOTÓN CERRAR
+       ========================================= */
+
+    .btn-cerrar-consulta {
+        display: block;
+        width: 130px;
+        height: 42px;
+        margin: 18px auto 0 auto;
+        border: none;
+        border-radius: 25px;
+        background-color: #ECE9DF;
+        color: #2E4F3E;
+        font-size: 16px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+        .btn-cerrar-consulta:hover {
+            background-color: #ffffff;
+            transform: scale(1.03);
+        }
+
 </style>
+
+<script>
+    function mostrarFactura(id, proveedor, valor, vencimiento, estado) {
+        // Rellenamos los campos del modal con los datos recibidos
+        document.getElementById("datoIdFactura").innerText = id;
+        document.getElementById("datoProveedor").innerText = proveedor;
+        document.getElementById("datoValor").innerText = valor;
+        document.getElementById("datoVencimiento").innerText = vencimiento;
+        document.getElementById("datoEstado").innerText = estado;
+
+        // Mostramos el modal cambiando su display a flex (idéntico al de Sedes)
+        document.getElementById("modalFactura").style.display = "flex";
+    }
+
+    function cerrarFactura() {
+        // Ocultamos el modal
+        document.getElementById("modalFactura").style.display = "none";
+    }
+</script>
