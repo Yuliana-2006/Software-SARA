@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Software_SARA.Dtos;
 using Software_SARA.Repositories.Models;
 using Software_SARA.Utilities;
-using System.Security.Cryptography.Pkcs;
+
 
 namespace Software_SARA.Repositories
 {
@@ -21,8 +21,9 @@ namespace Software_SARA.Repositories
         {
             return await _context.Facturas
                 .AsNoTracking()
-
+                .Where(f => f.EstadoFactura == true) // Filtra solo las facturas activas
                 .ToListAsync();
+                
         }
 
         public async Task<Boolean> CreateFacturaProveedor(FacProveedorDto facProveedorDto)
@@ -97,6 +98,29 @@ namespace Software_SARA.Repositories
                 }
             }
 
+            Connection.Disconnect();
+            return result;
+        }
+
+        public async Task<Boolean> ConfirmarPagoFacturaProveedor(int idFactura)
+        {
+            //Consulta SQL para confirmar el pago de una factura de proveedor en la base de datos
+            bool result = false;
+            string SQL = "UPDATE SARABD.dbo.factura SET estado_factura = 0 WHERE id_factura = " + idFactura + ";";
+            DBSaraUtility Connection = new DBSaraUtility();
+            Connection.Connect();
+            using (SqlCommand command = new SqlCommand(SQL, Connection.CONN()))
+            {
+                int comando = command.ExecuteNonQuery();
+                if (comando != 0)
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = false;
+                }
+            }
             Connection.Disconnect();
             return result;
         }

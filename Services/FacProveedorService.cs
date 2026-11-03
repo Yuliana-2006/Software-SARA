@@ -54,5 +54,48 @@ namespace Software_SARA.Services
         {
             return await _facProveedorRepository.ObtenerListaProveedores();
         }
+
+        public async Task<FacProveedorDto> ObtenerFacturaProveedorPorId(int id)
+        {
+            // Obtiene la lista completa usando la función 
+            var listaFacturas = await ObtenerTodasLasFacturasProveedores();
+
+            // Retorna la factura de proveedor que coincida con el ID
+            return listaFacturas.FirstOrDefault(f => f.IdFactura == id);
+        }
+
+        public async Task<FacProveedorDto> EditarFacturaProveedor(FacProveedorDto facProveedorDto)
+        {
+            var result = await _facProveedorRepository.EditarFacturaProveedor(facProveedorDto);
+            if (result)
+            {
+                facProveedorDto.Reponse = 1;
+                facProveedorDto.Message = "Factura de proveedor editada correctamente.";
+            }
+            else
+            {
+                facProveedorDto.Reponse = 0;
+                facProveedorDto.Message = "Error al editar la Factura de proveedor.";
+            }
+            return facProveedorDto;
+        }
+
+        public async Task<FacProveedorDto> ConfirmarPagoFacturaProveedor(int idFactura)
+        {
+            var facProveedorDto = new FacProveedorDto { IdFactura = idFactura };
+            var result = await _facProveedorRepository.ConfirmarPagoFacturaProveedor(idFactura);
+
+            if (result)
+            {
+                facProveedorDto.Reponse = 1;
+                facProveedorDto.Message = "Pago de factura de proveedor confirmado correctamente.";
+            }
+            else
+            {
+                facProveedorDto.Reponse = 0;
+                facProveedorDto.Message = "Error al confirmar el pago de la factura de proveedor.";
+            }
+            return facProveedorDto;
+        }
     }
 }
