@@ -1,0 +1,282 @@
+﻿@model Software_SARA.Dtos.FacServPublicDto
+
+@{
+    ViewData["Title"] = "Editar Factura de Servicio Público";
+}
+
+<div class="registro-container">
+
+    <div class="registro-card">
+
+        <!-- TÍTULO -->
+
+        <h1>EDITAR FACTURA DE SERVICIO PÚBLICO</h1>
+
+
+        <!-- FORMULARIO -->
+
+        <form asp-controller="ServiciosPublicos"
+              asp-action="EditarFacturaServicioPublico"
+              method="post">
+
+            @Html.AntiForgeryToken()
+
+            @if (ViewData["Mensaje"] != null)
+            {
+                <div style="color: white; background-color: #8B3A3A; padding: 10px; border-radius: 10px; margin-bottom: 15px;">
+                    @ViewData["Mensaje"]
+                </div>
+            }
+
+            <input type="hidden" asp-for="IdFactura" />
+
+            <!-- FILA 1: Proveedor y Valor Factura -->
+            <div class="form-row">
+
+                <div class="form-group">
+                    <label asp-for="IdServicio" class="control-label">Servicio</label>
+                    <select asp-for="IdServicio" asp-items="ViewBag.Servicios" class="form-control">
+                        <option value="">-- Seleccione un servicio --</option>
+                    </select>
+                    <span asp-validation-for="IdServicio" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label>Valor Factura</label>
+                    <input asp-for="ValorFactura"
+                           type="number"
+                           step="0.01"
+                           class="form-control"
+                           placeholder="0.00" />
+                    <span asp-validation-for="ValorFactura" class="text-danger"></span>
+                </div>
+
+            </div>
+
+
+            <!-- FILA 2: Fecha de Registro y Fecha de Vencimiento -->
+            <div class="form-row">
+
+                <div class="form-group">
+                    <label>Fecha de Registro</label>
+                    <input asp-for="FechaRegFactura"
+                           type="date"
+                           class="form-control" />
+                    <span asp-validation-for="FechaRegFactura" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label>Fecha de Vencimiento</label>
+                    <input asp-for="FechaVencimiento"
+                           type="date"
+                           class="form-control" />
+                    <span asp-validation-for="FechaVencimiento" class="text-danger"></span>
+                </div>
+
+            </div>
+
+
+            <!-- BOTONES -->
+            <div class="buttons" style="margin-top: 20px;">
+
+                <button type="submit" class="btn-registrar">
+                    REGISTRAR
+                </button>
+
+                <a asp-controller="ServiciosPublicos"
+                   asp-action="FacturasServiciosPublicos"
+                   class="btn-cancelar">
+                    CANCELAR
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<style>
+
+    /* CONTENEDOR */
+
+    .registro-container {
+        width: 100%;
+        min-height: calc(100vh - 120px);
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding-top: 5px;
+    }
+
+
+    /* TARJETA VERDE */
+
+    .registro-card {
+        width: 100%;
+        max-width: 610px;
+        background-color: #3C694F;
+        border: 2px solid #2E4F3E;
+        border-radius: 30px;
+        padding: 25px 28px 26px 28px;
+        box-sizing: border-box;
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+    }
+
+
+        /* TÍTULO */
+
+        .registro-card h1 {
+            color: white;
+            text-align: center;
+            font-size: 27px;
+            font-weight: 800;
+            margin: 0 0 22px 0;
+        }
+
+
+    /* FILAS DE DOS COLUMNAS */
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+
+    /* GRUPOS */
+
+    .form-group {
+        margin-bottom: 12px;
+    }
+
+
+    .form-row .form-group {
+        margin-bottom: 0;
+    }
+
+
+    /* ETIQUETAS */
+
+    .form-group label {
+        display: block;
+        color: white;
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 7px;
+    }
+
+
+    /* CAMPOS */
+
+    .form-control {
+        width: 100%;
+        height: 44px;
+        border-radius: 25px;
+        border: 1px solid #D0D0D0;
+        background-color: #F8F9FA;
+        padding: 8px 14px;
+        font-size: 16px;
+        box-sizing: border-box;
+        outline: none;
+    }
+
+
+        .form-control:focus {
+            border-color: #2E4F3E;
+            box-shadow: 0 0 0 2px rgba(46, 79, 62, 0.25);
+        }
+
+
+        .form-control::placeholder {
+            color: #777;
+        }
+
+
+    /* ANCHO COMPLETO */
+
+    .full-width {
+        width: 100%;
+    }
+
+
+    /* BOTONES */
+
+    .buttons {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 9px;
+        margin-top: 3px;
+    }
+
+
+    .btn-registrar,
+    .btn-cancelar {
+        width: 85%;
+        height: 47px;
+        border-radius: 25px;
+        font-size: 16px;
+        font-weight: 800;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+
+
+    /* GUARDAR CAMBIOS */
+
+    .btn-registrar {
+        border: none;
+        background-color: #F8F9FA;
+        color: #29342E;
+        cursor: pointer;
+    }
+
+
+        .btn-registrar:hover {
+            background-color: #E5E7E8;
+        }
+
+
+    /* CANCELAR */
+
+    .btn-cancelar {
+        background-color: transparent;
+        border: 1.5px solid white;
+        color: white;
+        text-decoration: none;
+    }
+
+
+        .btn-cancelar:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+
+    /* RESPONSIVE */
+
+    @@media (max-width: 600px) {
+
+        .registro-card {
+            padding: 22px 18px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+            gap: 0;
+        }
+
+        .btn-registrar,
+        .btn-cancelar {
+            width: 100%;
+        }
+    }
+
+</style>
