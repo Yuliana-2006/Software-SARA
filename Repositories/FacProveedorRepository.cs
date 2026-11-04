@@ -22,6 +22,7 @@ namespace Software_SARA.Repositories
             return await _context.Facturas
                 .AsNoTracking()
                 .Where(f => f.EstadoFactura == true) // Filtra solo las facturas activas
+                .Where(f => f.TipFactura == true) // Filtra solo las facturas de proveedores
                 .ToListAsync();
                 
         }

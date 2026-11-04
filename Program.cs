@@ -14,6 +14,8 @@ builder.Services.AddScoped<SedeRepository>();
 builder.Services.AddScoped<SedesServices>();
 builder.Services.AddScoped<FacProveedorRepository>();
 builder.Services.AddScoped<FacProveedorService>();
+builder.Services.AddScoped<FacServPubRepository>();
+builder.Services.AddScoped<FacServPubService>();
 
 
 // ==========================================
