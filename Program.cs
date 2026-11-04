@@ -12,6 +12,9 @@ builder.Services.AddDbContext<SarabdContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<SedeRepository>();
 builder.Services.AddScoped<SedesServices>();
+builder.Services.AddScoped<FacProveedorRepository>();
+builder.Services.AddScoped<FacProveedorService>();
+
 
 // ==========================================
 // REGISTRAR EL SERVICIO DE CORREO (NUEVA LÍNEA)
@@ -43,7 +46,7 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseSession();
 app.UseAuthorization();
-
+ 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Acceso}/{action=Login}/{id?}");
