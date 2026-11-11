@@ -13,6 +13,8 @@ public partial class Factura
 
     public int? IdProveedor { get; set; }
 
+    public string? NomProveedor { get; set; }
+
     public int? IdServicio { get; set; }
 
     public decimal ValorFactura { get; set; }
