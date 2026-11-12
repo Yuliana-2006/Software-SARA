@@ -18,12 +18,43 @@ namespace Software_SARA.Repositories
 
         public async Task<List<Factura>> ObtenerTodasLasFacturasServiciosPublicos()
         {
-            return await _context.Facturas
-                .AsNoTracking()
-                .Where(f => f.EstadoFactura == true) // Filtra solo las facturas activas
-                .Where(f => f.TipFactura == false) // Filtra solo las facturas de servicios públicos
-                .ToListAsync();
+            var listaFacturas = new List<Factura>();
+            string sql = @"SELECT f.id_factura, f.id_usuario, f.tip_factura, f.id_proveedor, 
+                             s.nom_servicio, f.id_servicio, f.valor_factura, 
+                             f.fecha_reg_factura, f.fecha_vencimiento, f.estado_factura 
+                         FROM SARABD.dbo.factura f
+                         LEFT JOIN SARABD.dbo.servicio s ON f.id_servicio = s.id_servicio
+                         WHERE f.estado_factura = 1 AND f.tip_factura = 0;";
 
+            DBSaraUtility connectionUtility = new DBSaraUtility();
+            connectionUtility.Connect();
+
+            using (SqlCommand command = new SqlCommand(sql, connectionUtility.CONN()))
+            {
+                using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        var factura = new Factura
+                        {
+                            IdFactura = reader["id_factura"] != DBNull.Value ? Convert.ToInt32(reader["id_factura"]) : 0,
+                            IdUsuario = reader["id_usuario"] != DBNull.Value ? Convert.ToInt32(reader["id_usuario"]) : 0,
+                            TipFactura = reader["tip_factura"] != DBNull.Value && Convert.ToBoolean(reader["tip_factura"]),
+                            IdProveedor = reader["id_proveedor"] != DBNull.Value ? Convert.ToInt32(reader["id_proveedor"]) : 0,
+                            NomProveedor = reader["nom_servicio"] != DBNull.Value ? reader["nom_servicio"].ToString() : "Sin servicio público",
+                            IdServicio = reader["id_servicio"] != DBNull.Value ? Convert.ToInt32(reader["id_servicio"]) : 0,
+                            ValorFactura = reader["valor_factura"] != DBNull.Value ? Convert.ToDecimal(reader["valor_factura"]) : 0,
+                            FechaRegFactura = reader["fecha_reg_factura"] != DBNull.Value ? DateOnly.FromDateTime(Convert.ToDateTime(reader["fecha_reg_factura"])) : default,
+                            FechaVencimiento = reader["fecha_vencimiento"] != DBNull.Value ? DateOnly.FromDateTime(Convert.ToDateTime(reader["fecha_vencimiento"])) : default,
+                            EstadoFactura = reader["estado_factura"] != DBNull.Value && Convert.ToBoolean(reader["estado_factura"])
+                        };
+                        listaFacturas.Add(factura);
+                    }
+                }
+            }
+
+            connectionUtility.Disconnect();
+            return listaFacturas;
         }
 
         public async Task<Boolean> CreateFacturaServicioPublico(FacServPublicDto facServPublicDto)

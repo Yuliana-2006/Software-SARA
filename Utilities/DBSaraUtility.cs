@@ -4,7 +4,7 @@ namespace Software_SARA.Utilities
 {
     public class DBSaraUtility
     {
-        static string SERVER = "GABRIELA";
+        static string SERVER = "LAPTOP-OG1EFTPF";
 
         static string DB_NAME = "SARABD";
 
