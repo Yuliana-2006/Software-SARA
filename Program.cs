@@ -10,6 +10,7 @@ builder.Services.AddControllersWithViews();
 // Usar el contexto del profesor
 builder.Services.AddDbContext<SarabdContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 builder.Services.AddScoped<SedeRepository>();
 builder.Services.AddScoped<SedesServices>();
 builder.Services.AddScoped<FacProveedorRepository>();
@@ -17,16 +18,28 @@ builder.Services.AddScoped<FacProveedorService>();
 builder.Services.AddScoped<FacServPubRepository>();
 builder.Services.AddScoped<FacServPubService>();
 
+// ==========================================
+// REGISTRAR REPOSITORIO Y SERVICIO DE RECORDATORIOS DE PEDIDOS
+// ==========================================
+builder.Services.AddScoped<RecordatorioPedidoRepository>();
+builder.Services.AddScoped<RecordatorioPedidoService>();
 
 // ==========================================
-// REGISTRAR EL SERVICIO DE CORREO (NUEVA LÍNEA)
+// REGISTRAR EL SERVICIO DE CORREO
 // ==========================================
 builder.Services.AddScoped<Software_SARA.Services.EmailService>();
 
 // ==========================================
-// REGISTRAR EL SERVICIO DE GERENTES (NUEVA LÍNEA)
+// REGISTRAR EL SERVICIO DE GERENTES
 // ==========================================
 builder.Services.AddScoped<Software_SARA.Services.GerenteService>();
+
+
+
+// ==========================================
+// REGISTRAR HTTP CONTEXT ACCESSOR
+// ==========================================
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddSession(options =>
 {
@@ -45,10 +58,12 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
 app.UseRouting();
+
 app.UseSession();
 app.UseAuthorization();
- 
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Acceso}/{action=Login}/{id?}");
