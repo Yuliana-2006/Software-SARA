@@ -15,7 +15,7 @@ namespace Software_SARA.Services
 
         public async Task<FacServPublicDto> CreateFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
-            facServPublicDto.EstadoFactura = true; // Set EstadoFactura to true (1) when creating a new FacturaServicioPublico
+            facServPublicDto.EstadoFactura = true;
             var result = await _facServPubRepository.CreateFacturaServicioPublico(facServPublicDto);
 
             if (result)
@@ -49,7 +49,21 @@ namespace Software_SARA.Services
             }).ToList();
         }
 
-        // Método que invoca la consulta SQL plana desde el repositorio
+        public async Task<List<FacServPublicDto>> ObtenerVencimientosProximos()
+        {
+            var fechaActual = DateOnly.FromDateTime(DateTime.Now);
+            var fechaLimite = fechaActual.AddDays(10);
+
+            var todasLasFacturas = await ObtenerTodasLasFacturasServiciosPublicos();
+
+            var vencimientosProximos = todasLasFacturas
+                .Where(f => f.FechaVencimiento >= fechaActual
+                         && f.FechaVencimiento <= fechaLimite)
+                .ToList();
+
+            return vencimientosProximos;
+        }
+
         public async Task<List<SelectListItem>> ObtenerServiciosPublicos()
         {
             return await _facServPubRepository.ObtenerListaServiciosPublicos();
@@ -57,10 +71,7 @@ namespace Software_SARA.Services
 
         public async Task<FacServPublicDto> ObtenerFacturaServicioPublicoPorId(int id)
         {
-            // Obtiene la lista completa usando la función 
             var listaFacturas = await ObtenerTodasLasFacturasServiciosPublicos();
-
-            // Retorna la factura de servicio público que coincida con el ID
             return listaFacturas.FirstOrDefault(f => f.IdFactura == id);
         }
 

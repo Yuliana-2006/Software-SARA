@@ -30,7 +30,6 @@ namespace Software_SARA.Controllers
             return View(facServPublicDto);
         }
 
-
         // POST: /Servicios/CrearFacturaServicioPublico
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -70,7 +69,6 @@ namespace Software_SARA.Controllers
                 ViewData["Mensaje"] = "Error al crear factura de servicio público: " + ex.Message;
                 return View(facServPublicDto);
             }
-
         }
 
         // GET: /Servicios/EditarFacturaServicioPublico
@@ -128,7 +126,6 @@ namespace Software_SARA.Controllers
                 ViewData["Mensaje"] = "Error al editar factura de servicio público: " + ex.Message;
                 return View(facServPublicDto);
             }
-
         }
 
         // GET: /Servicios/ConfirmarPagoFacturaServicioPublico
@@ -162,7 +159,23 @@ namespace Software_SARA.Controllers
                 ViewData["Mensaje"] = "Error al confirmar pago de factura de servicio público: " + ex.Message;
                 return View(facServPublicDto);
             }
+        }
 
+        // GET: /factura/servicios-publicos/vencimiento-proximos (CU-24)
+        [HttpGet("factura/servicios-publicos/vencimiento-proximos")]
+        public async Task<ActionResult> VencimientoProximos()
+        {
+            try
+            {
+                var facturasProximas = await _facServPubService.ObtenerVencimientosProximos();
+                return View(facturasProximas);
+            }
+            catch (Exception ex)
+            {
+                // Manejo de excepción para cumplir con FE02-CU25 (Error de carga de datos)
+                ViewData["Mensaje"] = "No fue posible cargar la lista de vencimientos próximos. Intente nuevamente más tarde.";
+                return View(new List<FacServPublicDto>());
+            }
         }
     }
 }

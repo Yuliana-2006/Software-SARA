@@ -1,5 +1,6 @@
 ﻿using Software_SARA.Repositories.Models;
 using Software_SARA.Utilities;
+using Software_SARA.Dtos; // <--- Importamos la capa DTO
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -19,12 +20,12 @@ namespace Software_SARA.Services
             _emailService = emailService;
         }
 
-        public async Task<List<Software_SARA.Controllers.GerenteViewModel>> ObtenerGerentesAsync()
+        public async Task<List<GerenteDto>> ObtenerGerentesAsync()
         {
             var gerentes = await _context.Usuarios.Where(u => u.IdRol == 2).ToListAsync();
             var sedesDict = _context.Sedes.ToDictionary(s => s.IdSede, s => s.NomSede);
 
-            return gerentes.Select(g => new Software_SARA.Controllers.GerenteViewModel
+            return gerentes.Select(g => new GerenteDto
             {
                 Id = g.IdUsuario,
                 Nombres = g.NomUsuario ?? string.Empty,
@@ -34,20 +35,19 @@ namespace Software_SARA.Services
                 Telefono = g.Telefono ?? string.Empty,
                 Direccion = g.DirUsuario ?? string.Empty,
                 IdSede = g.IdSede,
-                Sede = sedesDict.ContainsKey(g.IdSede) ? sedesDict[g.IdSede] : string.Empty, // <--- Asigna el nombre de la sede
+                Sede = sedesDict.ContainsKey(g.IdSede) ? sedesDict[g.IdSede] : string.Empty,
                 FechaNacimiento = g.FechaNaci.ToDateTime(TimeOnly.MinValue)
             }).ToList();
         }
 
-        public async Task<Software_SARA.Controllers.GerenteViewModel?> ObtenerGerentePorIdAsync(int id)
+        public async Task<GerenteDto?> ObtenerGerentePorIdAsync(int id)
         {
             var g = await _context.Usuarios.FindAsync(id);
             if (g == null) return null;
 
-            // Buscamos el nombre de la sede correspondiente
             var nombreSede = _context.Sedes.Where(s => s.IdSede == g.IdSede).Select(s => s.NomSede).FirstOrDefault() ?? string.Empty;
 
-            return new Software_SARA.Controllers.GerenteViewModel
+            return new GerenteDto
             {
                 Id = g.IdUsuario,
                 Nombres = g.NomUsuario ?? string.Empty,
@@ -57,12 +57,12 @@ namespace Software_SARA.Services
                 Telefono = g.Telefono ?? string.Empty,
                 Direccion = g.DirUsuario ?? string.Empty,
                 IdSede = g.IdSede,
-                Sede = nombreSede, // <--- Asigna el nombre de la sede para que se muestre al consultar/editar
+                Sede = nombreSede,
                 FechaNacimiento = g.FechaNaci.ToDateTime(TimeOnly.MinValue)
             };
         }
 
-        public async Task<string?> ValidarYCrearGerenteAsync(Software_SARA.Controllers.GerenteViewModel gerente)
+        public async Task<string?> ValidarYCrearGerenteAsync(GerenteDto gerente)
         {
             if (_context.Usuarios.Any(u => u.NumDoc.ToString() == gerente.NumeroDocumento))
                 return "El número de documento ya está registrado en el sistema.";
@@ -115,7 +115,7 @@ namespace Software_SARA.Services
             return null;
         }
 
-        public async Task<string?> ValidarYActualizarGerenteAsync(Software_SARA.Controllers.GerenteViewModel gerente)
+        public async Task<string?> ValidarYActualizarGerenteAsync(GerenteDto gerente)
         {
             var usuarioDb = await _context.Usuarios.FindAsync(gerente.Id);
             if (usuarioDb == null) return "El gerente no existe en la base de datos.";
