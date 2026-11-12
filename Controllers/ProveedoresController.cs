@@ -61,6 +61,13 @@ namespace Software_SARA.Controllers
                 }
 
                 var resultado = await _facProveedorServices.CreateFacturaProveedor(facProveedorDto);
+                if (resultado.Reponse == 0)
+                {
+                    ViewBag.Proveedores = await _facProveedorServices.ObtenerProveedores();
+                    ViewData["Mensaje"] = resultado.Message;
+                    return View(facProveedorDto); 
+                }
+
                 TempData["MensajeExito"] = resultado.Message;
                 return RedirectToAction(nameof(FacturasProveedores));
             }
@@ -119,6 +126,13 @@ namespace Software_SARA.Controllers
                 }
 
                 var resultado = await _facProveedorServices.EditarFacturaProveedor(facProveedorDto);
+                if (resultado.Reponse == 0)
+                {
+                    ViewBag.Proveedores = await _facProveedorServices.ObtenerProveedores();
+                    ViewData["Mensaje"] = resultado.Message;
+                    return View(facProveedorDto);
+                }
+
                 TempData["MensajeExito"] = resultado.Message;
                 return RedirectToAction(nameof(FacturasProveedores));
             }

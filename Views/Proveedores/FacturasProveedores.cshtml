@@ -26,11 +26,11 @@
                 </div>
 
                 <div class="facturas-name">
-                    <!-- Muestra el ID o un texto representativo de la factura -->
-                    <h2>Factura #@factura.IdFactura</h2>
+                    
+                    <h2>Factura @factura.NomProveedor</h2>
                 </div>
 
-                <!-- Opcional: Puedes mostrar información adicional como el valor o fecha si lo deseas -->
+               
                 <div style="color: #ECE9DF; font-size: 14px; font-weight: 600; text-align: center; margin-top: 4px;">
                     Valor: $@factura.ValorFactura
                 </div>
@@ -39,7 +39,7 @@
                     <button type="button" class="facturas-button"
                             onclick="mostrarFactura(
                         '@factura.IdFactura' ,
-                        '@factura.IdProveedor' , <!-- O el nombre del proveedor si lo tienes en el DTO -->
+                        '@factura.NomProveedor',
                         '$@factura.ValorFactura',
                         '@factura.FechaVencimiento.ToString("dd/MM/yyyy")',
                         '@(factura.EstadoFactura ? "Activa" : "Inactiva")'
