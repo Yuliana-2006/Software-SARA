@@ -5,41 +5,67 @@
 }
 
 <div class="facturas-container">
-
-    <!-- Encabezado Principal de la Vista -->
     <div class="facturas-header-banner">
         <h2>Facturas Servicios Públicos</h2>
-        <a href="#" class="btn-vencimientos">
+        <a asp-controller="ServiciosPublicos" asp-action="VencimientoProximos" class="btn-vencimientos">
             Vencimientos próximos
         </a>
     </div>
 
-    <!-- Contenedor de las Tarjetas -->
     <div class="facturas-cards-wrapper">
-
         @foreach (var factura in Model)
         {
-            <div class="facturas-card">
+            string nombreServicio = "SERVICIO";
+            string iconoClase = "bi-file-earmark-text";
+            int idServ = factura.IdServicio ?? 0;
 
+            switch (idServ)
+            {
+                case 1:
+                case 10: // <-- Agregado el ID 10 para que cargue la LUZ y su icono correctamente
+                    nombreServicio = "LUZ";
+                    iconoClase = "bi-lightning-fill";
+                    break;
+                case 2:
+                case 9:
+                    nombreServicio = "AGUA";
+                    iconoClase = "bi-droplet-fill";
+                    break;
+                case 3:
+                case 11:
+                    nombreServicio = "INTERNET";
+                    iconoClase = "bi-wifi";
+                    break;
+                case 4:
+                case 12:
+                    nombreServicio = "ARRIENDO";
+                    iconoClase = "bi-house-fill";
+                    break;
+                default:
+                    nombreServicio = $"SERVICIO #{idServ}";
+                    iconoClase = "bi-file-earmark-text";
+                    break;
+            }
+
+            <div class="facturas-card">
                 <div class="facturas-icon">
-                    <i class="bi bi-file-earmark-text"></i>
+                    <i class="bi @iconoClase"></i>
                 </div>
 
                 <div class="facturas-name">
-                    <!-- Muestra el ID o un texto representativo de la factura -->
-                    <h2>Factura #@factura.IdFactura</h2>
+                    <h2>@nombreServicio</h2>
+                    <div class="id-factura-card-text">Factura #@factura.IdFactura</div>
                 </div>
 
-                <!-- Opcional: Puedes mostrar información adicional como el valor o fecha si lo deseas -->
-                <div style="color: #ECE9DF; font-size: 14px; font-weight: 600; text-align: center; margin-top: 4px;">
+                <div class="valor-factura-card-text">
                     Valor: $@factura.ValorFactura
                 </div>
 
                 <div class="facturas-buttons">
                     <button type="button" class="facturas-button"
                             onclick="mostrarFactura(
-                        '@factura.IdFactura' ,
-                        '@factura.IdServicio' , 
+                        '@factura.IdFactura',
+                        '@nombreServicio',
                         '$@factura.ValorFactura',
                         '@factura.FechaVencimiento.ToString("dd/MM/yyyy")',
                         '@(factura.EstadoFactura ? "Activa" : "Inactiva")'
@@ -61,28 +87,21 @@
                         Confirmar Pago
                     </a>
                 </div>
-
             </div>
         }
 
-        <!-- Tarjeta 2: Registrar Factura (Enlace para agregar) -->
         <a asp-controller="ServiciosPublicos" asp-action="CrearFacturaServicioPublico" class="facturas-link">
             <div class="facturas-card agregar-card">
-
                 <div class="facturas-plus">
                     <i class="bi bi-plus-lg"></i>
                 </div>
-
                 <div class="facturas-title">
                     Registrar<br />
                     Factura
                 </div>
-
             </div>
         </a>
-
     </div>
-
 </div>
 
 @if (TempData["MensajeExito"] != null)
@@ -92,61 +111,39 @@
     </div>
 }
 
-<!-- =========================================
-    MODAL DE CONSULTA DE FACTURA
-    ========================================= -->
 <div id="modalFactura" class="modal-facturaproveedor">
     <div class="consulta-card">
-
-        <!-- ENCABEZADO -->
         <div class="consulta-header">
             <h2>Detalles de la Factura</h2>
             <button type="button" class="btn-cerrar-x" onclick="cerrarFactura()">&times;</button>
         </div>
-
-        <!-- INFORMACIÓN -->
         <div class="informacion-facturaproveedor">
-
             <div class="dato-facturaproveedor">
                 <span>Factura Número</span>
                 <strong id="datoIdFactura"></strong>
             </div>
-
             <div class="dato-facturaproveedor">
                 <span>Servicio</span>
                 <strong id="datoServicio"></strong>
             </div>
-
             <div class="dato-facturaproveedor">
                 <span>Valor de la Factura</span>
                 <strong id="datoValor"></strong>
             </div>
-
             <div class="dato-facturaproveedor">
                 <span>Fecha de Vencimiento</span>
                 <strong id="datoVencimiento"></strong>
             </div>
-
             <div class="dato-facturaproveedor">
                 <span>Estado</span>
                 <strong id="datoEstado"></strong>
             </div>
-
         </div>
-
-        <button type="button" class="btn-cerrar-consulta" onclick="cerrarFactura()">
-            Cerrar
-        </button>
-
+        <button type="button" class="btn-cerrar-consulta" onclick="cerrarFactura()">Cerrar</button>
     </div>
 </div>
 
 <style>
-
-    /* =========================================
-           CONTENEDOR GENERAL
-           ========================================= */
-
     .facturas-container {
         width: 100%;
         min-height: calc(100vh - 120px);
@@ -156,10 +153,6 @@
         padding-top: 10px;
         box-sizing: border-box;
     }
-
-    /* =========================================
-           ENCABEZADO Y BOTÓN VENCIMIENTOS
-           ========================================= */
 
     .facturas-header-banner {
         width: 100%;
@@ -197,10 +190,6 @@
             text-decoration: none;
         }
 
-    /* =========================================
-           WRAPPER DE TARJETAS
-           ========================================= */
-
     .facturas-cards-wrapper {
         width: 100%;
         display: flex;
@@ -212,14 +201,10 @@
         box-sizing: border-box;
     }
 
-    /* =========================================
-           TARJETA GENERAL
-           ========================================= */
-
     .facturas-card {
-        width: 280px;
-        height: 410px;
-        flex: 0 0 280px;
+        width: 290px;
+        height: 420px;
+        flex: 0 0 290px;
         background-color: #5B805E;
         border: 7px solid #2E4F3E;
         border-radius: 35px;
@@ -231,15 +216,11 @@
         box-shadow: 0 5px 10px rgba(0, 0, 0, 0.18);
     }
 
-    /* =========================================
-           ICONO CIRCULAR (CAMIÓN)
-           ========================================= */
-
     .facturas-icon {
-        width: 95px;
-        height: 95px;
-        min-width: 95px;
-        min-height: 95px;
+        width: 100px;
+        height: 100px;
+        min-width: 100px;
+        min-height: 100px;
         margin-top: 20px;
         background-color: #ECE9DF;
         border: 6px solid #2E4F3E;
@@ -256,29 +237,33 @@
             line-height: 1;
         }
 
-    /* =========================================
-           NOMBRE DE LA TARJETA
-           ========================================= */
-
     .facturas-name {
         width: 90%;
         margin-top: 8px;
-        color: #DAD7CD;
-        font-size: 26px;
-        line-height: 1.1;
-        font-weight: 800;
         text-align: center;
     }
 
         .facturas-name h2 {
             margin: 0;
-            font-size: 26px;
+            font-size: 24px;
             color: #ECE9DF;
+            font-weight: 800;
         }
 
-    /* =========================================
-           BOTONES INTERNOS DE LA TARJETA
-           ========================================= */
+    .id-factura-card-text {
+        font-size: 18px;
+        font-weight: 800;
+        color: #ECE9DF;
+        margin-top: 4px;
+    }
+
+    .valor-factura-card-text {
+        color: #ECE9DF;
+        font-size: 17px;
+        font-weight: 800;
+        text-align: center;
+        margin-top: 4px;
+    }
 
     .facturas-buttons {
         width: 100%;
@@ -286,11 +271,11 @@
         flex-direction: column;
         align-items: center;
         gap: 8px;
-        margin-top: 12px;
+        margin-top: 10px;
     }
 
     .facturas-button {
-        width: 150px;
+        width: 160px;
         height: 38px;
         padding: 0;
         border-radius: 25px;
@@ -298,7 +283,7 @@
         background-color: #ECE9DF;
         color: #355B43;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 800;
         line-height: 1;
         cursor: pointer;
@@ -315,32 +300,19 @@
             text-decoration: none;
         }
 
-    /* =========================================
-           ENLACE DE AGREGAR (REGISTRAR FACTURA)
-           ========================================= */
-
     .facturas-link {
         display: block;
-        width: 280px;
-        height: 410px;
-        flex: 0 0 280px;
+        width: 290px;
+        height: 420px;
+        flex: 0 0 290px;
         text-decoration: none;
         color: inherit;
     }
-
-        .facturas-link:hover {
-            text-decoration: none;
-            color: inherit;
-        }
 
     .agregar-card:hover {
         transform: translateY(-2px);
         transition: transform 0.2s ease;
     }
-
-    /* =========================================
-           CÍRCULO DEL SIGNO +
-           ========================================= */
 
     .facturas-plus {
         width: 105px;
@@ -359,10 +331,6 @@
         font-size: 58px;
     }
 
-    /* =========================================
-           TEXTO REGISTRAR FACTURA
-           ========================================= */
-
     .facturas-title {
         width: 100%;
         margin-top: 35px;
@@ -372,10 +340,6 @@
         font-weight: 800;
         text-align: center;
     }
-
-    /* =========================================
-           MENSAJE DE ÉXITO
-           ========================================= */
 
     .mensaje-exito {
         position: fixed;
@@ -389,52 +353,7 @@
         font-weight: 800;
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25);
         z-index: 9999;
-        animation: mostrarMensaje 4s ease forwards;
     }
-
-    @@keyframes mostrarMensaje {
-        0% {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        10% {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        85% {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        100% {
-            opacity: 0;
-            transform: translateY(20px);
-            visibility: hidden;
-        }
-    }
-
-    /* =========================================
-           RESPONSIVE
-           ========================================= */
-
-    @@media (max-width: 750px) {
-        .facturas-cards-wrapper {
-            gap: 25px;
-        }
-
-        .facturas-header-banner {
-            flex-direction: column;
-            gap: 15px;
-            align-items: flex-start;
-            padding: 0 20px;
-        }
-    }
-
-    /* =========================================
-               MODAL DE CONSULTA
-               ========================================= */
 
     .modal-facturaproveedor {
         position: fixed;
@@ -452,11 +371,6 @@
         z-index: 1000;
     }
 
-
-    /* =========================================
-           TARJETA DE DETALLES
-           ========================================= */
-
     .consulta-card {
         width: 100%;
         max-width: 600px;
@@ -465,14 +379,7 @@
         padding: 25px 35px 35px 35px;
         box-sizing: border-box;
         position: relative;
-        margin-top: 0;
-        max-height: none;
     }
-
-
-    /* =========================================
-           ENCABEZADO
-           ========================================= */
 
     .consulta-header {
         display: flex;
@@ -488,11 +395,6 @@
             font-weight: 800;
         }
 
-
-    /* =========================================
-           BOTÓN X
-           ========================================= */
-
     .btn-cerrar-x {
         width: 38px;
         height: 38px;
@@ -506,16 +408,6 @@
         align-items: center;
         justify-content: center;
     }
-
-        .btn-cerrar-x:hover {
-            color: white;
-            transform: scale(1.1);
-        }
-
-
-    /* =========================================
-           CAMPOS
-           ========================================= */
 
     .dato-facturaproveedor {
         background-color: #5E875E;
@@ -541,11 +433,6 @@
             word-break: break-word;
         }
 
-
-    /* =========================================
-           BOTÓN CERRAR
-           ========================================= */
-
     .btn-cerrar-consulta {
         display: block;
         width: 130px;
@@ -560,29 +447,18 @@
         cursor: pointer;
         transition: 0.2s;
     }
-
-        .btn-cerrar-consulta:hover {
-            background-color: #ffffff;
-            transform: scale(1.03);
-        }
-
 </style>
 
 <script>
     function mostrarFactura(id, proveedor, valor, vencimiento, estado) {
-        // Rellenamos los campos del modal con los datos recibidos
         document.getElementById("datoIdFactura").innerText = id;
         document.getElementById("datoServicio").innerText = proveedor;
         document.getElementById("datoValor").innerText = valor;
         document.getElementById("datoVencimiento").innerText = vencimiento;
         document.getElementById("datoEstado").innerText = estado;
-
-        // Mostramos el modal cambiando su display a flex (idéntico al de Sedes)
         document.getElementById("modalFactura").style.display = "flex";
     }
-
     function cerrarFactura() {
-        // Ocultamos el modal
         document.getElementById("modalFactura").style.display = "none";
     }
 </script>
