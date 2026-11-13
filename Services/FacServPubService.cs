@@ -16,6 +16,40 @@ namespace Software_SARA.Services
         public async Task<FacServPublicDto> CreateFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
             facServPublicDto.EstadoFactura = true;
+
+            // Validación de servicio seleccionado
+            if (facServPublicDto.IdServicio == null || facServPublicDto.IdServicio <= 0)
+            {
+                facServPublicDto.Reponse = 0;
+                facServPublicDto.Message = "Debe seleccionar un servicio público.";
+                return facServPublicDto;
+            }
+
+            // Validación de valor superior o igual a $20,000 pesos colombianos
+            if (facServPublicDto.ValorFactura < 20000)
+            {
+                facServPublicDto.Reponse = 0;
+                facServPublicDto.Message = "Ingrese un valor mayor o igual a $20,000 para la factura.";
+                return facServPublicDto;
+            }
+
+            // Validación de fecha de registro (desde el día actual en adelante)
+            var hoy = DateOnly.FromDateTime(DateTime.Now);
+            if (facServPublicDto.FechaRegFactura < hoy)
+            {
+                facServPublicDto.Reponse = 0;
+                facServPublicDto.Message = "La fecha de registro no puede ser una fecha anterior a la actual.";
+                return facServPublicDto;
+            }
+
+            // Validación de fecha de vencimiento (no puede ser inferior a la de registro)
+            if (facServPublicDto.FechaVencimiento < facServPublicDto.FechaRegFactura)
+            {
+                facServPublicDto.Reponse = 0;
+                facServPublicDto.Message = "La fecha de vencimiento no puede ser inferior a la fecha de registro.";
+                return facServPublicDto;
+            }
+
             var result = await _facServPubRepository.CreateFacturaServicioPublico(facServPublicDto);
 
             if (result)

@@ -1,11 +1,19 @@
 using Microsoft.EntityFrameworkCore;
-using Software_SARA.Repositories.Models; // <-- Namespace del SarabdContext
+using Software_SARA.Repositories.Models;
 using Software_SARA.Repositories;
 using Software_SARA.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllersWithViews();
+// Configuración de controladores con la traducción de mensajes de enlace al español
+builder.Services.AddControllersWithViews()
+    .AddMvcOptions(options =>
+    {
+        options.ModelBindingMessageProvider.SetAttemptedValueIsInvalidAccessor(
+            (x, y) => "El valor proporcionado no es válido.");
+        options.ModelBindingMessageProvider.SetValueIsInvalidAccessor(
+            (x) => "El valor ingresado no es válido.");
+    });
 
 // Usar el contexto del profesor
 builder.Services.AddDbContext<SarabdContext>(options =>
@@ -34,13 +42,10 @@ builder.Services.AddScoped<Software_SARA.Services.EmailService>();
 // ==========================================
 builder.Services.AddScoped<Software_SARA.Services.GerenteService>();
 
-
-
 // ==========================================
 // REGISTRAR HTTP CONTEXT ACCESSOR
 // ==========================================
 builder.Services.AddHttpContextAccessor();
-
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
@@ -58,9 +63,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
-
 app.UseSession();
 app.UseAuthorization();
 

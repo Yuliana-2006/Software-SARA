@@ -86,18 +86,18 @@ namespace Software_SARA.Services
             return await _facProveedorRepository.ObtenerListaProveedores();
         }
 
-        public async Task<FacProveedorDto> ObtenerFacturaProveedorPorId(int id)
+        public async Task<FacProveedorDto?> ObtenerFacturaProveedorPorId(int id)
         {
             // Obtiene la lista completa usando la función 
             var listaFacturas = await ObtenerTodasLasFacturasProveedores();
 
-            // Retorna la factura de proveedor que coincida con el ID
+            // Retorna la factura de proveedor que coincida con el ID (permite nulos de forma segura)
             return listaFacturas.FirstOrDefault(f => f.IdFactura == id);
         }
 
         public async Task<FacProveedorDto> EditarFacturaProveedor(FacProveedorDto facProveedorDto)
         {
-            
+
             if (facProveedorDto.EstadoFactura == false)
             {
                 facProveedorDto.Reponse = 0;
@@ -177,6 +177,19 @@ namespace Software_SARA.Services
         public async Task<List<FacProveedorDto>> ObtenerHistorialFacturasProveedoresAsync()
         {
             return await _facProveedorRepository.ObtenerHistorialFacturasProveedoresAsync();
+        }
+
+        // NUEVO MÉTODO: Obtener vencimientos próximos de proveedores ajustado a 1 semana (7 días)
+        public async Task<List<FacProveedorDto>> ObtenerVencimientosProximosProveedores()
+        {
+            var todasLasFacturas = await ObtenerTodasLasFacturasProveedores();
+
+            var hoy = DateOnly.FromDateTime(DateTime.Now);
+            var limite = hoy.AddDays(7); // Rango de una semana
+
+            return todasLasFacturas
+                .Where(f => f.IdProveedor != null && f.IdProveedor > 0 && f.FechaVencimiento >= hoy && f.FechaVencimiento <= limite)
+                .ToList();
         }
     }
 }
