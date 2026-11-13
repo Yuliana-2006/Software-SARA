@@ -1,14 +1,21 @@
-﻿@model IEnumerable<Software_SARA.Dtos.RecordatorioPedidoDto>
+﻿@using Microsoft.AspNetCore.Http
+@model IEnumerable<Software_SARA.Dtos.RecordatorioPedidoDto>
 
 @{
     ViewData["Title"] = "Entregas Próximas y Alertas";
+    var rolUsuario = Context.Session.GetString("UsuarioRol");
 }
 
 <div class="facturas-container">
 
     <div class="facturas-header-banner">
         <h2>Entregas Próximas (Alertas)</h2>
-        <a asp-controller="Recordatorios" asp-action="Index" class="btn-vencimientos">Volver</a>
+        
+        <!-- El botón "Volver" solo se muestra si NO es Tesorero -->
+        @if (rolUsuario != "Tesorero")
+        {
+            <a asp-controller="Recordatorios" asp-action="Index" class="btn-vencimientos">Volver</a>
+        }
     </div>
 
     <div class="facturas-cards-wrapper">
@@ -17,6 +24,9 @@
         {
             @foreach (var rec in Model)
             {
+                // Manejo seguro de la fecha de entrega para evitar artefactos si viene vacía                
+                string fechaEntregaFormateada = rec.FechaEntrega == default ? "Sin fecha" : rec.FechaEntrega.ToString("dd/MM/yyyy");
+
                 <div class="facturas-card" style="border-color: #A93226;">
                     <div class="facturas-icon" style="background-color: #FADBD8; color: #A93226;">
                         <i class="bi bi-exclamation-triangle-fill"></i>
@@ -25,7 +35,7 @@
                     <div class="facturas-name" style="text-align: center; padding: 0 10px;">
                         <h2 style="font-size: 16px; margin-top: 10px;">@rec.Proveedor</h2>
                         <div style="font-size: 14px; font-weight: 700; color: #ECE9DF; margin-top: 6px;">ID: @rec.IdRecordatorio</div>
-                        <div style="font-size: 13px; font-weight: 600; color: #ECE9DF; margin-top: 4px;">Entrega: @rec.FechaEntrega.ToString("dd/MM/yyyy")</div>
+                        <div style="font-size: 13px; font-weight: 600; color: #ECE9DF; margin-top: 4px;">Entrega: @fechaEntregaFormateada</div>
                         <div style="font-size: 13px; font-weight: 800; color: #FADBD8; margin-top: 6px; background-color: #78281F; padding: 4px; border-radius: 10px;">@rec.Estado</div>
                     </div>
 

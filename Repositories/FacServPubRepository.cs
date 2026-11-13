@@ -59,9 +59,9 @@ namespace Software_SARA.Repositories
 
         public async Task<Boolean> CreateFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
-            //Consulta SQL para insertar una nueva factura de servicio público en la base de datos
             bool result = false;
             string SQL = "INSERT INTO SARABD.dbo.factura (id_usuario, tip_factura, id_proveedor, id_servicio, valor_factura, fecha_reg_factura, fecha_vencimiento, estado_factura) VALUES ('" + facServPublicDto.IdUsuario + "', '" + (facServPublicDto.TipFactura ? 1 : 0) + "', " + (facServPublicDto.IdProveedor.HasValue ? "'" + facServPublicDto.IdProveedor.Value + "'" : "NULL") + " , '" + facServPublicDto.IdServicio + "' , '" + facServPublicDto.ValorFactura.ToString(System.Globalization.CultureInfo.InvariantCulture) + "', '" + facServPublicDto.FechaRegFactura.ToString("yyyy-MM-dd") + "', '" + facServPublicDto.FechaVencimiento.ToString("yyyy-MM-dd") + "', '" + (facServPublicDto.EstadoFactura ? 1 : 0) + "');";
+
             DBSaraUtility Connection = new DBSaraUtility();
             Connection.Connect();
             using (SqlCommand command = new SqlCommand(SQL, Connection.CONN()))
@@ -109,7 +109,6 @@ namespace Software_SARA.Repositories
 
         public async Task<Boolean> EditarFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
-            // Consulta SQL para actualizar los datos de la factura de servicio público existente
             bool result = false;
             string SQL = @"UPDATE SARABD.dbo.factura SET id_usuario = '" + facServPublicDto.IdUsuario + "', " + "id_proveedor = " + (facServPublicDto.IdProveedor.HasValue ? "'" + facServPublicDto.IdProveedor.Value + "'" : "NULL") + ", " + "id_servicio = " + facServPublicDto.IdServicio + ", " + "valor_factura = '" + facServPublicDto.ValorFactura.ToString(System.Globalization.CultureInfo.InvariantCulture) + "', " + "fecha_reg_factura = '" + facServPublicDto.FechaRegFactura.ToString("yyyy-MM-dd") + "', " + "fecha_vencimiento = '" + facServPublicDto.FechaVencimiento.ToString("yyyy-MM-dd") + "', " + "estado_factura = '" + (facServPublicDto.EstadoFactura ? 1 : 0) + "' " + "WHERE id_factura = " + facServPublicDto.IdFactura + ";";
 
@@ -135,7 +134,6 @@ namespace Software_SARA.Repositories
 
         public async Task<Boolean> ConfirmarPagoFacturaServicioPublico(int idFactura)
         {
-            //Consulta SQL para confirmar el pago de una factura de servicio público en la base de datos
             bool result = false;
             string SQL = "UPDATE SARABD.dbo.factura SET estado_factura = 0 WHERE id_factura = " + idFactura + ";";
             DBSaraUtility Connection = new DBSaraUtility();

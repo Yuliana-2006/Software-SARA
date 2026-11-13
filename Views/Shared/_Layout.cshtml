@@ -4,7 +4,7 @@
     var nombre = Context.Session.GetString("UsuarioNombre") ?? "Usuario Demo";
     var doc = Context.Session.GetString("UsuarioDoc") ?? "0000";
 
-    // Inicial para el avatar circular
+    // Inicial para el avatar circular            
     var inicial = !string.IsNullOrEmpty(rol) ? rol.Substring(0, 1).ToUpper() : "U";
 }
 <!DOCTYPE html>
@@ -144,16 +144,19 @@
                     {
                         <a asp-controller="GestorFacturas" asp-action="SelectFactura" title="Facturas"><i class="bi bi-receipt"></i> <span class="sidebar-text">Facturas</span></a>
                         <a asp-controller="Caja" asp-action="Index" title="Caja"><i class="bi bi-cash-stack"></i> <span class="sidebar-text">Caja</span></a>
-                        <a asp-controller="Home" asp-action="Index" title="Recordatorios"><i class="bi bi-bell-fill"></i> <span class="sidebar-text">Recordatorios</span></a>
+                        
+                        <a asp-controller="Recordatorios" asp-action="Index" title="Recordatorios"><i class="bi bi-bell-fill"></i> <span class="sidebar-text">Recordatorios</span></a>
+                        
                         <a asp-controller="Home" asp-action="Index" title="Informes"><i class="bi bi-bar-chart-line-fill"></i> <span class="sidebar-text">Informes</span></a>
                         
-                        <!-- NUEVO BOTÓN AGREGADO AQUÍ -->
                         <a asp-controller="Sustento" asp-action="Index" title="Calcular Sustento"><i class="bi bi-calculator-fill"></i> <span class="sidebar-text">Calcular Sustento de Caja</span></a>
                     }
 
                     <!-- 6. MENÚ EXCLUSIVO DEL EMPLEADO -->
                     @if (rol == "Empleado")
                     {
+                        <!-- Recordatorios ubicado justo debajo de Inicio -->
+                        <a asp-controller="Recordatorios" asp-action="Index" title="Recordatorios"><i class="bi bi-bell-fill"></i> <span class="sidebar-text">Recordatorios</span></a>
                         <a asp-controller="Caja" asp-action="Index" title="Apertura Caja"><i class="bi bi-box-arrow-in-right"></i> <span class="sidebar-text">Apertura Caja</span></a>
                         <a asp-controller="Home" asp-action="Index" title="Cierre Caja"><i class="bi bi-box-arrow-left"></i> <span class="sidebar-text">Cierre Caja</span></a>
                     }
@@ -175,9 +178,7 @@
             <!-- BARRA SUPERIOR REDUCIDA -->
             <div class="d-flex justify-content-end align-items-center px-3 py-1 bg-white shadow-sm" style="height: 48px; border-bottom: 2px solid #E2DFD2;">
                 <div class="text-end me-2">
-                    <!-- Muestra el nombre real del usuario desde la base de datos -->
                     <div class="fw-bold text-dark lh-1" style="font-size: 13px;">@nombre</div>
-                    <!-- Muestra el rol real del usuario desde la base de datos -->
                     <div class="text-uppercase fw-bold text-muted lh-1 mt-1" style="font-size: 10px; letter-spacing: 0.5px;">@rol</div>
                 </div>
                 <div class="avatar-circle-sm">
@@ -202,20 +203,17 @@
             const toggleBtn = document.getElementById("toggleSidebarBtn");
             const sidebar = document.getElementById("sidebarMenu");
 
-            // Cargar estado guardado previa navegación (opcional)
             if (localStorage.getItem("sidebar-collapsed") === "true") {
                 sidebar.classList.add("collapsed");
             }
 
             toggleBtn.addEventListener("click", function () {
                 sidebar.classList.toggle("collapsed");
-                // Guardar preferencia del usuario
                 localStorage.setItem("sidebar-collapsed", sidebar.classList.contains("collapsed"));
             });
         });
     </script>
 
-    <!-- IMPORTANTE PARA QUE FUNCIONEN LOS SCRIPTS DE VALIDACIÓN -->
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

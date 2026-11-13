@@ -179,5 +179,21 @@ namespace Software_SARA.Controllers
             }
 
         }
+
+        // NUEVO: GET: /Proveedores/VencimientosProximosProveedores
+        [HttpGet]
+        public async Task<ActionResult> VencimientosProximosProveedores()
+        {
+            try
+            {
+                var vencimientos = await _facProveedorServices.ObtenerVencimientosProximosProveedores();
+                return View(vencimientos);
+            }
+            catch (Exception ex)
+            {
+                ViewData["Mensaje"] = "Error al cargar los vencimientos próximos de proveedores: " + ex.Message;
+                return View(new List<FacProveedorDto>());
+            }
+        }
     }
 }

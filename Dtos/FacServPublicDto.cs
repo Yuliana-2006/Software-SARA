@@ -16,7 +16,7 @@ namespace Software_SARA.Dtos
         public int? IdServicio { get; set; }
 
         [Required(ErrorMessage = "El valor de la factura es obligatorio.")]
-        [Range(0.01, 99999999.99, ErrorMessage = "Ingrese un valor válido para la factura.")]
+        [Range(20000, 99999999.99, ErrorMessage = "El valor de la factura debe ser mayor o igual a $20,000.")]
         public decimal ValorFactura { get; set; }
 
         [Required(ErrorMessage = "La fecha de registro es obligatoria.")]
@@ -25,7 +25,7 @@ namespace Software_SARA.Dtos
 
         [Required(ErrorMessage = "La fecha de vencimiento es obligatoria.")]
         [DataType(DataType.Date)]
-        public DateOnly FechaVencimiento { get; set; }
+        public DateOnly FechaVencimiento { get; set; } = DateOnly.FromDateTime(DateTime.Now); // <-- Inicializada con la fecha actual
 
         public bool EstadoFactura { get; set; } = true;
 
