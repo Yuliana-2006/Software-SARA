@@ -1,4 +1,4 @@
-﻿@model Software_SARA.Controllers.GerenteViewModel
+﻿@model Software_SARA.Dtos.GerenteDto
 
 @{
     ViewData["Title"] = "Registrar Gerente - SARA";
@@ -63,9 +63,9 @@
         outline: none;
     }
 
-        .input-pill-sara:focus {
-            box-shadow: 0 0 0 3px rgba(230, 228, 220, 0.5);
-        }
+    .input-pill-sara:focus {
+        box-shadow: 0 0 0 3px rgba(230, 228, 220, 0.5);
+    }
 
     .select-doc {
         border-radius: 20px 0 0 20px;
@@ -92,10 +92,10 @@
         text-transform: uppercase;
     }
 
-        .btn-pill-registrar:hover {
-            background-color: #25402D;
-            color: #ffffff;
-        }
+    .btn-pill-registrar:hover {
+        background-color: #25402D;
+        color: #ffffff;
+    }
 
     .btn-pill-cancelar-form {
         width: 100%;
@@ -113,10 +113,20 @@
         text-transform: uppercase;
     }
 
-        .btn-pill-cancelar-form:hover {
-            background-color: #ffffff;
-            color: #25402D;
-        }
+    .btn-pill-cancelar-form:hover {
+        background-color: #ffffff;
+        color: #25402D;
+    }
+
+    /* 💡 Letra de validación grande y destacada en rojo */
+    .text-danger {
+        color: #ffcccc !important;
+        font-size: 15px !important;
+        font-weight: 800 !important;
+        margin-top: 6px !important;
+        display: block !important;
+        padding-left: 10px;
+    }
 </style>
 
 <div class="form-wrapper">
@@ -128,23 +138,23 @@
         <form asp-controller="Gerentes" asp-action="Crear" method="post">
             @Html.AntiForgeryToken()
 
-            <!-- Resumen general de errores por si hay alguno global -->
-            <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3 py-2" role="alert" style="font-size: 0.85rem; border-radius: 15px;"></div>
+            <!-- Resumen general de errores -->
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3 py-2" role="alert" style="font-size: 0.95rem; border-radius: 15px; font-weight: 700;"></div>
 
-            <!-- Sede Asignada (Desplegable dinámico) -->
+            <!-- Sede Asignada -->
             <div class="mb-3">
                 <label class="form-label-custom">Sede Asignada</label>
                 <select asp-for="IdSede" class="input-pill-sara" asp-items="ViewBag.ListaSedes">
                     <option value="">-- Seleccione una Sede --</option>
                 </select>
-                <span asp-validation-for="IdSede" class="text-danger fw-bold" style="font-size: 0.8rem; display: block; margin-top: 4px; padding-left: 10px; color: #ffcccc !important;"></span>
+                <span asp-validation-for="IdSede" class="text-danger"></span>
             </div>
 
             <!-- Documento: Tipo y Número -->
             <div class="mb-3">
                 <div class="d-flex justify-content-between">
                     <label class="form-label-custom" style="width: 35%;">Tipo Doc.</label>
-                    <label class="form-label-custom" style="width: 63%;">Número de Documento</label>
+                    <label class="form-label-custom" style="width: 63%;">Número de Documento (5 a 11 dígitos)</label>
                 </div>
                 <div class="d-flex">
                     <select asp-for="TipoDocumento" class="input-pill-sara select-doc">
@@ -154,7 +164,7 @@
                     </select>
                     <input asp-for="NumeroDocumento" class="input-pill-sara input-doc" placeholder="Número de Documento" />
                 </div>
-                <span asp-validation-for="NumeroDocumento" class="text-danger fw-bold" style="font-size: 0.8rem; display: block; margin-top: 4px; padding-left: 10px; color: #ffcccc !important;"></span>
+                <span asp-validation-for="NumeroDocumento" class="text-danger"></span>
             </div>
 
             <!-- Nombres y Apellidos -->
@@ -162,12 +172,12 @@
                 <div class="col-6">
                     <label class="form-label-custom">Nombres</label>
                     <input asp-for="Nombres" class="input-pill-sara" placeholder="Nombres" />
-                    <span asp-validation-for="Nombres" class="text-danger fw-bold" style="font-size: 0.8rem; color: #ffcccc !important;"></span>
+                    <span asp-validation-for="Nombres" class="text-danger"></span>
                 </div>
                 <div class="col-6">
                     <label class="form-label-custom">Apellidos</label>
                     <input asp-for="Apellidos" class="input-pill-sara" placeholder="Apellidos" />
-                    <span asp-validation-for="Apellidos" class="text-danger fw-bold" style="font-size: 0.8rem; color: #ffcccc !important;"></span>
+                    <span asp-validation-for="Apellidos" class="text-danger"></span>
                 </div>
             </div>
 
@@ -176,12 +186,12 @@
                 <div class="col-6">
                     <label class="form-label-custom">Teléfono</label>
                     <input asp-for="Telefono" class="input-pill-sara" placeholder="Teléfono" />
-                    <span asp-validation-for="Telefono" class="text-danger fw-bold" style="font-size: 0.8rem; color: #ffcccc !important;"></span>
+                    <span asp-validation-for="Telefono" class="text-danger"></span>
                 </div>
                 <div class="col-6">
                     <label class="form-label-custom">Correo Electrónico</label>
                     <input asp-for="Correo" type="email" class="input-pill-sara" placeholder="Correo" />
-                    <span asp-validation-for="Correo" class="text-danger fw-bold" style="font-size: 0.8rem; color: #ffcccc !important;"></span>
+                    <span asp-validation-for="Correo" class="text-danger"></span>
                 </div>
             </div>
 
@@ -189,14 +199,14 @@
             <div class="mb-3">
                 <label class="form-label-custom">Dirección de Vivienda</label>
                 <input asp-for="Direccion" class="input-pill-sara" placeholder="Dirección" />
-                <span asp-validation-for="Direccion" class="text-danger fw-bold" style="font-size: 0.8rem; color: #ffcccc !important;"></span>
+                <span asp-validation-for="Direccion" class="text-danger"></span>
             </div>
 
             <!-- Fecha de Nacimiento -->
             <div class="mb-4">
                 <label class="form-label-custom">Fecha de Nacimiento</label>
                 <input asp-for="FechaNacimiento" type="date" class="input-pill-sara" />
-                <span asp-validation-for="FechaNacimiento" class="text-danger fw-bold" style="font-size: 0.8rem; color: #ffcccc !important;"></span>
+                <span asp-validation-for="FechaNacimiento" class="text-danger"></span>
             </div>
 
             <!-- Botones -->

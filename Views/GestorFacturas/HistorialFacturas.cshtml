@@ -1,0 +1,63 @@
+﻿@model IEnumerable<Software_SARA.Dtos.HistorialFacturaDto>
+
+@{
+    ViewData["Title"] = "Historial General de Facturas";
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold" style="color: #2D4832;">HISTORIAL DE FACTURAS</h2>
+        <a asp-controller="GestorFacturas" asp-action="SelectFactura" class="btn fw-bold" style="border: 2px solid #2D4832; color: #2D4832; border-radius: 20px;">
+            &larr; Volver
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0" style="border-radius: 16px; background-color: #FFFFFF;">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0 align-middle text-center">
+                    <thead style="border-bottom: 2px solid #dee2e6;">
+                        <tr style="color: #2D4832; font-weight: 700; font-size: 15px;">
+                            <th class="py-3">Resp. Ingreso</th>
+                            <th class="py-3">Proveedor / Servicio</th>
+                            <th class="py-3">Valor Factura</th>
+                            <th class="py-3">Fecha Registro</th>
+                            <th class="py-3">Fecha Vencimiento</th>
+                            <th class="py-3">Fecha Pago</th>
+                            <th class="py-3">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            @foreach (var item in Model)
+                            {
+                                <tr style="border-bottom: 1px solid #f1f1f1; font-size: 14px; color: #333;">
+                                    <td class="py-3 fw-semibold">@item.NomUsuario</td>
+                                    <td class="py-3">@item.NombreEntidad</td>
+                                    <td class="py-3 fw-bold" style="color: #2D4832;">$@item.ValorFactura.ToString("N2")</td>
+                                    <td class="py-3">@item.FechaRegFactura.ToString("dd/MM/yyyy")</td>
+                                    <td class="py-3">@item.FechaVencimiento.ToString("dd/MM/yyyy")</td>
+                                    <td class="py-3">@(item.FechaPago.HasValue ? item.FechaPago.Value.ToString("dd/MM/yyyy") : "N/D")</td>
+                                    <td class="py-3">
+                                        <span class="badge px-3 py-2 fw-bold" style="background-color: #2D4832; color: #FFFFFF; border-radius: 20px; font-size: 12px;">
+                                            CANCELADA
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">
+                                    No hay facturas con pago confirmado en el historial.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

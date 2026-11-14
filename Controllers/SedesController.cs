@@ -1,11 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Software_SARA.Dtos;
 using Software_SARA.Services;
-using System.Collections.Generic;
-using System.Linq;
+
 
 namespace Software_SARA.Controllers
 {
@@ -78,6 +75,12 @@ namespace Software_SARA.Controllers
                 }
 
                 var resultado = await _sedesServices.CreateSede(sedeDto);
+                if (resultado.Reponse == 0)
+                {
+                    ViewBag.Proveedores = await _sedesServices.ObtenerTodasLasSedes();
+                    ViewData["Mensaje"] = resultado.Message;
+                    return View(sedeDto);
+                }
                 TempData["MensajeExito"] = resultado.Message;
                 return RedirectToAction(nameof(RegistrarSede));
             }
@@ -123,6 +126,12 @@ namespace Software_SARA.Controllers
                 }
 
                 var resultado = await _sedesServices.EditarSede(sedeDto);
+                if (resultado.Reponse == 0)
+                {
+                    ViewBag.Proveedores = await _sedesServices.ObtenerTodasLasSedes();
+                    ViewData["Mensaje"] = resultado.Message;
+                    return View(sedeDto);
+                }
                 TempData["MensajeExito"] = resultado.Message;
                 return RedirectToAction(nameof(RegistrarSede));
             }

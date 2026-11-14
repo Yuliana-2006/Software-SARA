@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering; // Importante para SelectList
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Software_SARA.Dtos; // Importamos la capa DTO
 using Software_SARA.Repositories.Models;
 using Software_SARA.Services;
 using Software_SARA.Utilities;
@@ -11,21 +12,6 @@ using System.Threading.Tasks;
 
 namespace Software_SARA.Controllers
 {
-    public class GerenteViewModel
-    {
-        public int Id { get; set; }
-        public string? Nombres { get; set; }
-        public string? Apellidos { get; set; }
-        public string? TipoDocumento { get; set; }
-        public string? NumeroDocumento { get; set; }
-        public string? Correo { get; set; }
-        public string? Telefono { get; set; }
-        public string? Direccion { get; set; }
-        public string? Sede { get; set; }
-        public int IdSede { get; set; }
-        public DateTime? FechaNacimiento { get; set; }
-    }
-
     public class GerentesController : Controller
     {
         private readonly GerenteService _gerenteService;
@@ -49,7 +35,7 @@ namespace Software_SARA.Controllers
             catch (Exception ex)
             {
                 TempData["MensajeError"] = "Error al conectar con la base de datos: " + ex.Message;
-                return View(new List<GerenteViewModel>());
+                return View(new List<GerenteDto>());
             }
         }
 
@@ -58,7 +44,7 @@ namespace Software_SARA.Controllers
         {
             ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede");
 
-            var model = new GerenteViewModel
+            var model = new GerenteDto
             {
                 TipoDocumento = "CC"
             };
@@ -68,7 +54,7 @@ namespace Software_SARA.Controllers
         // POST: /Gerentes/Crear
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Crear(GerenteViewModel gerente)
+        public async Task<IActionResult> Crear(GerenteDto gerente)
         {
             // 1. Validar Sede obligatoria
             if (gerente.IdSede <= 0)
@@ -76,7 +62,7 @@ namespace Software_SARA.Controllers
                 ModelState.AddModelError("IdSede", "Debe seleccionar una sede válida.");
             }
 
-            // 2. Validar Documento: Detectar letras o formato incorrecto
+            // 2. Validar Documento: De 5 a 11 dígitos numéricos
             if (string.IsNullOrEmpty(gerente.NumeroDocumento))
             {
                 ModelState.AddModelError("NumeroDocumento", "El número de documento es obligatorio.");
@@ -85,12 +71,12 @@ namespace Software_SARA.Controllers
             {
                 ModelState.AddModelError("NumeroDocumento", "El número de documento solo debe contener números (sin letras).");
             }
-            else if (!Regex.IsMatch(gerente.NumeroDocumento, @"^\d{8,10}$"))
+            else if (!Regex.IsMatch(gerente.NumeroDocumento, @"^\d{5,11}$"))
             {
-                ModelState.AddModelError("NumeroDocumento", "El número de documento debe tener entre 8 y 10 dígitos.");
+                ModelState.AddModelError("NumeroDocumento", "El número de documento debe tener entre 5 y 11 dígitos.");
             }
 
-            // 3. Validar Teléfono: Detectar letras o formato incorrecto
+            // 3. Validar Teléfono: Exactamente 10 dígitos numéricos
             if (string.IsNullOrEmpty(gerente.Telefono))
             {
                 ModelState.AddModelError("Telefono", "El teléfono es obligatorio.");
@@ -180,7 +166,7 @@ namespace Software_SARA.Controllers
         // POST: /Gerentes/Editar/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Editar(GerenteViewModel gerente)
+        public async Task<IActionResult> Editar(GerenteDto gerente)
         {
             // 1. Validar Sede obligatoria
             if (gerente.IdSede <= 0)
@@ -188,7 +174,7 @@ namespace Software_SARA.Controllers
                 ModelState.AddModelError("IdSede", "Debe seleccionar una sede válida.");
             }
 
-            // 2. Validar Documento en Edición (Letras vs Números)
+            // 2. Validar Documento en Edición: De 5 a 11 dígitos
             if (string.IsNullOrEmpty(gerente.NumeroDocumento))
             {
                 ModelState.AddModelError("NumeroDocumento", "El número de documento es obligatorio.");
@@ -197,12 +183,12 @@ namespace Software_SARA.Controllers
             {
                 ModelState.AddModelError("NumeroDocumento", "El número de documento solo debe contener números (sin letras).");
             }
-            else if (!Regex.IsMatch(gerente.NumeroDocumento, @"^\d{8,10}$"))
+            else if (!Regex.IsMatch(gerente.NumeroDocumento, @"^\d{5,11}$"))
             {
-                ModelState.AddModelError("NumeroDocumento", "El número de documento debe tener entre 8 y 10 dígitos.");
+                ModelState.AddModelError("NumeroDocumento", "El número de documento debe tener entre 5 y 11 dígitos.");
             }
 
-            // 3. Validar Teléfono en Edición (Letras vs Números)
+            // 3. Validar Teléfono en Edición
             if (string.IsNullOrEmpty(gerente.Telefono))
             {
                 ModelState.AddModelError("Telefono", "El teléfono es obligatorio.");
