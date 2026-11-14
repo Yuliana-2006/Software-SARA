@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Software_SARA.Dtos;
 using Software_SARA.Repositories.Models;
 using Software_SARA.Utilities;
+using System.Data;
 
 namespace Software_SARA.Repositories
 {
@@ -54,24 +55,40 @@ namespace Software_SARA.Repositories
 
         public async Task<Boolean> CreateFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
+            //Consulta SQL para insertar una nueva factura de proveedor en la base de datos
             bool result = false;
-            string SQL = "INSERT INTO SARABD.dbo.factura (id_usuario, tip_factura, id_proveedor, id_servicio, valor_factura, fecha_reg_factura, fecha_vencimiento, estado_factura) VALUES ('" + facServPublicDto.IdUsuario + "', '" + (facServPublicDto.TipFactura ? 1 : 0) + "', " + (facServPublicDto.IdProveedor.HasValue ? "'" + facServPublicDto.IdProveedor.Value + "'" : "NULL") + " , '" + facServPublicDto.IdServicio + "' , '" + facServPublicDto.ValorFactura.ToString(System.Globalization.CultureInfo.InvariantCulture) + "', '" + facServPublicDto.FechaRegFactura.ToString("yyyy-MM-dd") + "', '" + facServPublicDto.FechaVencimiento.ToString("yyyy-MM-dd") + "', '" + (facServPublicDto.EstadoFactura ? 1 : 0) + "');";
+            DBSaraUtility connectionUtility = new DBSaraUtility();
+            connectionUtility.Connect();
 
-            DBSaraUtility Connection = new DBSaraUtility();
-            Connection.Connect();
-            using (SqlCommand command = new SqlCommand(SQL, Connection.CONN()))
+            // Usamos el nombre del procedimiento almacenado
+            using (SqlCommand command = new SqlCommand("SARABD.dbo.InsertarFacturaServicio", connectionUtility.CONN()))
             {
-                int comando = command.ExecuteNonQuery();
-                if (comando != 0)
-                {
-                    result = true;
-                }
-                else
-                {
-                    result = false;
-                }
+                // Indicamos que es un procedimiento almacenado
+                command.CommandType = CommandType.StoredProcedure;
+
+                // Añadimos los parámetros de forma segura (Previene Inyección SQL)
+                command.Parameters.AddWithValue("@id_usuario", facServPublicDto.IdUsuario);
+                command.Parameters.AddWithValue("@tip_factura", facServPublicDto.TipFactura);
+
+                // Manejamos el caso de que IdProveedor sea nulo (Nullable)
+                command.Parameters.AddWithValue("@id_proveedor", (object)facServPublicDto.IdProveedor ?? DBNull.Value);
+
+                command.Parameters.AddWithValue("@id_servicio", facServPublicDto.IdServicio);
+
+                command.Parameters.AddWithValue("@valor_factura", facServPublicDto.ValorFactura);
+
+                // Convertimos DateOnly a DateTime para SQL Server
+                command.Parameters.AddWithValue("@fecha_reg_factura", facServPublicDto.FechaRegFactura.ToDateTime(TimeOnly.MinValue));
+                command.Parameters.AddWithValue("@fecha_vencimiento", facServPublicDto.FechaVencimiento.ToDateTime(TimeOnly.MinValue));
+
+                command.Parameters.AddWithValue("@estado_factura", facServPublicDto.EstadoFactura);
+
+                // Ejecución asíncrona segura
+                int filasAfectadas = await command.ExecuteNonQueryAsync();
+                result = filasAfectadas > 0;
             }
-            Connection.Disconnect();
+
+            connectionUtility.Disconnect();
             return result;
         }
 
