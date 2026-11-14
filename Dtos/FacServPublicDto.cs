@@ -15,6 +15,8 @@ namespace Software_SARA.Dtos
         [Required(ErrorMessage = "Debe seleccionar un servicio público.")]
         public int? IdServicio { get; set; }
 
+        public string? NomServicio { get; set; }
+
         [Required(ErrorMessage = "El valor de la factura es obligatorio.")]
         [Range(20000, 99999999.99, ErrorMessage = "El valor de la factura debe ser mayor o igual a $20,000.")]
         public decimal ValorFactura { get; set; }
@@ -32,5 +34,9 @@ namespace Software_SARA.Dtos
         public int Reponse { get; set; }
 
         public string Message { get; set; } = string.Empty;
+
+        public string? NomUsuario { get; set; } // Nombre del responsable que ingresó la factura
+
+        public DateTime? FechaPago { get; set; } // Fecha en la que se confirmó el pago
     }
 }
