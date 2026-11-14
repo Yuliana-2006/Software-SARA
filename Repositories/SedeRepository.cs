@@ -1,9 +1,10 @@
-﻿using Software_SARA.Dtos;
-using Software_SARA.Utilities;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Cryptography.Pkcs;
+using Software_SARA.Dtos;
 using Software_SARA.Repositories.Models;
+using Software_SARA.Utilities;
+using System.Data;
+using System.Security.Cryptography.Pkcs;
 
 namespace Software_SARA.Repositories
 {
@@ -28,22 +29,30 @@ namespace Software_SARA.Repositories
         {
             //Consulta SQL para insertar una nueva sede en la base de datos
             bool result = false;
-            string SQL = "INSERT INTO SARABD.dbo.Sede (nom_sede, dir_sede, tel_sede, estado_sede, ciu_sede, dep_sede, barrio_sede) VALUES ('" + sedeDto.NomSede + "', '" + sedeDto.DirSede + "', '" + sedeDto.TelSede + "', '" + sedeDto.EstadoSede + "', '" + sedeDto.CiuSede + "', '" + sedeDto.DepSede + "', '" + sedeDto.BarrioSede + "');";
-            DBSaraUtility Connection = new DBSaraUtility();
-            Connection.Connect();
-            using (SqlCommand command = new SqlCommand(SQL, Connection.CONN()))
+            DBSaraUtility connectionUtility = new DBSaraUtility();
+            connectionUtility.Connect();
+
+            // Usamos el nombre del procedimiento almacenado
+            using (SqlCommand command = new SqlCommand("SARABD.dbo.InsertarSede", connectionUtility.CONN()))
             {
-                int comando = command.ExecuteNonQuery();
-                if (comando != 0)
-                {
-                    result = true;
-                }
-                else
-                {
-                    result = false;
-                }
+                // Indicamos que es un procedimiento almacenado
+                command.CommandType = CommandType.StoredProcedure;
+
+                // Añadimos los parámetros de forma segura (Previene Inyección SQL)
+                command.Parameters.AddWithValue("@nom_sede", (object)sedeDto.NomSede ?? DBNull.Value);
+                command.Parameters.AddWithValue("@dir_sede", (object)sedeDto.DirSede ?? DBNull.Value);
+                command.Parameters.AddWithValue("@tel_sede", (object)sedeDto.TelSede ?? DBNull.Value);
+                command.Parameters.AddWithValue("@estado_sede", sedeDto.EstadoSede);
+                command.Parameters.AddWithValue("@ciu_sede", (object)sedeDto.CiuSede ?? DBNull.Value);
+                command.Parameters.AddWithValue("@dep_sede", (object)sedeDto.DepSede ?? DBNull.Value);
+                command.Parameters.AddWithValue("@barrio_sede", (object)sedeDto.BarrioSede ?? DBNull.Value);
+
+                // Ejecución asíncrona segura
+                int filasAfectadas = await command.ExecuteNonQueryAsync();
+                result = filasAfectadas > 0;
             }
-            Connection.Disconnect();
+
+            connectionUtility.Disconnect();
             return result;
         }
 
