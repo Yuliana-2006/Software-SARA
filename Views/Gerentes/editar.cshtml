@@ -1,4 +1,4 @@
-﻿@model Software_SARA.Controllers.GerenteViewModel
+﻿@model Software_SARA.Dtos.GerenteDto
 
 @{
     ViewData["Title"] = "Editar Gerente - SARA";
@@ -18,11 +18,11 @@
         margin-bottom: 30px;
     }
 
-        .header-banner h1 {
-            font-size: 2.2rem;
-            font-weight: 900;
-            margin: 0;
-        }
+    .header-banner h1 {
+        font-size: 2.2rem;
+        font-weight: 900;
+        margin: 0;
+    }
 
     .form-container {
         display: flex;
@@ -63,14 +63,13 @@
         outline: none;
     }
 
-        .form-control-sara:focus {
-            background-color: #496849;
-            border-color: #E6E4DC;
-            box-shadow: none;
-            color: white;
-        }
+    .form-control-sara:focus {
+        background-color: #496849;
+        border-color: #E6E4DC;
+        box-shadow: none;
+        color: white;
+    }
 
-    /* 💡 Estilo para el cuadro de error principal */
     .alert-sara-error {
         background-color: #f8d7da;
         color: #842029;
@@ -87,13 +86,13 @@
             padding-left: 20px;
         }
 
-    /* 💡 Estilo para las alertas de texto en rojo debajo de cada campo */
+    /* 💡 Letra de validación grande y destacada en rojo para Editar */
     .text-danger-sara {
-        color: #ff9999;
-        font-size: 0.85rem;
-        font-weight: 700;
-        margin-top: 4px;
-        display: block;
+        color: #ff9999 !important;
+        font-size: 15px !important;
+        font-weight: 800 !important;
+        margin-top: 6px !important;
+        display: block !important;
     }
 
     .btn-container-actions {
@@ -115,11 +114,11 @@
         transition: all 0.2s ease;
     }
 
-        .btn-pill-guardar:hover {
-            background-color: #2D4A36;
-            color: white;
-            border-color: #E6E4DC;
-        }
+    .btn-pill-guardar:hover {
+        background-color: #2D4A36;
+        color: white;
+        border-color: #E6E4DC;
+    }
 
     .btn-pill-cancelar {
         background-color: #E6E4DC;
@@ -134,11 +133,11 @@
         transition: all 0.2s ease;
     }
 
-        .btn-pill-cancelar:hover {
-            background-color: #2D4A36;
-            color: white;
-            border-color: #E6E4DC;
-        }
+    .btn-pill-cancelar:hover {
+        background-color: #2D4A36;
+        color: white;
+        border-color: #E6E4DC;
+    }
 </style>
 
 <div class="header-banner">
@@ -152,8 +151,8 @@
 
             <input type="hidden" asp-for="Id" />
 
-            <!-- 💡 AVISO PRINCIPAL DE ERROR (Caja Roja) -->
-            <div asp-validation-summary="ModelOnly" class="alert-sara-error"></div>
+            <!-- Aviso principal de error -->
+         
 
             <div class="form-group-sara">
                 <label class="form-label-sara">Nombres</label>
@@ -177,7 +176,7 @@
                     </select>
                 </div>
                 <div class="col-md-8 form-group-sara">
-                    <label class="form-label-sara">Número de Documento</label>
+                    <label class="form-label-sara">Número de Documento (5 a 11 dígitos)</label>
                     <input asp-for="NumeroDocumento" class="form-control-sara" />
                     <span asp-validation-for="NumeroDocumento" class="text-danger-sara"></span>
                 </div>
@@ -201,7 +200,7 @@
                 <span asp-validation-for="Direccion" class="text-danger-sara"></span>
             </div>
 
-            <!-- Sede Asignada (Desplegable dinámico) -->
+            <!-- Sede Asignada -->
             <div class="form-group-sara">
                 <label class="form-label-sara">Sede Asignada</label>
                 <select asp-for="IdSede" class="form-control-sara" asp-items="ViewBag.ListaSedes">
