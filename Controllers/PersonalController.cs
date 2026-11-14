@@ -12,12 +12,12 @@ using System.Threading.Tasks;
 namespace Software_SARA.Controllers
 {
     [AuthorizeRole("Gerente")]
-    public class EmpleadoController : Controller
+    public class PersonalController : Controller // <--- Cambiado de EmpleadoController a PersonalController
     {
         private readonly SarabdContext _context;
         private readonly EmailService _emailService;
 
-        public EmpleadoController(SarabdContext context, EmailService emailService)
+        public PersonalController(SarabdContext context, EmailService emailService) // <--- Cambiado aquí también
         {
             _context = context;
             _emailService = emailService;
