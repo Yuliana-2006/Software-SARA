@@ -2,11 +2,14 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Software_SARA.Dtos;
 using Software_SARA.Services;
+using Software_SARA.Utilities;
 
 
 namespace Software_SARA.Controllers
 {
+    [AuthorizeRole("Dueño")]
     public class SedesController : Controller
+  
     {
         private readonly SedesServices _sedesServices;
 
@@ -75,6 +78,12 @@ namespace Software_SARA.Controllers
                 }
 
                 var resultado = await _sedesServices.CreateSede(sedeDto);
+                if (resultado.Reponse == 0)
+                {
+                    ViewBag.Proveedores = await _sedesServices.ObtenerTodasLasSedes();
+                    ViewData["Mensaje"] = resultado.Message;
+                    return View(sedeDto);
+                }
                 TempData["MensajeExito"] = resultado.Message;
                 return RedirectToAction(nameof(RegistrarSede));
             }
@@ -120,6 +129,12 @@ namespace Software_SARA.Controllers
                 }
 
                 var resultado = await _sedesServices.EditarSede(sedeDto);
+                if (resultado.Reponse == 0)
+                {
+                    ViewBag.Proveedores = await _sedesServices.ObtenerTodasLasSedes();
+                    ViewData["Mensaje"] = resultado.Message;
+                    return View(sedeDto);
+                }
                 TempData["MensajeExito"] = resultado.Message;
                 return RedirectToAction(nameof(RegistrarSede));
             }

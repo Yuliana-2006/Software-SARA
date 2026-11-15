@@ -1,6 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
 using Software_SARA.Dtos;
 using Software_SARA.Repositories;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Software_SARA.Services
 {
@@ -17,7 +21,6 @@ namespace Software_SARA.Services
         {
             facServPublicDto.EstadoFactura = true;
 
-            // Validación de servicio seleccionado
             if (facServPublicDto.IdServicio == null || facServPublicDto.IdServicio <= 0)
             {
                 facServPublicDto.Reponse = 0;
@@ -25,7 +28,6 @@ namespace Software_SARA.Services
                 return facServPublicDto;
             }
 
-            // Validación de valor superior o igual a $20,000 pesos colombianos
             if (facServPublicDto.ValorFactura < 20000)
             {
                 facServPublicDto.Reponse = 0;
@@ -33,7 +35,7 @@ namespace Software_SARA.Services
                 return facServPublicDto;
             }
 
-            // Validación de fecha de registro (desde el día actual en adelante)
+            // CORRECCIÓN
             var hoy = DateOnly.FromDateTime(DateTime.Now);
             if (facServPublicDto.FechaRegFactura < hoy)
             {
@@ -42,7 +44,6 @@ namespace Software_SARA.Services
                 return facServPublicDto;
             }
 
-            // Validación de fecha de vencimiento (no puede ser inferior a la de registro)
             if (facServPublicDto.FechaVencimiento < facServPublicDto.FechaRegFactura)
             {
                 facServPublicDto.Reponse = 0;
@@ -85,14 +86,14 @@ namespace Software_SARA.Services
 
         public async Task<List<FacServPublicDto>> ObtenerVencimientosProximos()
         {
+            // CORRECCIÓN
             var fechaActual = DateOnly.FromDateTime(DateTime.Now);
             var fechaLimite = fechaActual.AddDays(10);
 
             var todasLasFacturas = await ObtenerTodasLasFacturasServiciosPublicos();
 
             var vencimientosProximos = todasLasFacturas
-                .Where(f => f.FechaVencimiento >= fechaActual
-                         && f.FechaVencimiento <= fechaLimite)
+                .Where(f => f.FechaVencimiento >= fechaActual && f.FechaVencimiento <= fechaLimite)
                 .ToList();
 
             return vencimientosProximos;
@@ -142,5 +143,11 @@ namespace Software_SARA.Services
             }
             return facServPublicDto;
         }
+
+        public async Task<List<HistorialFacturaDto>> ObtenerHistorialFacturasServiciosPublicosAsync()
+        {
+            return await _facServPubRepository.ObtenerHistorialFacturasServiciosPublicosAsync();
+        }
+
     }
 }

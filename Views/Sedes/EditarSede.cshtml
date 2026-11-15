@@ -21,6 +21,28 @@
 
             @Html.AntiForgeryToken()
 
+            @if (!ViewData.ModelState.IsValid || ViewData["Mensaje"] != null)
+            {
+                <div style="background-color: #a94442; color: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; width: 100%; box-sizing: border-box; box-shadow: 0 4px 8px rgba(0,0,0,0.15);">
+                     <div style="font-weight: 800; font-size: 16px; margin-bottom: 5px;">
+                             Revisa los datos ingresados.
+                     </div>
+
+                     <!-- Muestra el mensaje personalizado del servicio si existe -->
+                     @if (ViewData["Mensaje"] != null)
+                     {
+                         <div style="font-size: 14px; margin-top: 4px;">
+                              - @ViewData["Mensaje"]
+                         </div>
+                     }
+
+                     <!-- Muestra los errores de validación del modelo/formulario -->
+                         <div style="font-size: 14px; margin-top: 4px;">
+                             @Html.ValidationSummary(false, "", new { @style = "list-style-type: none; padding: 0; margin: 0;" })
+                         </div>
+                </div>
+            }
+
             <input type="hidden" asp-for="IdSede" />
 
             <!-- FILA 1 -->

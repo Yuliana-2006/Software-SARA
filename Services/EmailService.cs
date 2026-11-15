@@ -18,8 +18,10 @@ namespace Software_SARA.Services
             _config = config;
         }
 
+        // 1. ENVIAR CONTRASEÑA (Se mantiene igual, con logo)
         public async Task EnviarPasswordAsync(string destinatario, string nombre, string password, string rol, string numDocumento)
         {
+            // ... (Tu código actual de enviar contraseña se queda igual)
             var email = new MimeMessage();
             email.From.Add(new MailboxAddress(_config["EmailSettings:FromName"], _config["EmailSettings:FromEmail"]));
             email.To.Add(new MailboxAddress(nombre, destinatario));
@@ -41,7 +43,6 @@ namespace Software_SARA.Services
             if (File.Exists(imagePath))
             {
                 var image = builder.LinkedResources.Add(imagePath);
-                // Asignamos un ContentId limpio y estándar compatible con todos los clientes de correo
                 image.ContentId = "sara_logo_cid";
                 logoHtml = $"<img src='cid:sara_logo_cid' alt='SARA Logo' style='width: 160px; max-width: 100%; height: auto; display: block; margin: 0 auto 10px auto;'>";
             }
@@ -81,6 +82,40 @@ namespace Software_SARA.Services
                 </div>
             </div>";
 
+            email.Body = builder.ToMessageBody();
+
+            using var smtp = new SmtpClient();
+            smtp.Timeout = 15000;
+            await smtp.ConnectAsync(_config["EmailSettings:Host"], int.Parse(_config["EmailSettings:Port"]), SecureSocketOptions.StartTls);
+            await smtp.AuthenticateAsync(_config["EmailSettings:User"], _config["EmailSettings:Password"]);
+            await smtp.SendAsync(email);
+            await smtp.DisconnectAsync(true);
+        }
+
+        // 2. ENVIAR INFORME (SIN LOGO, Y CON NOMBRE CORRECTO)
+        public async Task EnviarInformeCajaAsync(string destinatario, string nombreDestinatario, string sede, DateTime fecha, byte[] pdfBytes)
+        {
+            var email = new MimeMessage();
+            email.From.Add(new MailboxAddress(_config["EmailSettings:FromName"], _config["EmailSettings:FromEmail"]));
+
+            // AQUÍ SE CORRIGE: Le pasamos el nombre real de la persona, no "Administrador"
+            email.To.Add(new MailboxAddress(nombreDestinatario, destinatario));
+
+            email.Subject = $"Informe Diario de Caja - {sede} - {fecha:dd/MM/yyyy}";
+
+            var builder = new BodyBuilder();
+
+            // Correo sin logo, solo texto y el nombre de la persona
+            builder.HtmlBody = $@"
+                <div style='font-family: Arial, sans-serif; padding: 20px;'>
+                    <h2 style='color: #2E4F3E;'>Informe Diario de Caja</h2>
+                    <p>Hola <strong>{nombreDestinatario}</strong>,</p>
+                    <p>Adjunto encontrarás el informe consolidado de los movimientos de caja para la sede <b>{sede}</b> correspondientes al día <b>{fecha:dd/MM/yyyy}</b>.</p>
+                    <br>
+                    <p>Atentamente,<br/>Sistema SARA</p>
+                </div>";
+
+            builder.Attachments.Add($"InformeCaja_{fecha:yyyyMMdd}.pdf", pdfBytes, new ContentType("application", "pdf"));
             email.Body = builder.ToMessageBody();
 
             using var smtp = new SmtpClient();

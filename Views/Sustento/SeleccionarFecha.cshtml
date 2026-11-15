@@ -1,0 +1,76 @@
+﻿@{
+    ViewData["Title"] = "Seleccionar Fecha";
+    var fechas = ViewBag.FechasDisponibles as List<DateTime>;
+}
+
+<style>
+    .sara-form-container {
+        background-color: #3B6146;
+        border-radius: 30px;
+        padding: 30px 40px;
+        max-width: 600px;
+        margin: 0 auto;
+        color: #FFFFFF;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    .sara-input-pill {
+        background-color: #558257;
+        color: white;
+        border: 1.5px solid #2D4832;
+        border-radius: 20px;
+        padding: 10px 15px;
+        font-size: 1.1rem;
+    }
+
+    .sara-btn-submit {
+        background-color: #D9D7C7;
+        color: #3B6146;
+        border: none;
+        border-radius: 50px;
+        font-weight: bold;
+        padding: 10px 0;
+        width: 100%;
+        transition: all 0.2s;
+        font-size: 1.1rem;
+    }
+
+        .sara-btn-submit:hover {
+            background-color: #ffffff;
+        }
+</style>
+
+<div class="container py-5">
+    <div class="sara-form-container text-center">
+        <h3 class="fw-bold mb-4 text-white">Seleccione una Fecha</h3>
+        <p class="mb-4">Elija el día del cual desea calcular el sustento mínimo.</p>
+
+        @if (fechas != null && fechas.Any())
+        {
+            <form asp-action="Calcular" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="mb-4 text-start">
+                    <label class="fw-bold mb-2">Fechas con facturas pendientes:</label>
+                    <select name="fechaSeleccionada" class="form-select sara-input-pill" required>
+                        <option value="">-- Seleccione una fecha --</option>
+                        @foreach (var fecha in fechas)
+                        {
+                            <option value="@fecha.ToString("yyyy-MM-dd")">@fecha.ToString("dd/MM/yyyy")</option>
+                        }
+                    </select>
+                </div>
+
+                <button type="submit" class="sara-btn-submit mb-3">CALCULAR SUSTENTO</button>
+                <a asp-action="Index" class="btn btn-outline-light w-100 rounded-pill">Cancelar</a>
+            </form>
+        }
+        else
+        {
+            <div class="alert alert-warning fw-bold">
+                No hay fechas con facturas pendientes registradas en el sistema.
+            </div>
+            <a asp-action="Index" class="btn btn-outline-light rounded-pill mt-3">Volver</a>
+        }
+    </div>
+</div>
