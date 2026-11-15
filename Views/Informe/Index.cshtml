@@ -1,0 +1,27 @@
+﻿@{
+    ViewData["Title"] = "Informe Diario";
+}
+
+<div class="container py-4">
+    <div class="card shadow mx-auto" style="max-width: 500px; background-color: #3B6146; color: white; border-radius: 30px;">
+        <div class="card-body p-5 text-center">
+            <h3 class="fw-bold mb-4">Informe Diario de Caja</h3>
+            <p>Selecciona la fecha para generar el reporte consolidado.</p>
+
+            @if (TempData["MensajeError"] != null)
+            {
+                <div class="alert alert-danger fw-bold text-start">@TempData["MensajeError"]</div>
+            }
+
+            <form asp-action="Generar" method="post">
+                @Html.AntiForgeryToken()
+                <div class="mb-4 text-start">
+                    <label class="fw-bold mb-2">Fecha del Informe</label>
+                    <input type="date" name="fechaSeleccionada" class="form-control rounded-pill" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                </div>
+                <button type="submit" class="btn btn-light w-100 rounded-pill fw-bold py-2">GENERAR REPORTE</button>
+                <a asp-controller="Caja" asp-action="Index" class="btn btn-outline-light w-100 rounded-pill mt-2">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>

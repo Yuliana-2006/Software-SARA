@@ -1,10 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Software_SARA.Dtos;
 using Software_SARA.Services;
-using Microsoft.AspNetCore.Http;
+using Software_SARA.Utilities;
 
 namespace Software_SARA.Controllers
 {
+    [AuthorizeRole("Gerente", "Tesorero", "Empleado")]
+    
     public class RecordatoriosController : Controller
     {
         private readonly RecordatorioPedidoService _service;
