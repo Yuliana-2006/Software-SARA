@@ -1,0 +1,247 @@
+﻿@model Software_SARA.Dtos.InformeCajaDTO
+@{
+    ViewData["Title"] = "Reporte de Gestión";
+    var cultura = new System.Globalization.CultureInfo("es-CO");
+}
+
+<style>
+    .sara-modal .modal-content {
+        background-color: #558257;
+        border: 4px solid #2D4832;
+        border-radius: 25px;
+        color: white;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .sara-modal .modal-body {
+        padding: 40px 30px;
+    }
+    .sara-modal-title {
+        font-weight: 900;
+        font-size: 1.5rem;
+        text-align: center;
+        margin-bottom: 30px;
+        line-height: 1.4;
+    }
+    .sara-modal-btn {
+        background-color: #D9D7C7;
+        color: #1A3020;
+        font-weight: 800;
+        border-radius: 50px;
+        border: 3px solid #2D4832;
+        padding: 8px 0;
+        width: 45%;
+        font-size: 1.1rem;
+    }
+</style>
+
+<div class="container py-4" style="max-width: 1000px;">
+    <div class="d-flex justify-content-between align-items-end mb-4 pb-3" style="border-bottom: 3px solid #2D4832;">
+        <div>
+            <h2 class="fw-bold m-0" style="color: #2D4832;">REPORTE DE GESTIÓN FINANCIERA</h2>
+            <p class="text-muted m-0 fs-5">Sede: <strong>@Model.NombreSede</strong> | Fecha: <strong>@Model.Fecha.ToString("dd/MM/yyyy")</strong></p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-dark rounded-pill fw-bold">Volver</a>
+    </div>
+
+    @if (TempData["MensajeExito"] != null) { <div class="alert alert-success fw-bold">@TempData["MensajeExito"]</div> }
+    @if (TempData["MensajeError"] != null) { <div class="alert alert-danger fw-bold">@TempData["MensajeError"]</div> }
+
+    <!-- SECCIÓN 1: MOVIMIENTOS DE CAJA -->
+    <h5 class="fw-bold mt-4 mb-3" style="color: #2D4832;"><i class="bi bi-cash-stack"></i> Movimientos de Caja (Apertura / Cierre)</h5>
+    @if (Model.Movimientos.Any())
+    {
+        <div class="table-responsive shadow-sm rounded">
+            <table class="table table-bordered align-middle mb-0 text-center">
+                <thead style="background-color: #2D4832; color: white;">
+                    <tr>
+                        <th>Responsable</th>
+                        <th>Fecha Apertura</th>
+                        <th class="text-end">Monto Inicial</th>
+                        <th>Fecha Cierre</th>
+                        <th class="text-end">Monto Final</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var mov in Model.Movimientos)
+                    {
+                        <tr>
+                            <td class="fw-bold">@(mov.IdUsuarioNavigation?.NomUsuario ?? "N/D")</td>
+                            <td>@mov.FechaHoraApertura.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="text-end">$ @mov.MontoInicial.ToString("N0", cultura)</td>
+                            <td>
+                                @if (mov.EstadoDia)
+                                {
+                                    <span class="badge bg-success">Caja Abierta</span>
+                                }
+                                else
+                                {
+                                    @mov.FechaHoraCierre.ToString("dd/MM/yyyy HH:mm")
+                                }
+                            </td>
+                            <td class="text-end">
+                                @if (mov.EstadoDia)
+                                {
+                                    <span class="text-muted">--</span>
+                                }
+                                else
+                                {
+                                    @($"$ {mov.MontoFinal.ToString("N0", cultura)}")
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-light border text-muted">No hay movimientos de caja registrados para esta fecha.</div>
+    }
+
+    <!-- SECCIÓN 2: FACTURAS PENDIENTES -->
+    <h5 class="fw-bold mt-5 mb-3" style="color: #856404;"><i class="bi bi-exclamation-circle-fill"></i> Facturas Pendientes de Pago</h5>
+    @if (Model.FacturasPendientes.Any())
+    {
+        <div class="table-responsive shadow-sm rounded">
+            <table class="table table-bordered table-striped align-middle mb-0 text-center">
+                <thead style="background-color: #FFF3CD; color: #856404;">
+                    <tr>
+                        <th>ID Factura</th>
+                        <th>Tipo</th>
+                        <th>Proveedor / Servicio</th>
+                        <th>Fecha Vencimiento</th>
+                        <th class="text-end">Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var f in Model.FacturasPendientes)
+                    {
+                        string tipo = f.TipFactura ? "Proveedor" : "Servicio";
+                        string nombre = f.TipFactura ? f.NomProveedor : f.NomServicio;
+                        <tr>
+                            <td>@f.IdFactura</td>
+                            <td>@tipo</td>
+                            <td class="fw-bold">@nombre</td>
+                            <td>@f.FechaVencimiento.ToString("dd/MM/yyyy")</td>
+                            <td class="text-end fw-bold">$ @f.ValorFactura.ToString("N0", cultura)</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot style="background-color: #FFF3CD; color: #856404;">
+                    <tr>
+                        <td colspan="4" class="text-end fw-bold fs-6">TOTAL PENDIENTE:</td>
+                        <td class="text-end fw-bold fs-6">$ @Model.TotalFacturasPendientes.ToString("N0", cultura)</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-light border text-muted">No hay facturas pendientes registradas para esta fecha.</div>
+    }
+
+    <!-- SECCIÓN 3: FACTURAS PAGADAS -->
+    <h5 class="fw-bold mt-5 mb-3" style="color: #198754;"><i class="bi bi-check-circle-fill"></i> Facturas Pagadas / Canceladas</h5>
+    @if (Model.FacturasPagadas.Any())
+    {
+        <div class="table-responsive shadow-sm rounded">
+            <table class="table table-bordered align-middle mb-0 text-center">
+                <thead style="background-color: #D1E7DD; color: #0F5132;">
+                    <tr>
+                        <th>ID Factura</th>
+                        <th>Tipo</th>
+                        <th>Proveedor / Servicio</th>
+                        <th>Fecha Vencimiento</th>
+                        <th class="text-end">Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var f in Model.FacturasPagadas)
+                    {
+                        string tipo = f.TipFactura ? "Proveedor" : "Servicio";
+                        string nombre = f.TipFactura ? f.NomProveedor : f.NomServicio;
+                        <tr>
+                            <td>@f.IdFactura</td>
+                            <td>@tipo</td>
+                            <td class="fw-bold">@nombre</td>
+                            <td>@f.FechaVencimiento.ToString("dd/MM/yyyy")</td>
+                            <td class="text-end fw-bold">$ @f.ValorFactura.ToString("N0", cultura)</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot style="background-color: #D1E7DD; color: #0F5132;">
+                    <tr>
+                        <td colspan="4" class="text-end fw-bold fs-6">TOTAL PAGADO:</td>
+                        <td class="text-end fw-bold fs-6">$ @Model.TotalFacturasPagadas.ToString("N0", cultura)</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-light border text-muted">No hay facturas pagadas registradas para esta fecha.</div>
+    }
+
+    <!-- BOTONES DE ACCIÓN -->
+    <div class="row justify-content-end mt-5 gap-3">
+        <div class="col-md-4">
+            <a href="@Url.Action("DescargarPDF", "Informe", new { fechaSeleccionada = Model.Fecha.ToString("yyyy-MM-dd") })" class="btn btn-dark w-100 rounded-pill py-2 fw-bold">
+                <i class="bi bi-download"></i> Descargar PDF
+            </a>
+        </div>
+        <div class="col-md-4">
+            <!-- Botón que SOLO ABRE EL MODAL. No envía nada por sí solo -->
+            <button type="button" class="btn btn-success w-100 rounded-pill py-2 fw-bold" onclick="abrirModalEnvio()">
+                <i class="bi bi-envelope"></i> Enviar por Correo
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL VERDE PARA SELECCIONAR Y CONFIRMAR -->
+<div class="modal fade sara-modal" id="modalEnviar" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <h4 class="sara-modal-title">Enviar Reporte por Correo</h4>
+                
+                <!-- AQUÍ ESTÁ EL FORMULARIO REAL. SOLO SE ENVÍA AL DAR CLIC EN "CONFIRMAR Y ENVIAR" -->
+                <form asp-action="EnviarCorreo" method="post" id="formEnviarCorreo">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="fechaSeleccionada" value="@Model.Fecha.ToString("yyyy-MM-dd")" />
+                    
+                    <div class="mb-4 text-start">
+                        <label class="fw-bold mb-2 text-white">Seleccione el destinatario (Solo Gerentes/Tesoreros):</label>
+                        <select name="emailDestino" class="form-select text-dark rounded-pill" required>
+                            <option value="">-- Seleccione un correo --</option>
+                            @if (Model.UsuariosCorreo != null)
+                            {
+                                foreach (var user in Model.UsuariosCorreo)
+                                {
+                                    <option value="@user.Correo">@user.NomUsuario (@user.Correo)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="submit" class="sara-modal-btn">Confirmar y Enviar</button>
+                        <button type="button" class="sara-modal-btn" data-bs-dismiss="modal">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function abrirModalEnvio() {
+            var modal = new bootstrap.Modal(document.getElementById('modalEnviar'));
+            modal.show();
+        }
+    </script>
+}
