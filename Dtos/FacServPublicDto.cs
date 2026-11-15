@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace Software_SARA.Dtos
@@ -10,6 +10,12 @@ namespace Software_SARA.Dtos
         public bool TipFactura { get; set; }
         public int? IdProveedor { get; set; }
         public int? IdServicio { get; set; }
+
+        // Propiedades que venían de Develop
+        public string? NomServicio { get; set; }
+
+        [Required(ErrorMessage = "El valor de la factura es obligatorio.")]
+        [Range(20000, 99999999.99, ErrorMessage = "El valor de la factura debe ser mayor o igual a $20,000.")]
         public decimal ValorFactura { get; set; }
 
         // Fechas como DateOnly
@@ -20,6 +26,10 @@ namespace Software_SARA.Dtos
 
         // PROPIEDADES QUE FALTABAN
         public int Reponse { get; set; }
-        public string? Message { get; set; }
+
+        // Propiedades que venían de Develop
+        public string Message { get; set; } = string.Empty;
+        public string? NomUsuario { get; set; } // Nombre del responsable que ingresó la factura
+        public DateTime? FechaPago { get; set; } // Fecha en la que se confirmó el pago
     }
 }

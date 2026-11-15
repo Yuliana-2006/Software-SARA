@@ -143,5 +143,11 @@ namespace Software_SARA.Services
             }
             return facServPublicDto;
         }
+
+        public async Task<List<HistorialFacturaDto>> ObtenerHistorialFacturasServiciosPublicosAsync()
+        {
+            return await _facServPubRepository.ObtenerHistorialFacturasServiciosPublicosAsync();
+        }
+
     }
 }

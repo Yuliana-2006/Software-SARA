@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Software_SARA.Dtos;
 using Software_SARA.Repositories.Models;
 using Software_SARA.Services;
@@ -17,7 +17,6 @@ namespace Software_SARA.Controllers
         private readonly SarabdContext _context;
         private readonly EmailService _emailService;
 
-        // 1. CONSTRUCTOR CORREGIDO (Antes decía EmpleadoController)
         public PersonalController(SarabdContext context, EmailService emailService)
         {
             _context = context;
@@ -37,7 +36,6 @@ namespace Software_SARA.Controllers
             var gerente = _context.Usuarios.Find(gerenteId);
             if (gerente == null) return RedirectToAction("Login", "Acceso");
 
-            // Variable cambiada a 'personal'
             var personal = _context.Usuarios
                 .Where(u => u.IdSede == gerente.IdSede && u.IdRol == idRol && u.EstadoUsuario == true)
                 .ToList();
@@ -95,7 +93,7 @@ namespace Software_SARA.Controllers
                 Telefono = dto.Telefono,
                 DirUsuario = dto.DirUsuario,
                 FechaNaci = dto.FechaNaci,
-                IdRol = dto.IdRol, // Toma el rol (3 o 4) del formulario
+                IdRol = dto.IdRol,
                 IdSede = gerente.IdSede,
                 EstadoUsuario = true
             };

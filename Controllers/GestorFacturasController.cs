@@ -10,10 +10,12 @@ namespace Software_SARA.Controllers
     public class GestorFacturasController : Controller
     {
         private readonly FacProveedorService _facProveedorService;
+        private readonly FacServPubService _facServPubService;
 
-        public GestorFacturasController(FacProveedorService facProveedorService)
+        public GestorFacturasController(FacProveedorService facProveedorService, FacServPubService facServPubService)
         {
             _facProveedorService = facProveedorService;
+            _facServPubService = facServPubService;
         }
 
         // GET: FacProveedorController
@@ -24,8 +26,12 @@ namespace Software_SARA.Controllers
 
         public async Task<ActionResult> HistorialFacturas()
         {
-            var historial = await _facProveedorService.ObtenerHistorialFacturasProveedoresAsync();
-            return View(historial);
+            var historialProveedores = await _facProveedorService.ObtenerHistorialFacturasProveedoresAsync();
+            var historialServicios = await _facServPubService.ObtenerHistorialFacturasServiciosPublicosAsync();
+            var historialUnificado = historialProveedores.Concat(historialServicios)
+                                                          .OrderByDescending(f => f.IdFactura)
+                                                          .ToList();
+            return View(historialUnificado);
         }
     }
 }
