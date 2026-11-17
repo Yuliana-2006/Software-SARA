@@ -9,10 +9,15 @@
     <!-- Encabezado Principal de la Vista -->
     <div class="facturas-header-banner">
         <h2>Facturas Proveedores</h2>
-        <!-- CORREGIDO: Se cambia el href="#" por los atributos asp-controller y asp-action -->
-        <a asp-controller="Proveedores" asp-action="VencimientosProximosProveedores" class="btn-vencimientos">
-            Vencimientos próximos
-        </a>
+        <div class="d-flex gap-3 align-items-center">
+            <a asp-controller="ServiciosPublicos" asp-action="VencimientoProximos" class="btn-vencimientos">
+                Vencimientos próximos
+            </a>
+     <!-- NUEVO BOTÓN VOLVER -->
+            <a asp-controller="GestorFacturas" asp-action="SelectFactura" class="btn btn-outline-dark rounded-pill fw-bold px-4 shadow-sm" style="border-color: #2D4832; color: #2D4832; background-color: white; height: fit-content;">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
     </div>
 
     <!-- Contenedor de las Tarjetas -->

@@ -26,7 +26,11 @@
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="fw-bold" style="color: #2D4832;">GESTIÓN DE DUEÑOS</h3>
-        <a asp-action="Crear" class="btn btn-success rounded-pill fw-bold px-4">+ Registrar Nuevo Dueño</a>
+        <div>
+            <!-- Botón de Registrar y el nuevo Botón de Volver -->
+            <a asp-action="Crear" class="btn btn-success rounded-pill fw-bold px-4 me-2">+ Registrar Nuevo Dueño</a>
+            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-dark rounded-pill fw-bold px-4" style="border-color: #2D4832; color: #2D4832;">Volver</a>
+        </div>
     </div>
 
     @if (TempData["MensajeExito"] != null) { <div class="alert alert-success fw-bold shadow-sm">@TempData["MensajeExito"]</div> }
@@ -75,7 +79,7 @@
             <div class="modal-body text-center">
                 <h4 class="sara-modal-title" id="textoEstado"></h4>
                 <form id="formEstado" method="post" asp-action="CambiarEstado">
-                    @Html.AntiForgeryToken() <!-- ¡ESTO ES VITAL! -->
+                    @Html.AntiForgeryToken()
                     <input type="hidden" name="id" id="idEstado" />
                     <div class="d-flex justify-content-between mt-4">
                         <button type="submit" class="sara-modal-btn">Confirmar</button>
@@ -94,7 +98,7 @@
             <div class="modal-body text-center">
                 <h4 class="sara-modal-title" id="textoEliminar"></h4>
                 <form id="formEliminar" method="post" asp-action="Eliminar">
-                    @Html.AntiForgeryToken() <!-- ¡ESTO ES VITAL! -->
+                    @Html.AntiForgeryToken()
                     <input type="hidden" name="id" id="idEliminar" />
                     <div class="d-flex justify-content-between mt-4">
                         <button type="submit" class="sara-modal-btn text-danger">Confirmar</button>

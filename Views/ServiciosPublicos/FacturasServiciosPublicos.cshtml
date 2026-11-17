@@ -5,11 +5,18 @@
 }
 
 <div class="facturas-container">
+    <!-- ENCABEZADO CON BOTÓN VOLVER -->
     <div class="facturas-header-banner">
         <h2>Facturas Servicios Públicos</h2>
-        <a asp-controller="ServiciosPublicos" asp-action="VencimientoProximos" class="btn-vencimientos">
-            Vencimientos próximos
-        </a>
+        <div class="d-flex gap-3 align-items-center">
+            <a asp-controller="ServiciosPublicos" asp-action="VencimientoProximos" class="btn-vencimientos">
+                Vencimientos próximos
+            </a>
+            <!-- NUEVO BOTÓN VOLVER -->
+            <a asp-controller="GestorFacturas" asp-action="SelectFactura" class="btn btn-outline-dark rounded-pill fw-bold px-4 shadow-sm" style="border-color: #2D4832; color: #2D4832; background-color: white; height: fit-content;">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
     </div>
 
     <div class="facturas-cards-wrapper">
@@ -22,7 +29,7 @@
             switch (idServ)
             {
                 case 1:
-                case 10: // <-- Agregado el ID 10 para que cargue la LUZ y su icono correctamente
+                case 10:
                     nombreServicio = "LUZ";
                     iconoClase = "bi-lightning-fill";
                     break;
