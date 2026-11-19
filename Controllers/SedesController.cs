@@ -30,7 +30,6 @@ namespace Software_SARA.Controllers
             };
         }
 
-        // GET: /Sedes/RegistrarSede
         [HttpGet]
         public async Task<IActionResult> RegistrarSede()
         {
@@ -38,7 +37,6 @@ namespace Software_SARA.Controllers
             return View(listaSedes);
         }
 
-        // GET: /Sedes/CrearSede
         [HttpGet]
         public ActionResult CrearSede()
         {
@@ -47,7 +45,6 @@ namespace Software_SARA.Controllers
             return View(sedeDto);
         }
 
-        // POST: /Sedes/CrearSede
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> CrearSede(SedeDto sedeDto)
@@ -63,7 +60,11 @@ namespace Software_SARA.Controllers
                 }
 
                 var resultado = await _sedesServices.CreateSede(sedeDto);
-                TempData["MensajeExito"] = resultado.Message;
+                if (resultado.Reponse == 1)
+                    TempData["MensajeExito"] = resultado.Message;
+                else
+                    TempData["MensajeError"] = resultado.Message;
+
                 return RedirectToAction(nameof(RegistrarSede));
             }
             catch (Exception ex)
@@ -74,22 +75,20 @@ namespace Software_SARA.Controllers
             }
         }
 
-        // GET: /Sedes/EditarSede
         [HttpGet]
-        public async Task<ActionResult> EditarSede(int id)
+        public async Task<IActionResult> EditarSede(int id)
         {
             var sedeDto = await _sedesServices.ObtenerSedePorId(id);
 
             if (sedeDto == null)
             {
-                return NotFound(); // Si no existe la sede retorna error
+                return NotFound();
             }
 
             ViewBag.Departamentos = new SelectList(ObtenerDepartamentos(), sedeDto.DepSede);
             return View(sedeDto);
         }
 
-        // POST: /Sedes/EditarSede
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> EditarSede(SedeDto sedeDto)
@@ -105,7 +104,11 @@ namespace Software_SARA.Controllers
                 }
 
                 var resultado = await _sedesServices.EditarSede(sedeDto);
-                TempData["MensajeExito"] = resultado.Message;
+                if (resultado.Reponse == 1)
+                    TempData["MensajeExito"] = resultado.Message;
+                else
+                    TempData["MensajeError"] = resultado.Message;
+
                 return RedirectToAction(nameof(RegistrarSede));
             }
             catch (Exception ex)
@@ -116,21 +119,19 @@ namespace Software_SARA.Controllers
             }
         }
 
-        // GET: /Sedes/EliminarSede
         [HttpGet]
-        public async Task<ActionResult> EliminarSede(int id)
+        public async Task<IActionResult> EliminarSede(int id)
         {
             var sedeDto = await _sedesServices.ObtenerSedePorId(id);
 
             if (sedeDto == null)
             {
-                return NotFound(); // Si no existe la sede retorna error
+                return NotFound();
             }
 
             return View(sedeDto);
         }
 
-        // POST: /Sedes/EliminarSede
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> EliminarSede(SedeDto sedeDto)
@@ -138,25 +139,38 @@ namespace Software_SARA.Controllers
             try
             {
                 var resultado = await _sedesServices.EliminarSede(sedeDto.IdSede);
-                TempData["MensajeExito"] = resultado.Message;
-                return RedirectToAction(nameof(RegistrarSede));
+                if (resultado.Reponse == 1)
+                {
+                    TempData["MensajeExito"] = resultado.Message;
+                    return RedirectToAction(nameof(RegistrarSede));
+                }
+
+                // Aquí se devuelve la vista EliminarSede con el bloqueo y el mensaje sin desactivar
+                var sedeActual = await _sedesServices.ObtenerSedePorId(sedeDto.IdSede) ?? sedeDto;
+                ViewData["Mensaje"] = resultado.Message;
+                ViewBag.Bloqueado = true;
+                return View(sedeActual);
             }
             catch (Exception ex)
             {
                 ViewData["Mensaje"] = "Error al eliminar sede: " + ex.Message;
+                ViewBag.Bloqueado = true;
                 return View(sedeDto);
             }
         }
 
-        // POST: /Sedes/ReactivarSede/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> ReactivarSede(int id)
+        public async Task<IActionResult> ReactivarSede(int id)
         {
             try
             {
                 var resultado = await _sedesServices.ReactivarSede(id);
-                TempData["MensajeExito"] = resultado.Message;
+                if (resultado.Reponse == 1)
+                    TempData["MensajeExito"] = resultado.Message;
+                else
+                    TempData["MensajeError"] = resultado.Message;
+
                 return RedirectToAction(nameof(RegistrarSede));
             }
             catch (Exception ex)

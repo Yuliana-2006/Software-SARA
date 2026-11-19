@@ -1,40 +1,132 @@
 ﻿@model IEnumerable<Software_SARA.Repositories.Models.Usuario>
-@{ ViewData["Title"] = "Gestión de Dueños"; }
+@{
+    ViewData["Title"] = "Gestión de Dueños";
+}
 
 <style>
     .sara-card-dueño {
-        background-color: #558257; border: 3.5px solid #2D4832;
-        border-radius: 25px; width: 260px; padding: 25px 20px;
-        color: white; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        background-color: #558257;
+        border: 3.5px solid #2D4832;
+        border-radius: 25px;
+        width: 260px;
+        padding: 25px 20px;
+        color: white;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }
-    .sara-card-dueño.inactivo { background-color: #8a8a8a; border-color: #555555; }
-    .sara-avatar { width: 100px; height: 100px; background-color: #D9D7C7; border-radius: 50%; margin: 0 auto 15px auto; border: 2px solid #2D4832; }
-    .sara-name { font-size: 1.3rem; font-weight: 800; margin-bottom: 5px; line-height: 1.2; }
-    .sara-role { font-size: 1rem; color: #C8E0C8; font-weight: 600; margin-bottom: 20px; }
-    .sara-btn { background-color: #D9D7C7; color: #2D4832; font-weight: 800; border: 3px solid #2D4832; border-radius: 50px; width: 100%; padding: 6px 0; margin-bottom: 10px; text-decoration: none; display: block; transition: all 0.2s; font-size: 1rem; }
-    .sara-btn:hover { background-color: #2D4832; color: #FFFFFF; }
-    .sara-btn-danger { background-color: #A34848; color: #FFFFFF; }
-    .sara-btn-danger:hover { background-color: #722626; color: #FFFFFF; }
-    
-    .sara-modal .modal-content { background-color: #558257; border: 4px solid #2D4832; border-radius: 25px; color: white; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-    .sara-modal .modal-body { padding: 40px 30px; }
-    .sara-modal-title { font-weight: 900; font-size: 1.4rem; text-align: center; margin-bottom: 30px; line-height: 1.4; }
-    .sara-modal-btn { background-color: #D9D7C7; color: #1A3020; font-weight: 800; border-radius: 50px; border: 3px solid #2D4832; padding: 8px 0; width: 45%; font-size: 1rem; }
-    .sara-modal-btn:hover { background-color: #2D4832; color: white; }
+
+        .sara-card-dueño.inactivo {
+            background-color: #8a8a8a;
+            border-color: #555555;
+        }
+
+    .sara-avatar {
+        width: 100px;
+        height: 100px;
+        background-color: #D9D7C7;
+        border-radius: 50%;
+        margin: 0 auto 15px auto;
+        border: 2px solid #2D4832;
+    }
+
+    .sara-name {
+        font-size: 1.3rem;
+        font-weight: 800;
+        margin-bottom: 5px;
+        line-height: 1.2;
+    }
+
+    .sara-role {
+        font-size: 1rem;
+        color: #C8E0C8;
+        font-weight: 600;
+        margin-bottom: 20px;
+    }
+
+    .sara-btn {
+        background-color: #D9D7C7;
+        color: #2D4832;
+        font-weight: 800;
+        border: 3px solid #2D4832;
+        border-radius: 50px;
+        width: 100%;
+        padding: 6px 0;
+        margin-bottom: 10px;
+        text-decoration: none;
+        display: block;
+        transition: all 0.2s;
+        font-size: 1rem;
+    }
+
+        .sara-btn:hover {
+            background-color: #2D4832;
+            color: #FFFFFF;
+        }
+
+    .sara-btn-danger {
+        background-color: #A34848;
+        color: #FFFFFF;
+    }
+
+        .sara-btn-danger:hover {
+            background-color: #722626;
+            color: #FFFFFF;
+        }
+
+    .sara-modal .modal-content {
+        background-color: #558257;
+        border: 4px solid #2D4832;
+        border-radius: 25px;
+        color: white;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .sara-modal .modal-body {
+        padding: 40px 30px;
+    }
+
+    .sara-modal-title {
+        font-weight: 900;
+        font-size: 1.4rem;
+        text-align: center;
+        margin-bottom: 30px;
+        line-height: 1.4;
+    }
+
+    .sara-modal-btn {
+        background-color: #D9D7C7;
+        color: #1A3020;
+        font-weight: 800;
+        border-radius: 50px;
+        border: 3px solid #2D4832;
+        padding: 8px 0;
+        width: 45%;
+        font-size: 1rem;
+    }
+
+        .sara-modal-btn:hover {
+            background-color: #2D4832;
+            color: white;
+        }
 </style>
 
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="fw-bold" style="color: #2D4832;">GESTIÓN DE DUEÑOS</h3>
         <div>
-            <!-- Botón de Registrar y el nuevo Botón de Volver -->
             <a asp-action="Crear" class="btn btn-success rounded-pill fw-bold px-4 me-2">+ Registrar Nuevo Dueño</a>
             <a asp-controller="Home" asp-action="Index" class="btn btn-outline-dark rounded-pill fw-bold px-4" style="border-color: #2D4832; color: #2D4832;">Volver</a>
         </div>
     </div>
 
-    @if (TempData["MensajeExito"] != null) { <div class="alert alert-success fw-bold shadow-sm">@TempData["MensajeExito"]</div> }
-    @if (TempData["MensajeError"] != null) { <div class="alert alert-danger fw-bold shadow-sm">@TempData["MensajeError"]</div> }
+    @if (TempData["MensajeExito"] != null)
+    {
+        <div class="alert alert-success fw-bold shadow-sm">@TempData["MensajeExito"]</div>
+    }
+    @if (TempData["MensajeError"] != null)
+    {
+        <div class="alert alert-danger fw-bold shadow-sm">@TempData["MensajeError"]</div>
+    }
 
     <div class="d-flex flex-wrap gap-4">
         @if (Model != null && Model.Any())
@@ -45,12 +137,12 @@
                     <div class="sara-avatar"></div>
                     <div class="sara-name">@d.NomUsuario <br /> @d.ApelliUsuario</div>
                     <div class="sara-role">Dueño</div>
-                    
+
                     <div class="w-100 mt-auto">
                         <a asp-action="Consultar" asp-route-id="@d.IdUsuario" class="sara-btn">Consultar</a>
                         <a asp-action="Editar" asp-route-id="@d.IdUsuario" class="sara-btn">Editar</a>
-                        
-                        <button type="button" class="sara-btn @(d.EstadoUsuario ? "" : "text-success")" 
+
+                        <button type="button" class="sara-btn @(d.EstadoUsuario ? "" : "text-success")"
                                 onclick="confirmarEstado(@d.IdUsuario, '@(d.EstadoUsuario ? "Inactivar" : "Activar")', '@d.NomUsuario')">
                             @(d.EstadoUsuario ? "Inactivar" : "Activar")
                         </button>

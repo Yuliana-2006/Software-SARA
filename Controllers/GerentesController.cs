@@ -55,13 +55,11 @@ namespace Software_SARA.Controllers
 
         private void ValidarDatosGerente(GerenteDto gerente, int? idIgnorar = null)
         {
-            // 1. Sede obligatoria
             if (gerente.IdSede <= 0)
             {
                 ModelState.AddModelError("IdSede", "Debe seleccionar una sede válida.");
             }
 
-            // 2. Documento: 5 a 10 dígitos numéricos
             if (string.IsNullOrWhiteSpace(gerente.NumeroDocumento))
             {
                 ModelState.AddModelError("NumeroDocumento", "El número de documento es obligatorio.");
@@ -75,7 +73,6 @@ namespace Software_SARA.Controllers
                 ModelState.AddModelError("NumeroDocumento", "El número de documento debe tener entre 5 y 10 dígitos.");
             }
 
-            // 3. Teléfono: exactamente 10 dígitos numéricos
             if (string.IsNullOrWhiteSpace(gerente.Telefono))
             {
                 ModelState.AddModelError("Telefono", "El teléfono es obligatorio.");
@@ -89,14 +86,12 @@ namespace Software_SARA.Controllers
                 ModelState.AddModelError("Telefono", "El teléfono debe tener exactamente 10 números.");
             }
 
-            // 4. Correo: dominios permitidos (@gmail.com, @outlook.com, @ucundinamarca.edu.co)
             if (string.IsNullOrWhiteSpace(gerente.Correo) ||
                 !Regex.IsMatch(gerente.Correo, @"^[a-zA-Z0-9._%+-]+@(gmail\.com|outlook\.com|ucundinamarca\.edu\.co)$"))
             {
                 ModelState.AddModelError("Correo", "El correo debe ser valido");
             }
 
-            // 5. Edad: mayor de 18 años
             if (!gerente.FechaNacimiento.HasValue)
             {
                 ModelState.AddModelError("FechaNacimiento", "La fecha de nacimiento es obligatoria.");
@@ -106,7 +101,6 @@ namespace Software_SARA.Controllers
                 ModelState.AddModelError("FechaNacimiento", "El gerente debe ser mayor de 18 años.");
             }
 
-            // 6. Duplicados en base de datos
             if (!string.IsNullOrWhiteSpace(gerente.NumeroDocumento) && int.TryParse(gerente.NumeroDocumento, out int numDocParsed))
             {
                 bool existeDoc = idIgnorar.HasValue
@@ -176,7 +170,6 @@ namespace Software_SARA.Controllers
             return View(model);
         }
 
-        // POST: /Gerentes/Crear
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Crear(GerenteDto gerente)
@@ -232,7 +225,6 @@ namespace Software_SARA.Controllers
             }
         }
 
-        // POST: /Gerentes/Editar/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Editar(GerenteDto gerente)
@@ -291,7 +283,13 @@ namespace Software_SARA.Controllers
         {
             try
             {
-                await _gerenteService.EliminarGerenteAsync(id);
+                string? error = await _gerenteService.EliminarGerenteAsync(id);
+                if (error != null)
+                {
+                    TempData["MensajeError"] = error;
+                    return RedirectToAction("Index");
+                }
+
                 TempData["MensajeExito"] = "¡Gerente eliminado exitosamente!";
             }
             catch (Exception ex)

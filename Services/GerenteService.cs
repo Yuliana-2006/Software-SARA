@@ -1,6 +1,6 @@
 ﻿using Software_SARA.Repositories.Models;
 using Software_SARA.Utilities;
-using Software_SARA.Dtos; // <--- Importamos la capa DTO
+using Software_SARA.Dtos;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -18,6 +18,22 @@ namespace Software_SARA.Services
         {
             _context = context;
             _emailService = emailService;
+        }
+
+        public async Task<string?> ValidarDependenciasGerenteAsync(int idUsuario)
+        {
+            bool tieneFacturas = await _context.Facturas.AnyAsync(f => f.IdUsuario == idUsuario);
+            bool tieneRecordatorios = await _context.Recordatorios.AnyAsync(r => r.IdUsuario == idUsuario);
+            bool tieneCajas = await _context.DiaCajas.AnyAsync(c =>
+                c.IdUsuario == idUsuario ||
+                c.IdUsuarioCierre == idUsuario);
+
+            if (tieneFacturas || tieneRecordatorios || tieneCajas)
+            {
+                return "No se puede eliminar ni desactivar el gerente porque tiene información operativa (facturas, recordatorios o caja) asociada.";
+            }
+
+            return null;
         }
 
         public async Task<List<GerenteDto>> ObtenerGerentesAsync()
@@ -120,6 +136,11 @@ namespace Software_SARA.Services
             var usuarioDb = await _context.Usuarios.FindAsync(gerente.Id);
             if (usuarioDb == null) return "El gerente no existe en la base de datos.";
 
+            if (usuarioDb.EstadoUsuario == false && gerente.IdSede != usuarioDb.IdSede)
+            {
+                return "No se puede reasignar o modificar un gerente inactivo con información asociada.";
+            }
+
             if (_context.Usuarios.Any(u => u.NumDoc.ToString() == gerente.NumeroDocumento && u.IdUsuario != gerente.Id))
                 return "El número de documento ya pertenece a otro usuario.";
             if (_context.Usuarios.Any(u => u.Correo == gerente.Correo && u.IdUsuario != gerente.Id))
@@ -149,14 +170,19 @@ namespace Software_SARA.Services
             return null;
         }
 
-        public async Task EliminarGerenteAsync(int id)
+        public async Task<string?> EliminarGerenteAsync(int id)
         {
             var usuario = await _context.Usuarios.FindAsync(id);
-            if (usuario != null)
-            {
-                _context.Usuarios.Remove(usuario);
-                await _context.SaveChangesAsync();
-            }
+            if (usuario == null)
+                return "El gerente no existe en el sistema.";
+
+            string? motivoBloqueo = await ValidarDependenciasGerenteAsync(id);
+            if (!string.IsNullOrEmpty(motivoBloqueo))
+                return motivoBloqueo;
+
+            _context.Usuarios.Remove(usuario);
+            await _context.SaveChangesAsync();
+            return null;
         }
     }
 }
