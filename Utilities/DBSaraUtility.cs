@@ -1,10 +1,12 @@
-﻿using Microsoft.Data.SqlClient;
+using Microsoft.Data.SqlClient;
+using System;
 
 namespace Software_SARA.Utilities
 {
     public class DBSaraUtility
     {
-        static string SERVER = "DESKTOP-YULIANA";
+        // Dejamos tu servidor para que te funcione a ti
+        static string SERVER = "DESKTOP-YULIANA"; 
 
         static string DB_NAME = "SARABD";
 
@@ -13,8 +15,8 @@ namespace Software_SARA.Utilities
         static string DB_PASSWORD = "123";
 
         static string Conn = "Server=" + SERVER + ";Database=" + DB_NAME + ";Trusted_Connection=True;TrustServerCertificate=True;";
+        
         //mi conxion:
-
         SqlConnection Con = new SqlConnection(Conn);
 
         //procedimiento para abrir la conexion a la base de datos
@@ -49,7 +51,6 @@ namespace Software_SARA.Utilities
         public SqlConnection CONN()
         {
             return Con;
-
         }
     }
 }
