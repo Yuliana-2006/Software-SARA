@@ -107,6 +107,7 @@ namespace Software_SARA.Repositories
 
         public async Task<bool> CreateFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
+            // Consulta SQL para insertar una nueva factura de servicio público en la base de datos
             bool result = false;
             string SQL = @"INSERT INTO SARABD.dbo.factura
                            (id_usuario, tip_factura, id_proveedor, id_servicio, valor_factura, fecha_reg_factura, fecha_vencimiento, estado_factura)

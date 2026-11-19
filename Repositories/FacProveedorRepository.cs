@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
 using Software_SARA.Dtos;
 using Software_SARA.Repositories.Models;
@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Data; // IMPORTANTE: Necesario para usar CommandType.StoredProcedure
 
 namespace Software_SARA.Repositories
 {

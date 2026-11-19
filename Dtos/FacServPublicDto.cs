@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace Software_SARA.Dtos
 {
@@ -18,6 +18,6 @@ namespace Software_SARA.Dtos
         public DateTime? FechaPago { get; set; }
         public bool EstadoFactura { get; set; }
         public int Reponse { get; set; }
-        public string? Message { get; set; }
+        public string Message { get; set; } = string.Empty;
     }
 }
