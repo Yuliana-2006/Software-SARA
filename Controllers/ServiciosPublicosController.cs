@@ -2,6 +2,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Software_SARA.Dtos;
 using Software_SARA.Services;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Software_SARA.Controllers
 {
@@ -14,34 +18,60 @@ namespace Software_SARA.Controllers
             _facServPubService = facServPubService;
         }
 
-        // GET: ServiciosPublicosController
-        public async Task<ActionResult> FacturasServiciosPublicos()
+        private void ValidarDatosFacturaServicio(FacServPublicDto dto)
         {
-            var facturas = await _facServPubService.ObtenerTodasLasFacturasServiciosPublicos();
-            return View(facturas);
+            if (!dto.IdServicio.HasValue || dto.IdServicio.Value <= 0)
+            {
+                ModelState.AddModelError("IdServicio", "Debe seleccionar un servicio público.");
+            }
+
+            if (dto.ValorFactura <= 10000m)
+            {
+                ModelState.AddModelError("ValorFactura", "El valor de la factura debe ser mayor a $10.000.");
+            }
+
+            if (dto.FechaVencimiento < dto.FechaRegFactura)
+            {
+                ModelState.AddModelError("FechaVencimiento", "La fecha de vencimiento no puede ser inferior a la fecha de registro.");
+            }
         }
 
-        // GET: /Servicios/CrearFacturaServicioPublico
+        [HttpGet]
+        public async Task<ActionResult> FacturasServiciosPublicos()
+        {
+            try
+            {
+                var facturas = await _facServPubService.ObtenerTodasLasFacturasServiciosPublicos()
+                    ?? new List<FacServPublicDto>();
+                return View(facturas);
+            }
+            catch (Exception ex)
+            {
+                ViewData["Mensaje"] = "Error al cargar las facturas de servicios públicos: " + ex.Message;
+                return View(new List<FacServPublicDto>());
+            }
+        }
+
         [HttpGet]
         public async Task<ActionResult> CrearFacturaServicioPublico()
         {
+            var hoy = DateOnly.FromDateTime(DateTime.Now);
             FacServPublicDto facServPublicDto = new()
             {
-                FechaRegFactura = DateOnly.FromDateTime(DateTime.Now),
-                FechaVencimiento = DateOnly.FromDateTime(DateTime.Now)
+                FechaRegFactura = hoy,
+                FechaVencimiento = hoy
             };
             ViewBag.Servicios = await _facServPubService.ObtenerServiciosPublicos();
             return View(facServPublicDto);
         }
 
-        // POST: /Servicios/CrearFacturaServicioPublico
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> CrearFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
             try
             {
-                string usuarioIdString = HttpContext.Session.GetString("UsuarioId");
+                string? usuarioIdString = HttpContext.Session.GetString("UsuarioId");
 
                 if (string.IsNullOrEmpty(usuarioIdString) || !int.TryParse(usuarioIdString, out int idUsuarioSesion))
                 {
@@ -49,14 +79,9 @@ namespace Software_SARA.Controllers
                 }
 
                 facServPublicDto.IdUsuario = idUsuarioSesion;
+                facServPublicDto.FechaRegFactura = DateOnly.FromDateTime(DateTime.Now);
 
-                // VALIDACIÓN DIRECTA DE FECHAS EN EL CONTROLADOR
-                if (facServPublicDto.FechaVencimiento < facServPublicDto.FechaRegFactura)
-                {
-                    ModelState.AddModelError("FechaVencimiento", "La fecha de vencimiento no puede ser inferior a la fecha de registro.");
-                    ViewBag.Servicios = await _facServPubService.ObtenerServiciosPublicos();
-                    return View(facServPublicDto);
-                }
+                ValidarDatosFacturaServicio(facServPublicDto);
 
                 if (!ModelState.IsValid)
                 {
@@ -70,25 +95,27 @@ namespace Software_SARA.Controllers
                 {
                     ViewBag.Servicios = await _facServPubService.ObtenerServiciosPublicos();
 
-                    if (resultado.Message.Contains("valor", StringComparison.OrdinalIgnoreCase) || resultado.Message.Contains("$20,000", StringComparison.OrdinalIgnoreCase))
+                    string mensajeError = resultado.Message ?? "No fue posible registrar la factura.";
+
+                    if (mensajeError.Contains("valor", StringComparison.OrdinalIgnoreCase) || mensajeError.Contains("10", StringComparison.OrdinalIgnoreCase))
                     {
-                        ModelState.AddModelError("ValorFactura", resultado.Message);
+                        ModelState.AddModelError("ValorFactura", mensajeError);
                     }
-                    else if (resultado.Message.Contains("fecha de registro", StringComparison.OrdinalIgnoreCase))
+                    else if (mensajeError.Contains("fecha de registro", StringComparison.OrdinalIgnoreCase))
                     {
-                        ModelState.AddModelError("FechaRegFactura", resultado.Message);
+                        ModelState.AddModelError("FechaRegFactura", mensajeError);
                     }
-                    else if (resultado.Message.Contains("fecha de vencimiento", StringComparison.OrdinalIgnoreCase) || resultado.Message.Contains("inferior", StringComparison.OrdinalIgnoreCase))
+                    else if (mensajeError.Contains("fecha de vencimiento", StringComparison.OrdinalIgnoreCase) || mensajeError.Contains("inferior", StringComparison.OrdinalIgnoreCase))
                     {
                         ModelState.AddModelError("FechaVencimiento", "La fecha de vencimiento no puede ser inferior a la fecha de registro.");
                     }
-                    else if (resultado.Message.Contains("servicio", StringComparison.OrdinalIgnoreCase))
+                    else if (mensajeError.Contains("servicio", StringComparison.OrdinalIgnoreCase))
                     {
-                        ModelState.AddModelError("IdServicio", resultado.Message);
+                        ModelState.AddModelError("IdServicio", mensajeError);
                     }
                     else
                     {
-                        ViewData["Mensaje"] = resultado.Message;
+                        ViewData["Mensaje"] = mensajeError;
                     }
 
                     return View(facServPublicDto);
@@ -97,15 +124,14 @@ namespace Software_SARA.Controllers
                 TempData["MensajeExito"] = resultado.Message;
                 return RedirectToAction(nameof(FacturasServiciosPublicos));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 ViewBag.Servicios = await _facServPubService.ObtenerServiciosPublicos();
-                ViewData["Mensaje"] = "Error al crear factura de servicio público: " + ex.Message;
+                ViewData["Mensaje"] = "Error al crear factura de servicio público. Intente nuevamente.";
                 return View(facServPublicDto);
             }
         }
 
-        // GET: /Servicios/EditarFacturaServicioPublico
         [HttpGet]
         public async Task<ActionResult> EditarFacturaServicioPublico(int id)
         {
@@ -117,18 +143,16 @@ namespace Software_SARA.Controllers
             }
 
             ViewBag.Servicios = await _facServPubService.ObtenerServiciosPublicos();
-
             return View(facServPublicDto);
         }
 
-        // POST: /Servicios/EditarFacturaServicioPublico
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> EditarFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
             try
             {
-                string usuarioIdString = HttpContext.Session.GetString("UsuarioId");
+                string? usuarioIdString = HttpContext.Session.GetString("UsuarioId");
 
                 if (string.IsNullOrEmpty(usuarioIdString) || !int.TryParse(usuarioIdString, out int idUsuarioSesion))
                 {
@@ -136,14 +160,7 @@ namespace Software_SARA.Controllers
                 }
 
                 facServPublicDto.IdUsuario = idUsuarioSesion;
-
-                // VALIDACIÓN DIRECTA DE FECHAS EN EL CONTROLADOR
-                if (facServPublicDto.FechaVencimiento < facServPublicDto.FechaRegFactura)
-                {
-                    ModelState.AddModelError("FechaVencimiento", "La fecha de vencimiento no puede ser inferior a la fecha de registro.");
-                    ViewBag.Servicios = await _facServPubService.ObtenerServiciosPublicos();
-                    return View(facServPublicDto);
-                }
+                ValidarDatosFacturaServicio(facServPublicDto);
 
                 if (!ModelState.IsValid)
                 {
@@ -156,43 +173,21 @@ namespace Software_SARA.Controllers
                 if (resultado.Reponse == 0)
                 {
                     ViewBag.Servicios = await _facServPubService.ObtenerServiciosPublicos();
-
-                    if (resultado.Message.Contains("valor", StringComparison.OrdinalIgnoreCase) || resultado.Message.Contains("$20,000", StringComparison.OrdinalIgnoreCase))
-                    {
-                        ModelState.AddModelError("ValorFactura", resultado.Message);
-                    }
-                    else if (resultado.Message.Contains("fecha de registro", StringComparison.OrdinalIgnoreCase))
-                    {
-                        ModelState.AddModelError("FechaRegFactura", resultado.Message);
-                    }
-                    else if (resultado.Message.Contains("fecha de vencimiento", StringComparison.OrdinalIgnoreCase) || resultado.Message.Contains("inferior", StringComparison.OrdinalIgnoreCase))
-                    {
-                        ModelState.AddModelError("FechaVencimiento", "La fecha de vencimiento no puede ser inferior a la fecha de registro.");
-                    }
-                    else if (resultado.Message.Contains("servicio", StringComparison.OrdinalIgnoreCase))
-                    {
-                        ModelState.AddModelError("IdServicio", resultado.Message);
-                    }
-                    else
-                    {
-                        ViewData["Mensaje"] = resultado.Message;
-                    }
-
+                    ViewData["Mensaje"] = resultado.Message ?? "No fue posible actualizar la factura.";
                     return View(facServPublicDto);
                 }
 
                 TempData["MensajeExito"] = resultado.Message;
                 return RedirectToAction(nameof(FacturasServiciosPublicos));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 ViewBag.Servicios = await _facServPubService.ObtenerServiciosPublicos();
-                ViewData["Mensaje"] = "Error al editar factura de servicio público: " + ex.Message;
+                ViewData["Mensaje"] = "Error al editar factura de servicio público. Intente nuevamente.";
                 return View(facServPublicDto);
             }
         }
 
-        // GET: /Servicios/ConfirmarPagoFacturaServicioPublico
         [HttpGet]
         public async Task<ActionResult> ConfirmarPagoFacturaServicioPublico(int id)
         {
@@ -206,7 +201,6 @@ namespace Software_SARA.Controllers
             return View(facServPublicDto);
         }
 
-        // POST: /Servicios/ConfirmarPagoFacturaServicioPublico
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> ConfirmarPagoFacturaServicioPublico(FacServPublicDto facServPublicDto)
@@ -217,14 +211,13 @@ namespace Software_SARA.Controllers
                 TempData["MensajeExito"] = resultado.Message;
                 return RedirectToAction(nameof(FacturasServiciosPublicos));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                ViewData["Mensaje"] = "Error al confirmar pago de factura de servicio público: " + ex.Message;
+                ViewData["Mensaje"] = "Error al confirmar pago de factura de servicio público.";
                 return View(facServPublicDto);
             }
         }
 
-        // GET: /factura/servicios-publicos/vencimiento-proximos (CU-24)
         [HttpGet("factura/servicios-publicos/vencimiento-proximos")]
         public async Task<ActionResult> VencimientoProximos()
         {
@@ -233,7 +226,7 @@ namespace Software_SARA.Controllers
                 var facturasProximas = await _facServPubService.ObtenerVencimientosProximos();
                 return View(facturasProximas);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 ViewData["Mensaje"] = "No fue posible cargar la lista de vencimientos próximos. Intente nuevamente más tarde.";
                 return View(new List<FacServPublicDto>());

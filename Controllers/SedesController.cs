@@ -4,12 +4,10 @@ using Software_SARA.Dtos;
 using Software_SARA.Services;
 using Software_SARA.Utilities;
 
-
 namespace Software_SARA.Controllers
 {
     [AuthorizeRole("Dueño")]
     public class SedesController : Controller
-  
     {
         private readonly SedesServices _sedesServices;
 
@@ -18,7 +16,20 @@ namespace Software_SARA.Controllers
             _sedesServices = sedesServices;
         }
 
-        // GET: /Sedes/RegistrarSede
+        private List<string> ObtenerDepartamentos()
+        {
+            return new List<string>
+            {
+                "Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar",
+                "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca",
+                "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Guainía",
+                "Guaviare", "Huila", "La Guajira", "Magdalena", "Meta",
+                "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda",
+                "San Andrés y Providencia", "Santander", "Sucre", "Tolima",
+                "Valle del Cauca", "Vaupés", "Vichada"
+            };
+        }
+
         [HttpGet]
         public async Task<IActionResult> RegistrarSede()
         {
@@ -26,142 +37,101 @@ namespace Software_SARA.Controllers
             return View(listaSedes);
         }
 
-
-        // GET: /Sedes/CrearSede
         [HttpGet]
         public ActionResult CrearSede()
         {
             SedeDto sedeDto = new();
-            List<string> departamentosColombia = new List<string>
-            {
-                "Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar",
-                "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca",
-                "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Guainía",
-                "Guaviare", "Huila", "La Guajira", "Magdalena", "Meta",
-                "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda",
-                "San Andrés y Providencia", "Santander", "Sucre", "Tolima",
-                "Valle del Cauca", "Vaupés", "Vichada"
-            };
-            ViewBag.Departamentos = new SelectList(departamentosColombia);
+            ViewBag.Departamentos = new SelectList(ObtenerDepartamentos());
             return View(sedeDto);
         }
 
-
-        // POST: /Sedes/CrearSede
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> CrearSede(SedeDto sedeDto)
         {
-            // Lista de departamentos para reutilizar si se recarga la vista
-            List<string> departamentosColombia = new List<string>
-            {
-                "Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar",
-                "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca",
-                "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Guainía",
-                "Guaviare", "Huila", "La Guajira", "Magdalena", "Meta",
-                "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda",
-                "San Andrés y Providencia", "Santander", "Sucre", "Tolima",
-                "Valle del Cauca", "Vaupés", "Vichada"
-            };
-
             try
             {
-                // Validar el modelo
                 if (!ModelState.IsValid)
                 {
-                    // Si el modelo no es válido, asignamos el ViewBag antes de retornar la vista
-                    ViewBag.Departamentos = new SelectList(departamentosColombia);
-                    // Si el modelo no es válido, devolver la vista con los errores
+                    ViewBag.Departamentos = new SelectList(ObtenerDepartamentos(), sedeDto.DepSede);
                     var errors = ModelState.Values.SelectMany(v => v.Errors);
                     ViewData["Message"] = string.Join("; ", errors.Select(e => e.ErrorMessage));
                     return View(sedeDto);
                 }
 
                 var resultado = await _sedesServices.CreateSede(sedeDto);
-                if (resultado.Reponse == 0)
-                {
-                    ViewBag.Proveedores = await _sedesServices.ObtenerTodasLasSedes();
-                    ViewData["Mensaje"] = resultado.Message;
-                    return View(sedeDto);
-                }
-                TempData["MensajeExito"] = resultado.Message;
+                if (resultado.Reponse == 1)
+                    TempData["MensajeExito"] = resultado.Message;
+                else
+                    TempData["MensajeError"] = resultado.Message;
+
                 return RedirectToAction(nameof(RegistrarSede));
             }
             catch (Exception ex)
             {
-                // Si ocurre cualquier excepción, el ViewBag no sera nulo al recargar
-                ViewBag.Departamentos = new SelectList(departamentosColombia);
-                // Manejar cualquier excepción que ocurra durante la validación
+                ViewBag.Departamentos = new SelectList(ObtenerDepartamentos(), sedeDto.DepSede);
                 ViewData["Mensaje"] = "Error al crear sede: " + ex.Message;
                 return View(sedeDto);
             }
-
         }
 
-        // GET: /Sedes/EditarSede
         [HttpGet]
-        public async Task<ActionResult> EditarSede(int id)
+        public async Task<IActionResult> EditarSede(int id)
         {
             var sedeDto = await _sedesServices.ObtenerSedePorId(id);
 
             if (sedeDto == null)
             {
-                return NotFound(); // Si no existe la sede retorna error
+                return NotFound();
             }
 
+            ViewBag.Departamentos = new SelectList(ObtenerDepartamentos(), sedeDto.DepSede);
             return View(sedeDto);
         }
 
-        // POST: /Sedes/EditarSede
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> EditarSede(SedeDto sedeDto)
         {
             try
             {
-                // Validar el modelo
                 if (!ModelState.IsValid)
                 {
-                    // Si el modelo no es válido, devolver la vista con los errores
+                    ViewBag.Departamentos = new SelectList(ObtenerDepartamentos(), sedeDto.DepSede);
                     var errors = ModelState.Values.SelectMany(v => v.Errors);
                     ViewData["Message"] = string.Join("; ", errors.Select(e => e.ErrorMessage));
                     return View(sedeDto);
                 }
 
                 var resultado = await _sedesServices.EditarSede(sedeDto);
-                if (resultado.Reponse == 0)
-                {
-                    ViewBag.Proveedores = await _sedesServices.ObtenerTodasLasSedes();
-                    ViewData["Mensaje"] = resultado.Message;
-                    return View(sedeDto);
-                }
-                TempData["MensajeExito"] = resultado.Message;
+                if (resultado.Reponse == 1)
+                    TempData["MensajeExito"] = resultado.Message;
+                else
+                    TempData["MensajeError"] = resultado.Message;
+
                 return RedirectToAction(nameof(RegistrarSede));
             }
             catch (Exception ex)
             {
-                // Manejar cualquier excepción que ocurra durante la validación
+                ViewBag.Departamentos = new SelectList(ObtenerDepartamentos(), sedeDto.DepSede);
                 ViewData["Mensaje"] = "Error al editar sede: " + ex.Message;
                 return View(sedeDto);
             }
-
         }
 
-        // GET: /Sedes/EliminarSede
         [HttpGet]
-        public async Task<ActionResult> EliminarSede(int id)
+        public async Task<IActionResult> EliminarSede(int id)
         {
             var sedeDto = await _sedesServices.ObtenerSedePorId(id);
 
             if (sedeDto == null)
             {
-                return NotFound(); // Si no existe la sede retorna error
+                return NotFound();
             }
 
             return View(sedeDto);
         }
 
-        // POST: /Sedes/EliminarSede
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> EliminarSede(SedeDto sedeDto)
@@ -169,27 +139,38 @@ namespace Software_SARA.Controllers
             try
             {
                 var resultado = await _sedesServices.EliminarSede(sedeDto.IdSede);
-                TempData["MensajeExito"] = resultado.Message;
-                return RedirectToAction(nameof(RegistrarSede));
+                if (resultado.Reponse == 1)
+                {
+                    TempData["MensajeExito"] = resultado.Message;
+                    return RedirectToAction(nameof(RegistrarSede));
+                }
+
+                // Aquí se devuelve la vista EliminarSede con el bloqueo y el mensaje sin desactivar
+                var sedeActual = await _sedesServices.ObtenerSedePorId(sedeDto.IdSede) ?? sedeDto;
+                ViewData["Mensaje"] = resultado.Message;
+                ViewBag.Bloqueado = true;
+                return View(sedeActual);
             }
             catch (Exception ex)
             {
-                // Manejar cualquier excepción que ocurra durante la validación
                 ViewData["Mensaje"] = "Error al eliminar sede: " + ex.Message;
+                ViewBag.Bloqueado = true;
                 return View(sedeDto);
             }
-
         }
 
-        // POST: /Sedes/ReactivarSede/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> ReactivarSede(int id)
+        public async Task<IActionResult> ReactivarSede(int id)
         {
             try
             {
                 var resultado = await _sedesServices.ReactivarSede(id);
-                TempData["MensajeExito"] = resultado.Message;
+                if (resultado.Reponse == 1)
+                    TempData["MensajeExito"] = resultado.Message;
+                else
+                    TempData["MensajeError"] = resultado.Message;
+
                 return RedirectToAction(nameof(RegistrarSede));
             }
             catch (Exception ex)

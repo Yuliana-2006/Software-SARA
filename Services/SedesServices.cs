@@ -1,27 +1,58 @@
-﻿using Software_SARA.Dtos;
+﻿using Microsoft.EntityFrameworkCore;
+using Software_SARA.Dtos;
 using Software_SARA.Repositories;
+using Software_SARA.Repositories.Models;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Software_SARA.Services
 {
     public class SedesServices
     {
         private readonly SedeRepository _sedeRepository;
-        
-        public SedesServices(SedeRepository sedeRepository)
+        private readonly SarabdContext _context;
+
+        public SedesServices(SedeRepository sedeRepository, SarabdContext context)
         {
             _sedeRepository = sedeRepository;
+            _context = context;
+        }
+
+        private async Task<string?> ValidarDependenciasSedeAsync(int idSede)
+        {
+            var idsUsuariosSede = await _context.Usuarios
+                .Where(u => u.IdSede == idSede)
+                .Select(u => u.IdUsuario)
+                .ToListAsync();
+
+            if (idsUsuariosSede.Count == 0)
+                return null;
+
+            bool tieneFacturas = await _context.Facturas
+                .AnyAsync(f => idsUsuariosSede.Contains(f.IdUsuario));
+
+            bool tieneRecordatorios = await _context.Recordatorios
+                .AnyAsync(r => idsUsuariosSede.Contains(r.IdUsuario));
+
+            bool tieneCajas = await _context.DiaCajas
+                .AnyAsync(c => idsUsuariosSede.Contains(c.IdUsuario) ||
+                              (c.IdUsuarioCierre.HasValue && idsUsuariosSede.Contains(c.IdUsuarioCierre.Value)));
+
+            if (tieneFacturas || tieneRecordatorios || tieneCajas)
+            {
+                return "No se puede desactivar ni eliminar la sede porque tiene información operativa (facturas, recordatorios o caja) registrada.";
+            }
+
+            return "No se puede desactivar ni eliminar la sede porque tiene usuarios asignados.";
         }
 
         public async Task<SedeDto> CreateSede(SedeDto sedeDto)
         {
-            sedeDto.EstadoSede = true; // Set EstadoSede to true (1) when creating a new Sede
+            sedeDto.EstadoSede = true;
 
-            // Obtenemos todas las sedes actuales para validar las reglas de negocio
             var listaSedesExistentes = await ObtenerTodasLasSedes();
 
-            // RN02-CU03: Validar que el nombre de la sede y la dirección física sean únicos
             bool nombreExiste = listaSedesExistentes.Any(s => s.NomSede.Trim().ToLower() == sedeDto.NomSede.Trim().ToLower());
             bool direccionExiste = listaSedesExistentes.Any(s => s.DirSede.Trim().ToLower() == sedeDto.DirSede.Trim().ToLower());
 
@@ -39,7 +70,6 @@ namespace Software_SARA.Services
                 return sedeDto;
             }
 
-            // Si pasa las validaciones de negocio, pasa a registrar en el repositorio
             var result = await _sedeRepository.CreateSede(sedeDto);
 
             if (result)
@@ -74,21 +104,15 @@ namespace Software_SARA.Services
 
         public async Task<SedeDto> ObtenerSedePorId(int id)
         {
-            // Obtiene la lista completa usando la función 
             var listaSedes = await ObtenerTodasLasSedes();
-
-            // Retorna la sede que coincida con el ID
             return listaSedes.FirstOrDefault(s => s.IdSede == id);
         }
 
         public async Task<SedeDto> EditarSede(SedeDto sedeDto)
         {
-            // Obtenemos la lista de todas las sedes para validar contra registros existentes
             var listaSedesExistentes = await ObtenerTodasLasSedes();
 
-            // RN02-CU04: Si el Dueño cambia el nombre o la dirección, valida que no entre en conflicto con otra sede existente para ello, filtra descartando la sede que se está editando comparando el IdSede.
             bool nombreConflicto = listaSedesExistentes.Any(s => s.IdSede != sedeDto.IdSede && s.NomSede.Trim().ToLower() == sedeDto.NomSede.Trim().ToLower());
-
             bool direccionConflicto = listaSedesExistentes.Any(s => s.IdSede != sedeDto.IdSede && s.DirSede.Trim().ToLower() == sedeDto.DirSede.Trim().ToLower());
 
             if (nombreConflicto)
@@ -105,7 +129,6 @@ namespace Software_SARA.Services
                 return sedeDto;
             }
 
-            // Si pasa las validaciones de negocio, pasa a actualizar en el repositorio
             var result = await _sedeRepository.EditarSede(sedeDto);
             if (result)
             {
@@ -134,11 +157,18 @@ namespace Software_SARA.Services
                 return sedeDto;
             }
 
-            // RN-5-CU06: Una sede que se encuentre inactiva no podrá ser inactivada nuevamente
             if (!sedeAInactivar.EstadoSede)
             {
                 sedeDto.Reponse = 0;
                 sedeDto.Message = "La sede ya se encuentra inactiva y no puede ser procesada nuevamente.";
+                return sedeDto;
+            }
+
+            string? motivoBloqueo = await ValidarDependenciasSedeAsync(idSede);
+            if (!string.IsNullOrEmpty(motivoBloqueo))
+            {
+                sedeDto.Reponse = 0;
+                sedeDto.Message = motivoBloqueo;
                 return sedeDto;
             }
 

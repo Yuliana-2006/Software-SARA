@@ -15,10 +15,10 @@ namespace Software_SARA.Dtos
         public string DirSede { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "El teléfono es obligatorio.")]
-        [RegularExpression(@"^\d{7,10}$", ErrorMessage = "El teléfono debe contener únicamente números y tener entre 7 y 10 dígitos.")]
+        [RegularExpression(@"^[0-9]{10}$", ErrorMessage = "El teléfono debe tener exactamente 10 números, sin letras ni caracteres.")]
         public string TelSede { get; set; } = string.Empty;
 
-        public bool EstadoSede { get; set; } = true; // Por defecto suele registrarse activa
+        public bool EstadoSede { get; set; } = true;
 
         [Required(ErrorMessage = "La ciudad es obligatoria.")]
         [StringLength(50, ErrorMessage = "La ciudad no puede superar los 50 caracteres.")]

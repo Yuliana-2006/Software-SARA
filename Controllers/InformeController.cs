@@ -15,7 +15,7 @@ using System.IO;
 
 namespace Software_SARA.Controllers
 {
-    [AuthorizeRole("Gerente", "Tesorero")]
+    [AuthorizeRole("Gerente", "Tesorero", "Dueño")]
     public class InformeController : Controller
     {
         private readonly SarabdContext _context;
@@ -79,12 +79,11 @@ namespace Software_SARA.Controllers
             try
             {
                 var datos = ObtenerDatosInforme(fechaSeleccionada);
-                var pdfBytes = GenerarPdf(datos); // El PDF que se adjunta al correo SÍ tendrá el logo
+                var pdfBytes = GenerarPdf(datos);
 
                 var usuarioDestino = _context.Usuarios.FirstOrDefault(u => u.Correo == emailDestino);
                 string nombreDestino = usuarioDestino != null ? $"{usuarioDestino.NomUsuario} {usuarioDestino.ApelliUsuario}" : "Usuario SARA";
 
-                // El correo se envía sin logo, pero con el PDF (que ya lleva el logo)
                 await _emailService.EnviarInformeCajaAsync(emailDestino, nombreDestino, datos.NombreSede, datos.Fecha, pdfBytes);
 
                 TempData["MensajeExito"] = $"Reporte enviado exitosamente a {nombreDestino} ({emailDestino}).";
@@ -176,7 +175,6 @@ namespace Software_SARA.Controllers
 
                     page.Header().Column(col =>
                     {
-                        // 👇 AQUÍ VOLVEMOS A PONER EL LOGO EN EL PDF 👇
                         if (System.IO.File.Exists(imagePath))
                         {
                             col.Item().AlignCenter().Width(120).Image(imagePath);

@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
 using Software_SARA.Dtos;
 using Software_SARA.Repositories;
-using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,6 +20,7 @@ namespace Software_SARA.Services
         public async Task<FacProveedorDto> CreateFacturaProveedor(FacProveedorDto facProveedorDto)
         {
             facProveedorDto.EstadoFactura = true;
+            facProveedorDto.FechaRegFactura = DateOnly.FromDateTime(DateTime.Now);
 
             if (facProveedorDto.IdProveedor == null || facProveedorDto.IdProveedor <= 0)
             {
@@ -29,18 +29,10 @@ namespace Software_SARA.Services
                 return facProveedorDto;
             }
 
-            if (facProveedorDto.ValorFactura <= 0)
+            if (facProveedorDto.ValorFactura <= 10000m)
             {
                 facProveedorDto.Reponse = 0;
-                facProveedorDto.Message = "Ingrese un valor mayor o igual a $10,000 para la factura.";
-                return facProveedorDto;
-            }
-
-            // CORRECCIÓN: Comparamos DateOnly con DateOnly
-            if (facProveedorDto.FechaRegFactura < DateOnly.FromDateTime(DateTime.Now))
-            {
-                facProveedorDto.Reponse = 0;
-                facProveedorDto.Message = "La fecha de registro no puede ser una fecha anterior a la actual.";
+                facProveedorDto.Message = "Ingrese un valor mayor a $10,000 para la factura.";
                 return facProveedorDto;
             }
 
@@ -112,18 +104,10 @@ namespace Software_SARA.Services
                 return facProveedorDto;
             }
 
-            if (facProveedorDto.ValorFactura <= 0)
+            if (facProveedorDto.ValorFactura <= 10000m)
             {
                 facProveedorDto.Reponse = 0;
-                facProveedorDto.Message = "Ingrese un valor mayor o igual a $10,000 para la factura.";
-                return facProveedorDto;
-            }
-
-            // CORRECCIÓN
-            if (facProveedorDto.FechaRegFactura < DateOnly.FromDateTime(DateTime.Now))
-            {
-                facProveedorDto.Reponse = 0;
-                facProveedorDto.Message = "La fecha de registro no puede ser una fecha anterior a la actual.";
+                facProveedorDto.Message = "Ingrese un valor mayor a $10,000 para la factura.";
                 return facProveedorDto;
             }
 
@@ -153,10 +137,11 @@ namespace Software_SARA.Services
         {
             var facProveedorDto = new FacProveedorDto { IdFactura = idFactura };
 
-            if (facProveedorDto.EstadoFactura == false)
+            var facturaExistente = await ObtenerFacturaProveedorPorId(idFactura);
+            if (facturaExistente != null && facturaExistente.EstadoFactura == false)
             {
                 facProveedorDto.Reponse = 0;
-                facProveedorDto.Message = "No se puede editar la factura porque su pago ya fue confirmado.";
+                facProveedorDto.Message = "El pago de esta factura ya fue confirmado anteriormente.";
                 return facProveedorDto;
             }
 
@@ -175,7 +160,7 @@ namespace Software_SARA.Services
             return facProveedorDto;
         }
 
-        public async Task<List<HistorialFacturaDto>> ObtenerHistorialFacturasProveedoresAsync()
+        public async Task<List<FacProveedorDto>> ObtenerHistorialFacturasProveedoresAsync()
         {
             return await _facProveedorRepository.ObtenerHistorialFacturasProveedoresAsync();
         }
@@ -184,12 +169,11 @@ namespace Software_SARA.Services
         {
             var todasLasFacturas = await ObtenerTodasLasFacturasProveedores();
 
-            // CORRECCIÓN: Usamos DateOnly
             var hoy = DateOnly.FromDateTime(DateTime.Now);
             var limite = hoy.AddDays(7);
 
             return todasLasFacturas
-                .Where(f => f.IdProveedor != null && f.IdProveedor > 0 && f.FechaVencimiento >= hoy && f.FechaVencimiento <= limite)
+                .Where(f => f.EstadoFactura && f.IdProveedor != null && f.IdProveedor > 0 && f.FechaVencimiento >= hoy && f.FechaVencimiento <= limite)
                 .ToList();
         }
     }

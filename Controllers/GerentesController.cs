@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Software_SARA.Dtos; // Importamos la capa DTO
+using Software_SARA.Dtos;
 using Software_SARA.Repositories.Models;
 using Software_SARA.Services;
 using Software_SARA.Utilities;
@@ -25,6 +25,125 @@ namespace Software_SARA.Controllers
             _context = context;
         }
 
+        private void CargarSedes(int? sedeSeleccionada = null)
+        {
+            ViewBag.ListaSedes = new SelectList(
+                _context.Sedes.Where(s => s.EstadoSede == true),
+                "IdSede",
+                "NomSede",
+                sedeSeleccionada
+            );
+        }
+
+        private bool EsMayorDeEdad(DateTime? fechaNacimiento)
+        {
+            if (!fechaNacimiento.HasValue)
+                return false;
+
+            var hoy = DateTime.Today;
+            var nacimiento = fechaNacimiento.Value.Date;
+
+            if (nacimiento > hoy)
+                return false;
+
+            int edad = hoy.Year - nacimiento.Year;
+            if (nacimiento > hoy.AddYears(-edad))
+                edad--;
+
+            return edad >= 18;
+        }
+
+        private void ValidarDatosGerente(GerenteDto gerente, int? idIgnorar = null)
+        {
+            if (gerente.IdSede <= 0)
+            {
+                ModelState.AddModelError("IdSede", "Debe seleccionar una sede válida.");
+            }
+
+            if (string.IsNullOrWhiteSpace(gerente.NumeroDocumento))
+            {
+                ModelState.AddModelError("NumeroDocumento", "El número de documento es obligatorio.");
+            }
+            else if (!Regex.IsMatch(gerente.NumeroDocumento, @"^\d+$"))
+            {
+                ModelState.AddModelError("NumeroDocumento", "El número de documento solo debe contener números (sin letras ni caracteres).");
+            }
+            else if (!Regex.IsMatch(gerente.NumeroDocumento, @"^\d{5,10}$"))
+            {
+                ModelState.AddModelError("NumeroDocumento", "El número de documento debe tener entre 5 y 10 dígitos.");
+            }
+
+            if (string.IsNullOrWhiteSpace(gerente.Telefono))
+            {
+                ModelState.AddModelError("Telefono", "El teléfono es obligatorio.");
+            }
+            else if (!Regex.IsMatch(gerente.Telefono, @"^\d+$"))
+            {
+                ModelState.AddModelError("Telefono", "El teléfono solo debe contener números (sin letras ni caracteres).");
+            }
+            else if (!Regex.IsMatch(gerente.Telefono, @"^\d{10}$"))
+            {
+                ModelState.AddModelError("Telefono", "El teléfono debe tener exactamente 10 números.");
+            }
+
+            if (string.IsNullOrWhiteSpace(gerente.Correo) ||
+                !Regex.IsMatch(gerente.Correo, @"^[a-zA-Z0-9._%+-]+@(gmail\.com|outlook\.com|ucundinamarca\.edu\.co)$"))
+            {
+                ModelState.AddModelError("Correo", "El correo debe ser valido");
+            }
+
+            if (!gerente.FechaNacimiento.HasValue)
+            {
+                ModelState.AddModelError("FechaNacimiento", "La fecha de nacimiento es obligatoria.");
+            }
+            else if (!EsMayorDeEdad(gerente.FechaNacimiento))
+            {
+                ModelState.AddModelError("FechaNacimiento", "El gerente debe ser mayor de 18 años.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(gerente.NumeroDocumento) && int.TryParse(gerente.NumeroDocumento, out int numDocParsed))
+            {
+                bool existeDoc = idIgnorar.HasValue
+                    ? _context.Usuarios.Any(u => u.NumDoc == numDocParsed && u.IdUsuario != idIgnorar.Value)
+                    : _context.Usuarios.Any(u => u.NumDoc == numDocParsed);
+
+                if (existeDoc)
+                {
+                    ModelState.AddModelError("NumeroDocumento", idIgnorar.HasValue
+                        ? "El documento ya pertenece a otro usuario."
+                        : $"El documento {gerente.NumeroDocumento} ya existe en SARA.");
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(gerente.Correo))
+            {
+                bool existeCorreo = idIgnorar.HasValue
+                    ? _context.Usuarios.Any(u => u.Correo == gerente.Correo && u.IdUsuario != idIgnorar.Value)
+                    : _context.Usuarios.Any(u => u.Correo == gerente.Correo);
+
+                if (existeCorreo)
+                {
+                    ModelState.AddModelError("Correo", idIgnorar.HasValue
+                        ? "El correo ya pertenece a otro usuario."
+                        : $"El correo {gerente.Correo} ya está registrado.");
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(gerente.Telefono))
+            {
+                bool existeTel = idIgnorar.HasValue
+                    ? _context.Usuarios.Any(u => u.Telefono == gerente.Telefono && u.IdUsuario != idIgnorar.Value)
+                    : _context.Usuarios.Any(u => u.Telefono == gerente.Telefono);
+
+                if (existeTel)
+                {
+                    ModelState.AddModelError("Telefono", idIgnorar.HasValue
+                        ? "El teléfono ya pertenece a otro usuario."
+                        : "El teléfono ya está registrado.");
+                }
+            }
+        }
+
         public async Task<IActionResult> Index()
         {
             try
@@ -42,7 +161,7 @@ namespace Software_SARA.Controllers
         [HttpGet]
         public IActionResult Crear()
         {
-            ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede");
+            CargarSedes();
 
             var model = new GerenteDto
             {
@@ -51,71 +170,15 @@ namespace Software_SARA.Controllers
             return View(model);
         }
 
-        // POST: /Gerentes/Crear
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Crear(GerenteDto gerente)
         {
-            // 1. Validar Sede obligatoria
-            if (gerente.IdSede <= 0)
-            {
-                ModelState.AddModelError("IdSede", "Debe seleccionar una sede válida.");
-            }
-
-            // 2. Validar Documento: De 5 a 11 dígitos numéricos
-            if (string.IsNullOrEmpty(gerente.NumeroDocumento))
-            {
-                ModelState.AddModelError("NumeroDocumento", "El número de documento es obligatorio.");
-            }
-            else if (!Regex.IsMatch(gerente.NumeroDocumento, @"^\d+$"))
-            {
-                ModelState.AddModelError("NumeroDocumento", "El número de documento solo debe contener números (sin letras).");
-            }
-            else if (!Regex.IsMatch(gerente.NumeroDocumento, @"^\d{5,11}$"))
-            {
-                ModelState.AddModelError("NumeroDocumento", "El número de documento debe tener entre 5 y 11 dígitos.");
-            }
-
-            // 3. Validar Teléfono: Exactamente 10 dígitos numéricos
-            if (string.IsNullOrEmpty(gerente.Telefono))
-            {
-                ModelState.AddModelError("Telefono", "El teléfono es obligatorio.");
-            }
-            else if (!Regex.IsMatch(gerente.Telefono, @"^\d+$"))
-            {
-                ModelState.AddModelError("Telefono", "El teléfono solo debe contener números (sin letras).");
-            }
-            else if (!Regex.IsMatch(gerente.Telefono, @"^\d{10}$"))
-            {
-                ModelState.AddModelError("Telefono", "El teléfono celular debe contener exactamente 10 dígitos numéricos.");
-            }
-
-            // 4. Validar Correo
-            if (string.IsNullOrEmpty(gerente.Correo) || !Regex.IsMatch(gerente.Correo, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
-            {
-                ModelState.AddModelError("Correo", "Ingrese un correo electrónico válido que contenga '@'.");
-            }
-
-            // 5. Validar duplicados en la Base de Datos
-            if (!string.IsNullOrEmpty(gerente.NumeroDocumento) && int.TryParse(gerente.NumeroDocumento, out int numDocParsed))
-            {
-                if (_context.Usuarios.Any(u => u.NumDoc == numDocParsed))
-                    ModelState.AddModelError("NumeroDocumento", $"El documento {gerente.NumeroDocumento} ya existe en SARA.");
-            }
-
-            if (!string.IsNullOrEmpty(gerente.Correo) && _context.Usuarios.Any(u => u.Correo == gerente.Correo))
-            {
-                ModelState.AddModelError("Correo", $"El correo {gerente.Correo} ya está registrado.");
-            }
-
-            if (!string.IsNullOrEmpty(gerente.Telefono) && _context.Usuarios.Any(u => u.Telefono == gerente.Telefono))
-            {
-                ModelState.AddModelError("Telefono", $"El teléfono ya está registrado.");
-            }
+            ValidarDatosGerente(gerente);
 
             if (!ModelState.IsValid)
             {
-                ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede", gerente.IdSede);
+                CargarSedes(gerente.IdSede);
                 return View(gerente);
             }
 
@@ -126,7 +189,7 @@ namespace Software_SARA.Controllers
                 if (error != null)
                 {
                     ModelState.AddModelError("", error);
-                    ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede", gerente.IdSede);
+                    CargarSedes(gerente.IdSede);
                     return View(gerente);
                 }
 
@@ -136,7 +199,7 @@ namespace Software_SARA.Controllers
             catch (Exception ex)
             {
                 ModelState.AddModelError("", "Ocurrió un error al intentar guardar: " + ex.Message);
-                ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede", gerente.IdSede);
+                CargarSedes(gerente.IdSede);
                 return View(gerente);
             }
         }
@@ -152,8 +215,7 @@ namespace Software_SARA.Controllers
                     return RedirectToAction("Index");
                 }
 
-                ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede", gerente.IdSede);
-
+                CargarSedes(gerente.IdSede);
                 return View(gerente);
             }
             catch (Exception ex)
@@ -163,71 +225,15 @@ namespace Software_SARA.Controllers
             }
         }
 
-        // POST: /Gerentes/Editar/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Editar(GerenteDto gerente)
         {
-            // 1. Validar Sede obligatoria
-            if (gerente.IdSede <= 0)
-            {
-                ModelState.AddModelError("IdSede", "Debe seleccionar una sede válida.");
-            }
-
-            // 2. Validar Documento en Edición: De 5 a 11 dígitos
-            if (string.IsNullOrEmpty(gerente.NumeroDocumento))
-            {
-                ModelState.AddModelError("NumeroDocumento", "El número de documento es obligatorio.");
-            }
-            else if (!Regex.IsMatch(gerente.NumeroDocumento, @"^\d+$"))
-            {
-                ModelState.AddModelError("NumeroDocumento", "El número de documento solo debe contener números (sin letras).");
-            }
-            else if (!Regex.IsMatch(gerente.NumeroDocumento, @"^\d{5,11}$"))
-            {
-                ModelState.AddModelError("NumeroDocumento", "El número de documento debe tener entre 5 y 11 dígitos.");
-            }
-
-            // 3. Validar Teléfono en Edición
-            if (string.IsNullOrEmpty(gerente.Telefono))
-            {
-                ModelState.AddModelError("Telefono", "El teléfono es obligatorio.");
-            }
-            else if (!Regex.IsMatch(gerente.Telefono, @"^\d+$"))
-            {
-                ModelState.AddModelError("Telefono", "El teléfono solo debe contener números (sin letras).");
-            }
-            else if (!Regex.IsMatch(gerente.Telefono, @"^\d{10}$"))
-            {
-                ModelState.AddModelError("Telefono", "El teléfono celular debe contener exactamente 10 dígitos numéricos.");
-            }
-
-            // 4. Validar Correo en Edición
-            if (string.IsNullOrEmpty(gerente.Correo) || !Regex.IsMatch(gerente.Correo, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
-            {
-                ModelState.AddModelError("Correo", "Ingrese un correo electrónico válido que contenga '@'.");
-            }
-
-            // 5. Validar duplicados en Edición
-            if (!string.IsNullOrEmpty(gerente.NumeroDocumento) && int.TryParse(gerente.NumeroDocumento, out int numDocParsed))
-            {
-                if (_context.Usuarios.Any(u => u.NumDoc == numDocParsed && u.IdUsuario != gerente.Id))
-                    ModelState.AddModelError("NumeroDocumento", "El documento ya pertenece a otro usuario.");
-            }
-
-            if (!string.IsNullOrEmpty(gerente.Correo) && _context.Usuarios.Any(u => u.Correo == gerente.Correo && u.IdUsuario != gerente.Id))
-            {
-                ModelState.AddModelError("Correo", "El correo ya pertenece a otro usuario.");
-            }
-
-            if (!string.IsNullOrEmpty(gerente.Telefono) && _context.Usuarios.Any(u => u.Telefono == gerente.Telefono && u.IdUsuario != gerente.Id))
-            {
-                ModelState.AddModelError("Telefono", "El teléfono ya pertenece a otro usuario.");
-            }
+            ValidarDatosGerente(gerente, gerente.Id);
 
             if (!ModelState.IsValid)
             {
-                ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede", gerente.IdSede);
+                CargarSedes(gerente.IdSede);
                 return View(gerente);
             }
 
@@ -237,7 +243,7 @@ namespace Software_SARA.Controllers
                 if (error != null)
                 {
                     ModelState.AddModelError("", error);
-                    ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede", gerente.IdSede);
+                    CargarSedes(gerente.IdSede);
                     return View(gerente);
                 }
 
@@ -247,7 +253,7 @@ namespace Software_SARA.Controllers
             catch (Exception ex)
             {
                 ModelState.AddModelError("", "Ocurrió un error al actualizar los datos: " + ex.Message);
-                ViewBag.ListaSedes = new SelectList(_context.Sedes.Where(s => s.EstadoSede == true), "IdSede", "NomSede", gerente.IdSede);
+                CargarSedes(gerente.IdSede);
                 return View(gerente);
             }
         }
@@ -277,7 +283,13 @@ namespace Software_SARA.Controllers
         {
             try
             {
-                await _gerenteService.EliminarGerenteAsync(id);
+                string? error = await _gerenteService.EliminarGerenteAsync(id);
+                if (error != null)
+                {
+                    TempData["MensajeError"] = error;
+                    return RedirectToAction("Index");
+                }
+
                 TempData["MensajeExito"] = "¡Gerente eliminado exitosamente!";
             }
             catch (Exception ex)
