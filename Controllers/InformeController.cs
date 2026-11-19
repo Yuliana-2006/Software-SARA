@@ -6,7 +6,9 @@ using Software_SARA.Utilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -20,6 +22,10 @@ namespace Software_SARA.Controllers
     {
         private readonly SarabdContext _context;
         private readonly EmailService _emailService;
+
+        // IDs de roles en base de datos
+        private const int IdRolEmpleadoExcluido = 3;
+        private const int IdRolTesoreroFijo = 4;
 
         public InformeController(SarabdContext context, EmailService emailService)
         {
@@ -39,7 +45,7 @@ namespace Software_SARA.Controllers
         {
             var datos = ObtenerDatosInforme(fechaSeleccionada);
 
-            if (datos == null || (datos.Movimientos.Count == 0 && datos.FacturasPendientes.Count == 0 && datos.FacturasPagadas.Count == 0))
+            if (datos == null)
             {
                 TempData["MensajeError"] = "No se encontraron registros para la fecha seleccionada.";
                 return RedirectToAction("Index");
@@ -70,7 +76,7 @@ namespace Software_SARA.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EnviarCorreo(DateTime fechaSeleccionada, string emailDestino)
         {
-            if (string.IsNullOrEmpty(emailDestino))
+            if (string.IsNullOrWhiteSpace(emailDestino))
             {
                 TempData["MensajeError"] = "Por favor, seleccione un destinatario de la lista.";
                 return RedirectToAction("Preview", new { fechaSeleccionada = fechaSeleccionada.ToString("yyyy-MM-dd") });
@@ -79,42 +85,99 @@ namespace Software_SARA.Controllers
             try
             {
                 var datos = ObtenerDatosInforme(fechaSeleccionada);
+                if (datos == null)
+                {
+                    TempData["MensajeError"] = "No se encontraron datos del reporte para la fecha seleccionada.";
+                    return RedirectToAction("Index");
+                }
+
+                string correoLimpio = emailDestino.Trim();
+                var destinatariosAutorizados = datos.UsuariosCorreo
+                    .Where(u => !string.IsNullOrWhiteSpace(u.Correo) && u.IdRol != IdRolEmpleadoExcluido)
+                    .ToList();
+
+                var usuarioDestino = destinatariosAutorizados
+                    .FirstOrDefault(u => string.Equals(u.Correo!.Trim(), correoLimpio, StringComparison.OrdinalIgnoreCase));
+
+                if (usuarioDestino == null)
+                {
+                    TempData["MensajeError"] = "El correo seleccionado solo puede pertenecer a un Tesorero, Gerente o Dueño autorizado.";
+                    return RedirectToAction("Preview", new { fechaSeleccionada = fechaSeleccionada.ToString("yyyy-MM-dd") });
+                }
+
                 var pdfBytes = GenerarPdf(datos);
+                string nombreDestino = $"{usuarioDestino.NomUsuario} {usuarioDestino.ApelliUsuario}".Trim();
+                if (string.IsNullOrWhiteSpace(nombreDestino))
+                {
+                    nombreDestino = "Destinatario Autorizado";
+                }
 
-                var usuarioDestino = _context.Usuarios.FirstOrDefault(u => u.Correo == emailDestino);
-                string nombreDestino = usuarioDestino != null ? $"{usuarioDestino.NomUsuario} {usuarioDestino.ApelliUsuario}" : "Usuario SARA";
+                await _emailService.EnviarInformeCajaAsync(correoLimpio, nombreDestino, datos.NombreSede, datos.Fecha, pdfBytes);
 
-                await _emailService.EnviarInformeCajaAsync(emailDestino, nombreDestino, datos.NombreSede, datos.Fecha, pdfBytes);
-
-                TempData["MensajeExito"] = $"Reporte enviado exitosamente a {nombreDestino} ({emailDestino}).";
+                TempData["MensajeExito"] = $"Reporte enviado exitosamente a {nombreDestino} ({correoLimpio}).";
+            }
+            catch (TaskCanceledException)
+            {
+                TempData["MensajeError"] = "El servidor de correo tardó demasiado en responder (tiempo de espera agotado). Verifique la configuración SMTP, el puerto y la conexión a internet.";
             }
             catch (Exception ex)
             {
-                TempData["MensajeError"] = "Error al enviar el correo: " + ex.Message;
+                string detalleInterno = ex.InnerException?.InnerException?.Message
+                                       ?? ex.InnerException?.Message
+                                       ?? ex.Message;
+                TempData["MensajeError"] = $"Error al enviar el correo: {ex.Message} | Detalle: {detalleInterno}";
             }
 
             return RedirectToAction("Preview", new { fechaSeleccionada = fechaSeleccionada.ToString("yyyy-MM-dd") });
         }
 
-        private InformeCajaDTO ObtenerDatosInforme(DateTime fecha)
+        private InformeCajaDTO? ObtenerDatosInforme(DateTime fecha)
         {
             var sedeIdStr = HttpContext.Session.GetString("SedeId");
             int sedeId = string.IsNullOrEmpty(sedeIdStr) ? 1 : int.Parse(sedeIdStr);
 
             var sede = _context.Sedes.Find(sedeId);
-            var usuariosSede = _context.Usuarios.Where(u => u.IdSede == sedeId).Select(u => u.IdUsuario).ToList();
+
+            var mapaRoles = ObtenerMapaRolesDesdeBd();
+            var usuariosActivos = _context.Usuarios
+                .Include(u => u.IdRolNavigation)
+                .Where(u => u.EstadoUsuario == true)
+                .ToList();
+
+            var (perfilActual, _) = ObtenerPerfilYUsuarioActual(usuariosActivos, mapaRoles);
+            bool esDueno = perfilActual == "dueno";
+
+            var usuariosSede = _context.Usuarios
+                .Where(u => u.IdSede == sedeId)
+                .Select(u => u.IdUsuario)
+                .ToList();
 
             var movimientos = _context.DiaCajas
                 .Include(c => c.IdUsuarioNavigation)
-                .Where(c => usuariosSede.Contains(c.IdUsuario) &&
+                .Where(c => (usuariosSede.Contains(c.IdUsuario) || esDueno) &&
                            (c.FechaHoraApertura.Date == fecha.Date || c.FechaHoraCierre.Date == fecha.Date))
                 .ToList();
 
+            if (esDueno && movimientos.Count == 0)
+            {
+                movimientos = _context.DiaCajas
+                    .Include(c => c.IdUsuarioNavigation)
+                    .Where(c => c.FechaHoraApertura.Date == fecha.Date || c.FechaHoraCierre.Date == fecha.Date)
+                    .ToList();
+            }
+
             DateOnly fechaSolo = DateOnly.FromDateTime(fecha);
             var todasFacturas = _context.Facturas
-                .Where(f => usuariosSede.Contains(f.IdUsuario) &&
+                .Where(f => (usuariosSede.Contains(f.IdUsuario) || esDueno) &&
                            (f.FechaRegFactura == fechaSolo || f.FechaVencimiento == fechaSolo))
                 .ToList();
+
+            if (esDueno && todasFacturas.Count == 0)
+            {
+                todasFacturas = _context.Facturas
+                    .Where(f => f.FechaRegFactura == fechaSolo || f.FechaVencimiento == fechaSolo)
+                    .ToList();
+            }
 
             var proveedores = _context.Proveedors.ToList();
             var servicios = _context.Servicios.ToList();
@@ -136,13 +199,10 @@ namespace Software_SARA.Controllers
             var pendientes = todasFacturas.Where(f => !f.EstadoFactura).ToList();
             var pagadas = todasFacturas.Where(f => f.EstadoFactura).ToList();
 
-            if (movimientos.Count == 0 && todasFacturas.Count == 0) return null;
+            if (!esDueno && movimientos.Count == 0 && todasFacturas.Count == 0)
+                return null;
 
-            var usuariosCorreo = _context.Usuarios
-                .Where(u => u.IdSede == sedeId &&
-                           (u.IdRol == 2 || u.IdRol == 3) &&
-                            u.EstadoUsuario == true)
-                .ToList();
+            var usuariosCorreo = ObtenerDestinatariosSegunPerfilActual(sede, usuariosActivos, mapaRoles);
 
             return new InformeCajaDTO
             {
@@ -157,6 +217,249 @@ namespace Software_SARA.Controllers
                 TotalFacturasPagadas = pagadas.Sum(f => f.ValorFactura),
                 UsuariosCorreo = usuariosCorreo
             };
+        }
+
+        private string NormalizarCategoriaRol(string textoRol)
+        {
+            if (string.IsNullOrWhiteSpace(textoRol)) return string.Empty;
+            string t = textoRol.Trim().ToLowerInvariant();
+
+            if (t.Contains("tesor"))
+                return "tesorero";
+            if (t.Contains("geren"))
+                return "gerente";
+            if (t.Contains("dueñ") || t.Contains("duen") || t.Contains("propiet"))
+                return "dueno";
+            if (t.Contains("emple") || t.Contains("cajer") || t.Contains("auxil"))
+                return "empleado";
+
+            return string.Empty;
+        }
+
+        private Dictionary<int, string> ObtenerMapaRolesDesdeBd()
+        {
+            var mapa = new Dictionary<int, string>();
+
+            if (IdRolTesoreroFijo > 0)
+            {
+                mapa[IdRolTesoreroFijo] = "tesorero";
+            }
+
+            var dbSetRolesProp = _context.GetType().GetProperties()
+                .FirstOrDefault(p => p.Name.Equals("Rols", StringComparison.OrdinalIgnoreCase) ||
+                                     p.Name.Equals("Roles", StringComparison.OrdinalIgnoreCase));
+
+            if (dbSetRolesProp != null)
+            {
+                var rolesObj = dbSetRolesProp.GetValue(_context) as System.Collections.IEnumerable;
+                if (rolesObj != null)
+                {
+                    foreach (var rol in rolesObj)
+                    {
+                        if (rol == null) continue;
+                        var props = rol.GetType().GetProperties();
+                        var propId = props.FirstOrDefault(pr => pr.Name.Contains("Id", StringComparison.OrdinalIgnoreCase) &&
+                                                               (pr.PropertyType == typeof(int) || pr.PropertyType == typeof(int?)));
+                        var propNombre = props.FirstOrDefault(pr => pr.PropertyType == typeof(string) &&
+                                                                   (pr.Name.Contains("Nom", StringComparison.OrdinalIgnoreCase) ||
+                                                                    pr.Name.Contains("Rol", StringComparison.OrdinalIgnoreCase) ||
+                                                                    pr.Name.Contains("Desc", StringComparison.OrdinalIgnoreCase)));
+
+                        var idVal = propId?.GetValue(rol);
+                        var nombreVal = propNombre?.GetValue(rol)?.ToString() ?? string.Empty;
+                        string categoria = NormalizarCategoriaRol(nombreVal);
+
+                        if (idVal != null && int.TryParse(idVal.ToString(), out int idRol) && !string.IsNullOrEmpty(categoria))
+                        {
+                            mapa[idRol] = categoria;
+                        }
+                    }
+                }
+            }
+
+            if (IdRolEmpleadoExcluido > 0)
+            {
+                mapa[IdRolEmpleadoExcluido] = "empleado";
+            }
+
+            if (IdRolTesoreroFijo > 0)
+            {
+                mapa[IdRolTesoreroFijo] = "tesorero";
+            }
+
+            return mapa;
+        }
+
+        private string ObtenerCategoriaRolUsuario(Usuario usuario, Dictionary<int, string> mapaRoles)
+        {
+            if (usuario.IdRol == IdRolEmpleadoExcluido)
+            {
+                return "empleado";
+            }
+
+            if (IdRolTesoreroFijo > 0 && usuario.IdRol == IdRolTesoreroFijo)
+            {
+                return "tesorero";
+            }
+
+            if (mapaRoles.TryGetValue(usuario.IdRol, out string catDesdeMapa) && !string.IsNullOrEmpty(catDesdeMapa))
+            {
+                return catDesdeMapa;
+            }
+
+            if (usuario.IdRolNavigation != null)
+            {
+                var propNombre = usuario.IdRolNavigation.GetType().GetProperties()
+                    .FirstOrDefault(p => p.PropertyType == typeof(string) &&
+                                       (p.Name.Contains("Nom", StringComparison.OrdinalIgnoreCase) ||
+                                        p.Name.Contains("Rol", StringComparison.OrdinalIgnoreCase) ||
+                                        p.Name.Contains("Desc", StringComparison.OrdinalIgnoreCase)));
+
+                var nombreRol = propNombre?.GetValue(usuario.IdRolNavigation)?.ToString() ?? string.Empty;
+                string catNav = NormalizarCategoriaRol(nombreRol);
+                if (!string.IsNullOrEmpty(catNav))
+                {
+                    return catNav;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private (string PerfilActual, Usuario? UsuarioActual) ObtenerPerfilYUsuarioActual(
+            List<Usuario> usuariosActivos,
+            Dictionary<int, string> mapaRoles)
+        {
+            string perfilSesion = HttpContext.Session.GetString("RolUsuario")
+                               ?? HttpContext.Session.GetString("NombreRol")
+                               ?? HttpContext.Session.GetString("Rol")
+                               ?? User?.FindFirst(ClaimTypes.Role)?.Value
+                               ?? string.Empty;
+
+            string categoriaActual = NormalizarCategoriaRol(perfilSesion);
+
+            string? correoSesion = HttpContext.Session.GetString("CorreoUsuario")
+                               ?? HttpContext.Session.GetString("UserEmail")
+                               ?? HttpContext.Session.GetString("Correo")
+                               ?? User?.FindFirst(ClaimTypes.Email)?.Value;
+
+            string? idUsuarioSesionStr = HttpContext.Session.GetString("IdUsuario")
+                                      ?? HttpContext.Session.GetString("UsuarioId")
+                                      ?? User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            Usuario? usuarioActual = null;
+            if (!string.IsNullOrWhiteSpace(correoSesion))
+            {
+                usuarioActual = usuariosActivos.FirstOrDefault(u =>
+                    string.Equals(u.Correo?.Trim(), correoSesion.Trim(), StringComparison.OrdinalIgnoreCase));
+            }
+            if (usuarioActual == null && int.TryParse(idUsuarioSesionStr, out int idActual) && idActual > 0)
+            {
+                usuarioActual = usuariosActivos.FirstOrDefault(u => u.IdUsuario == idActual);
+            }
+
+            if (string.IsNullOrEmpty(categoriaActual) && usuarioActual != null)
+            {
+                categoriaActual = ObtenerCategoriaRolUsuario(usuarioActual, mapaRoles);
+            }
+
+            return (categoriaActual, usuarioActual);
+        }
+
+        private List<Usuario> ObtenerDestinatariosSegunPerfilActual(
+            Sede? sede,
+            List<Usuario> usuariosActivos,
+            Dictionary<int, string> mapaRoles)
+        {
+            var usuariosConCorreo = usuariosActivos
+                .Where(u => !string.IsNullOrWhiteSpace(u.Correo) && u.IdRol != IdRolEmpleadoExcluido)
+                .ToList();
+
+            var (_, usuarioActual) = ObtenerPerfilYUsuarioActual(usuariosConCorreo, mapaRoles);
+
+            var rolesDestinoPermitidos = new HashSet<string> { "tesorero", "gerente", "dueno" };
+
+            var destinatarios = usuariosConCorreo.Where(u =>
+            {
+                if (u.IdRol == IdRolEmpleadoExcluido) return false;
+                string cat = ObtenerCategoriaRolUsuario(u, mapaRoles);
+                if (cat == "empleado") return false;
+                return rolesDestinoPermitidos.Contains(cat);
+            }).ToList();
+
+            if (usuarioActual != null &&
+                !string.IsNullOrWhiteSpace(usuarioActual.Correo) &&
+                usuarioActual.IdRol != IdRolEmpleadoExcluido)
+            {
+                string catActual = ObtenerCategoriaRolUsuario(usuarioActual, mapaRoles);
+                if (catActual != "empleado")
+                {
+                    destinatarios.Add(usuarioActual);
+                }
+            }
+
+            if (sede != null)
+            {
+                var propsSede = sede.GetType().GetProperties();
+
+                var propIdDueno = propsSede.FirstOrDefault(p =>
+                    (p.Name.Contains("Dueno", StringComparison.OrdinalIgnoreCase) ||
+                     p.Name.Contains("Dueño", StringComparison.OrdinalIgnoreCase) ||
+                     p.Name.Contains("Propietario", StringComparison.OrdinalIgnoreCase)) &&
+                    (p.PropertyType == typeof(int) || p.PropertyType == typeof(int?)));
+
+                if (propIdDueno != null)
+                {
+                    var valId = propIdDueno.GetValue(sede);
+                    if (valId != null && int.TryParse(valId.ToString(), out int idDueno) && idDueno > 0)
+                    {
+                        var usuarioDueno = usuariosConCorreo.FirstOrDefault(u => u.IdUsuario == idDueno && u.IdRol != IdRolEmpleadoExcluido);
+                        if (usuarioDueno != null && ObtenerCategoriaRolUsuario(usuarioDueno, mapaRoles) != "empleado")
+                        {
+                            destinatarios.Add(usuarioDueno);
+                        }
+                    }
+                }
+
+                var propCorreoDueno = propsSede.FirstOrDefault(p =>
+                    p.Name.Contains("Correo", StringComparison.OrdinalIgnoreCase) &&
+                    (p.Name.Contains("Dueno", StringComparison.OrdinalIgnoreCase) ||
+                     p.Name.Contains("Dueño", StringComparison.OrdinalIgnoreCase) ||
+                     p.Name.Contains("Propietario", StringComparison.OrdinalIgnoreCase)));
+
+                var correoDueno = propCorreoDueno?.GetValue(sede)?.ToString()?.Trim();
+                if (!string.IsNullOrWhiteSpace(correoDueno))
+                {
+                    var usuarioPorCorreo = usuariosConCorreo.FirstOrDefault(u =>
+                        string.Equals(u.Correo?.Trim(), correoDueno, StringComparison.OrdinalIgnoreCase));
+
+                    if (usuarioPorCorreo != null)
+                    {
+                        if (usuarioPorCorreo.IdRol != IdRolEmpleadoExcluido &&
+                            ObtenerCategoriaRolUsuario(usuarioPorCorreo, mapaRoles) != "empleado")
+                        {
+                            destinatarios.Add(usuarioPorCorreo);
+                        }
+                    }
+                    else
+                    {
+                        destinatarios.Add(new Usuario
+                        {
+                            NomUsuario = "Dueño de Sede",
+                            ApelliUsuario = sede.NomSede ?? "",
+                            Correo = correoDueno,
+                            EstadoUsuario = true
+                        });
+                    }
+                }
+            }
+
+            return destinatarios
+                .Where(u => !string.IsNullOrWhiteSpace(u.Correo) && u.IdRol != IdRolEmpleadoExcluido)
+                .GroupBy(u => u.Correo!.Trim().ToLowerInvariant())
+                .Select(g => g.First())
+                .OrderBy(u => u.NomUsuario)
+                .ToList();
         }
 
         private byte[] GenerarPdf(InformeCajaDTO datos)

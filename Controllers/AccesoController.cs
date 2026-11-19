@@ -66,9 +66,12 @@ namespace Software_SARA.Controllers
 
                 HttpContext.Session.SetString("UsuarioRol", nombreRol);
 
-                var sede = _context.Sedes.FirstOrDefault(s => s.IdSede == usuario.IdSede);
-                HttpContext.Session.SetString("SedeNombre", sede?.NomSede ?? "Sede Principal");
-                HttpContext.Session.SetString("SedeId", usuario.IdSede.ToString());
+                var sede = usuario.IdSede.HasValue
+                    ? _context.Sedes.FirstOrDefault(s => s.IdSede == usuario.IdSede.Value)
+                    : null;
+
+                HttpContext.Session.SetString("SedeNombre", sede?.NomSede ?? "Sin Sede");
+                HttpContext.Session.SetString("SedeId", usuario.IdSede?.ToString() ?? "");
 
                 // ========================================================
                 // REDIRECCIÓN GENERAL: Todos van al Inicio (Bienvenida)

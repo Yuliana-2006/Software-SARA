@@ -90,11 +90,26 @@ namespace Software_SARA.Services
 
         public async Task<FacProveedorDto> EditarFacturaProveedor(FacProveedorDto facProveedorDto)
         {
-            if (facProveedorDto.EstadoFactura == false)
+            var facturaActual = await ObtenerFacturaProveedorPorId(facProveedorDto.IdFactura);
+            if (facturaActual == null)
             {
+                facProveedorDto.Reponse = 0;
+                facProveedorDto.Message = "La factura de proveedor no existe.";
+                return facProveedorDto;
+            }
+
+            if (facturaActual.EstadoFactura == false)
+            {
+                facProveedorDto.EstadoFactura = false;
                 facProveedorDto.Reponse = 0;
                 facProveedorDto.Message = "No se puede editar la factura porque su pago ya fue confirmado.";
                 return facProveedorDto;
+            }
+
+            facProveedorDto.EstadoFactura = facturaActual.EstadoFactura;
+            if (facProveedorDto.FechaRegFactura == default)
+            {
+                facProveedorDto.FechaRegFactura = facturaActual.FechaRegFactura;
             }
 
             if (facProveedorDto.IdProveedor == null || facProveedorDto.IdProveedor <= 0)

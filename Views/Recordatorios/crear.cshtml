@@ -10,8 +10,12 @@
     </div>
 
     <div class="form-card-box">
+        <div asp-validation-summary="All" class="validation-box"></div>
+
         <form asp-controller="Recordatorios" asp-action="Crear" method="post">
-            
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Estado" value="0" />
+
             <div class="form-grid">
                 <div class="form-group">
                     <label asp-for="Proveedor">Proveedor</label>
@@ -44,7 +48,6 @@
                 <button type="submit" class="btn-sara-action">Registrar</button>
                 <a asp-controller="Recordatorios" asp-action="Index" class="btn-sara-action btn-cancelar">Cancelar</a>
             </div>
-
         </form>
     </div>
 </div>
@@ -64,4 +67,10 @@
     .btn-sara-action:hover { background-color: #4A6E4D; color: white; transform: scale(1.03); }
     .btn-cancelar { background-color: #DCD9CF; color: #2E4F3E; }
     .text-danger { color: #A93226; font-size: 15px; font-weight: 800; margin-top: 6px; display: block; }
+    .validation-box { color: #A93226; background-color: #FDEDEC; border: 2px solid #A93226; border-radius: 15px; padding: 12px 18px; margin-bottom: 20px; font-weight: 700; }
+    .validation-box:empty { display: none; }
 </style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

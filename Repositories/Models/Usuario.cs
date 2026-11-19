@@ -9,7 +9,7 @@ public partial class Usuario
     public int IdUsuario { get; set; }
     public int IdRol { get; set; }
     public bool TipDoc { get; set; }
-    public int IdSede { get; set; }
+    public int? IdSede { get; set; }
 
     [Required(ErrorMessage = "Los nombres son obligatorios")]
     public string NomUsuario { get; set; } = null!;
