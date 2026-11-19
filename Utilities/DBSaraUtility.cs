@@ -5,17 +5,13 @@ namespace Software_SARA.Utilities
 {
     public class DBSaraUtility
     {
-        // Dejamos tu servidor para que te funcione a ti
-        static string SERVER = "DESKTOP-YULIANA"; 
+  
+        static string SERVER = "DESKTOP-YULIANA";
 
         static string DB_NAME = "SARABD";
 
-        static string DB_USER = "SARA_app";
-
-        static string DB_PASSWORD = "123";
-
         static string Conn = "Server=" + SERVER + ";Database=" + DB_NAME + ";Trusted_Connection=True;TrustServerCertificate=True;";
-        
+
         //mi conxion:
         SqlConnection Con = new SqlConnection(Conn);
 

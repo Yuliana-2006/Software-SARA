@@ -14,7 +14,7 @@ namespace Software_SARA.Controllers
 
         // 2. Para errores de página no encontrada (Error 404 - "Host")
         [Route("Error/StatusCode/{code:int}")]
-        public IActionResult StatusCode(int code)
+        public new IActionResult StatusCode(int code)
         {
             ViewBag.CodigoError = code;
 

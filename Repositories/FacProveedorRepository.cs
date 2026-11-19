@@ -27,23 +27,42 @@ namespace Software_SARA.Repositories
             var httpContext = _httpContextAccessor.HttpContext;
             if (httpContext == null) return new List<int>();
 
+            int? sedeId = null;
             var sedeIdStr = httpContext.Session.GetString("SedeId");
-            if (!int.TryParse(sedeIdStr, out int sedeId) || sedeId <= 0)
+            if (int.TryParse(sedeIdStr, out int parsedSedeId) && parsedSedeId > 0)
+            {
+                sedeId = parsedSedeId;
+            }
+            else
             {
                 var usuarioIdStr = httpContext.Session.GetString("UsuarioId");
                 if (int.TryParse(usuarioIdStr, out int usuarioId) && usuarioId > 0)
                 {
-                    sedeId = _context.Usuarios
+                    var usuario = _context.Usuarios
                         .Where(u => u.IdUsuario == usuarioId)
-                        .Select(u => u.IdSede)
+                        .Select(u => new { u.IdRol, u.IdSede })
                         .FirstOrDefault();
+
+                    if (usuario != null)
+                    {
+                        // Si es Dueño (1) o Administrador (5) y no tiene sede asignada, puede ver todos los usuarios activos
+                        if (!usuario.IdSede.HasValue && (usuario.IdRol == 1 || usuario.IdRol == 5))
+                        {
+                            return _context.Usuarios
+                                .Where(u => u.EstadoUsuario)
+                                .Select(u => u.IdUsuario)
+                                .ToList();
+                        }
+
+                        sedeId = usuario.IdSede;
+                    }
                 }
             }
 
-            if (sedeId <= 0) return new List<int>();
+            if (!sedeId.HasValue || sedeId.Value <= 0) return new List<int>();
 
             return _context.Usuarios
-                .Where(u => u.IdSede == sedeId)
+                .Where(u => u.IdSede == sedeId.Value)
                 .Select(u => u.IdUsuario)
                 .ToList();
         }

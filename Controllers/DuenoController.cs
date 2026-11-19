@@ -82,16 +82,6 @@ namespace Software_SARA.Controllers
             if (await _context.Usuarios.AnyAsync(u => u.Telefono == dto.Telefono))
                 ModelState.AddModelError("Telefono", $"El teléfono {dto.Telefono} ya está registrado.");
 
-            var sedeAsignada = await _context.Sedes
-                .OrderByDescending(s => s.EstadoSede)
-                .ThenBy(s => s.IdSede)
-                .FirstOrDefaultAsync();
-
-            if (sedeAsignada == null)
-            {
-                ModelState.AddModelError("", "Debe existir al menos una sede registrada en el sistema antes de crear un Dueño.");
-            }
-
             if (!ModelState.IsValid) return View(dto);
 
             var nuevoUsuario = new Usuario
@@ -105,7 +95,7 @@ namespace Software_SARA.Controllers
                 DirUsuario = dto.DirUsuario,
                 FechaNaci = dto.FechaNaci,
                 IdRol = 1,
-                IdSede = sedeAsignada!.IdSede,
+                IdSede = null, // El Dueño no requiere sede asignada al crearse
                 EstadoUsuario = true
             };
 

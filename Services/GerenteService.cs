@@ -50,8 +50,8 @@ namespace Software_SARA.Services
                 Correo = g.Correo ?? string.Empty,
                 Telefono = g.Telefono ?? string.Empty,
                 Direccion = g.DirUsuario ?? string.Empty,
-                IdSede = g.IdSede,
-                Sede = sedesDict.ContainsKey(g.IdSede) ? sedesDict[g.IdSede] : string.Empty,
+                IdSede = g.IdSede ?? 0,
+                Sede = g.IdSede.HasValue && sedesDict.ContainsKey(g.IdSede.Value) ? sedesDict[g.IdSede.Value] : string.Empty,
                 FechaNacimiento = g.FechaNaci.ToDateTime(TimeOnly.MinValue)
             }).ToList();
         }
@@ -61,7 +61,9 @@ namespace Software_SARA.Services
             var g = await _context.Usuarios.FindAsync(id);
             if (g == null) return null;
 
-            var nombreSede = _context.Sedes.Where(s => s.IdSede == g.IdSede).Select(s => s.NomSede).FirstOrDefault() ?? string.Empty;
+            var nombreSede = g.IdSede.HasValue
+                ? (_context.Sedes.Where(s => s.IdSede == g.IdSede.Value).Select(s => s.NomSede).FirstOrDefault() ?? string.Empty)
+                : string.Empty;
 
             return new GerenteDto
             {
@@ -72,7 +74,7 @@ namespace Software_SARA.Services
                 Correo = g.Correo ?? string.Empty,
                 Telefono = g.Telefono ?? string.Empty,
                 Direccion = g.DirUsuario ?? string.Empty,
-                IdSede = g.IdSede,
+                IdSede = g.IdSede ?? 0,
                 Sede = nombreSede,
                 FechaNacimiento = g.FechaNaci.ToDateTime(TimeOnly.MinValue)
             };

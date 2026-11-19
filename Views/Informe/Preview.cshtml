@@ -207,21 +207,21 @@
         <div class="modal-content">
             <div class="modal-body text-center">
                 <h4 class="sara-modal-title">Enviar Reporte por Correo</h4>
-                
+
                 <!-- AQUÍ ESTÁ EL FORMULARIO REAL. SOLO SE ENVÍA AL DAR CLIC EN "CONFIRMAR Y ENVIAR" -->
                 <form asp-action="EnviarCorreo" method="post" id="formEnviarCorreo">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="fechaSeleccionada" value="@Model.Fecha.ToString("yyyy-MM-dd")" />
-                    
+
                     <div class="mb-4 text-start">
-                        <label class="fw-bold mb-2 text-white">Seleccione el destinatario (Solo Gerentes/Tesoreros):</label>
+                        <label class="fw-bold mb-2 text-white">Seleccione el destinatario:</label>
                         <select name="emailDestino" class="form-select text-dark rounded-pill" required>
                             <option value="">-- Seleccione un correo --</option>
                             @if (Model.UsuariosCorreo != null)
                             {
                                 foreach (var user in Model.UsuariosCorreo)
                                 {
-                                    <option value="@user.Correo">@user.NomUsuario (@user.Correo)</option>
+                                    <option value="@user.Correo">@user.NomUsuario @user.ApelliUsuario (@user.Correo)</option>
                                 }
                             }
                         </select>

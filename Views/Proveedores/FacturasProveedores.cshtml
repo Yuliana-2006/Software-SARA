@@ -4,6 +4,14 @@
 @{
     ViewData["Title"] = "Facturas Proveedores";
     var culturaCo = new CultureInfo("es-CO");
+
+    var listaFacturas = Model?.ToList() ?? new List<Software_SARA.Dtos.FacProveedorDto>();
+    var hoy = DateOnly.FromDateTime(DateTime.Now);
+    var limiteProximos = hoy.AddDays(7);
+
+    int cantidadVencenHoy = listaFacturas.Count(f => f.EstadoFactura && f.FechaVencimiento == hoy);
+    int cantidadProximos = listaFacturas.Count(f => f.EstadoFactura && f.FechaVencimiento >= hoy && f.FechaVencimiento <= limiteProximos);
+    int numeroBadge = cantidadVencenHoy > 0 ? cantidadVencenHoy : cantidadProximos;
 }
 
 <div class="facturas-container">
@@ -13,7 +21,11 @@
         <h2>Facturas Proveedores</h2>
         <div class="d-flex gap-3 align-items-center">
             <a asp-controller="Proveedores" asp-action="VencimientosProximosProveedores" class="btn-vencimientos">
-                Vencimientos próximos
+                <span>Vencimientos próximos</span>
+                @if (numeroBadge > 0)
+                {
+                    <span class="badge-vencimientos" title="@(cantidadVencenHoy > 0 ? "Vencen hoy" : "Próximos 7 días")">@numeroBadge</span>
+                }
             </a>
             <a asp-controller="GestorFacturas" asp-action="SelectFactura" class="btn btn-outline-dark rounded-pill fw-bold px-4 shadow-sm" style="border-color: #2D4832; color: #2D4832; background-color: white; height: fit-content;">
                 <i class="bi bi-arrow-left"></i> Volver
@@ -24,9 +36,9 @@
     <!-- Contenedor de las Tarjetas -->
     <div class="facturas-cards-wrapper">
 
-        @foreach (var factura in Model)
+        @foreach (var factura in listaFacturas)
         {
-            string valorEnteroFormateado = ((long)factura.ValorFactura).ToString("N0", culturaCo);
+            string valorEnteroFormateado = ((long)Math.Round(factura.ValorFactura)).ToString("N0", culturaCo);
             string valorModal = $"${valorEnteroFormateado}";
 
             <div class="facturas-card">
@@ -179,6 +191,9 @@
     }
 
     .btn-vencimientos {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
         background-color: #385141;
         color: #ECE9DF;
         padding: 10px 22px;
@@ -194,6 +209,21 @@
         background-color: #2E4F3E;
         color: white;
         text-decoration: none;
+    }
+
+    .badge-vencimientos {
+        background-color: #E74C3C;
+        color: #FFFFFF;
+        font-size: 13px;
+        font-weight: 800;
+        min-width: 22px;
+        height: 22px;
+        padding: 0 6px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
     }
 
     .facturas-cards-wrapper {
