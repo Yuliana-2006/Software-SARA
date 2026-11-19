@@ -18,10 +18,6 @@ namespace Software_SARA.Dtos
         public DateTime? FechaPago { get; set; }
         public bool EstadoFactura { get; set; }
         public int Reponse { get; set; }
-
-        // Propiedades que venían de Develop
         public string Message { get; set; } = string.Empty;
-        public string? NomUsuario { get; set; } // Nombre del responsable que ingresó la factura
-        public DateTime? FechaPago { get; set; } // Fecha en la que se confirmó el pago
     }
 }

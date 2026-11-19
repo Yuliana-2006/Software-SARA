@@ -107,7 +107,7 @@ namespace Software_SARA.Repositories
 
         public async Task<bool> CreateFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
-            //Consulta SQL para insertar una nueva factura de proveedor en la base de datos
+            // Consulta SQL para insertar una nueva factura de servicio público en la base de datos
             bool result = false;
             string SQL = @"INSERT INTO SARABD.dbo.factura
                            (id_usuario, tip_factura, id_proveedor, id_servicio, valor_factura, fecha_reg_factura, fecha_vencimiento, estado_factura)
@@ -298,39 +298,6 @@ namespace Software_SARA.Repositories
                 connectionUtility.Disconnect();
             }
 
-            return lista;
-        }
-
-        public async Task<List<HistorialFacturaDto>> ObtenerHistorialFacturasServiciosPublicosAsync()
-        {
-            var lista = new List<HistorialFacturaDto>();
-            string sql = "SELECT * FROM SARABD.dbo.vw_FacturasServiciosPagoConfirmadoConUsuario;";
-
-            DBSaraUtility connectionUtility = new DBSaraUtility();
-            connectionUtility.Connect();
-
-            using (SqlCommand command = new SqlCommand(sql, connectionUtility.CONN()))
-            {
-                using (SqlDataReader reader = await command.ExecuteReaderAsync())
-                {
-                    while (await reader.ReadAsync())
-                    {
-                        lista.Add(new HistorialFacturaDto
-                        {
-                            IdFactura = reader["id_factura"] != DBNull.Value ? Convert.ToInt32(reader["id_factura"]) : 0,
-                            NomUsuario = reader["nom_usuario"] != DBNull.Value ? reader["nom_usuario"].ToString() : "N/D",
-                            NombreEntidad = reader["nom_servicio"] != DBNull.Value ? reader["nom_servicio"].ToString() : "Sin ServicioPúblico",
-                            ValorFactura = reader["valor_factura"] != DBNull.Value ? Convert.ToDecimal(reader["valor_factura"]) : 0,
-                            FechaRegFactura = reader["fecha_reg_factura"] != DBNull.Value ? DateOnly.FromDateTime(Convert.ToDateTime(reader["fecha_reg_factura"])) : default,
-                            FechaVencimiento = reader["fecha_vencimiento"] != DBNull.Value ? DateOnly.FromDateTime(Convert.ToDateTime(reader["fecha_vencimiento"])) : default,
-                            FechaPago = reader["fecha_pago"] != DBNull.Value ? DateOnly.FromDateTime(Convert.ToDateTime(reader["fecha_pago"])) : null,
-                            EstadoFactura = reader["estado_factura"] != DBNull.Value && Convert.ToBoolean(reader["estado_factura"])
-                        });
-                    }
-                }
-            }
-
-            connectionUtility.Disconnect();
             return lista;
         }
     }

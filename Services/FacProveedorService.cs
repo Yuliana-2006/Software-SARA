@@ -160,7 +160,7 @@ namespace Software_SARA.Services
             return facProveedorDto;
         }
 
-        public async Task<List<HistorialFacturaDto>> ObtenerHistorialFacturasProveedoresAsync()
+        public async Task<List<FacProveedorDto>> ObtenerHistorialFacturasProveedoresAsync()
         {
             return await _facProveedorRepository.ObtenerHistorialFacturasProveedoresAsync();
         }

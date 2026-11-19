@@ -240,7 +240,7 @@ namespace Software_SARA.Repositories
             return result;
         }
 
-        public async Task<List<HistorialFacturaDto>> ObtenerHistorialFacturasProveedoresAsync()
+        public async Task<List<FacProveedorDto>> ObtenerHistorialFacturasProveedoresAsync()
         {
             var lista = new List<FacProveedorDto>();
             var idsUsuariosSede = ObtenerIdsUsuariosSedeActual();
