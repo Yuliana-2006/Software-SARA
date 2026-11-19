@@ -1,14 +1,16 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Software_SARA.Dtos;
-using Software_SARA.Services;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Software_SARA.Dtos;
+using Software_SARA.Services;
+using Software_SARA.Utilities;
 
 namespace Software_SARA.Controllers
 {
+    [AuthorizeRole("Tesorero", "Gerente")]
     public class ServiciosPublicosController : Controller
     {
         private readonly FacServPubService _facServPubService;

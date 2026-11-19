@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace Software_SARA.Controllers
 {
+    [AuthorizeRole("Dueño")]
     public class GerentesController : Controller
     {
         private readonly GerenteService _gerenteService;
