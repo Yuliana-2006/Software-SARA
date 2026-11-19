@@ -1,7 +1,9 @@
 ﻿@model IEnumerable<Software_SARA.Dtos.FacProveedorDto>
+@using System.Globalization
 
 @{
     ViewData["Title"] = "Facturas Proveedores";
+    var culturaCo = new CultureInfo("es-CO");
 }
 
 <div class="facturas-container">
@@ -10,10 +12,9 @@
     <div class="facturas-header-banner">
         <h2>Facturas Proveedores</h2>
         <div class="d-flex gap-3 align-items-center">
-            <a asp-controller="ServiciosPublicos" asp-action="VencimientoProximos" class="btn-vencimientos">
+            <a asp-controller="Proveedores" asp-action="VencimientosProximosProveedores" class="btn-vencimientos">
                 Vencimientos próximos
             </a>
-     <!-- NUEVO BOTÓN VOLVER -->
             <a asp-controller="GestorFacturas" asp-action="SelectFactura" class="btn btn-outline-dark rounded-pill fw-bold px-4 shadow-sm" style="border-color: #2D4832; color: #2D4832; background-color: white; height: fit-content;">
                 <i class="bi bi-arrow-left"></i> Volver
             </a>
@@ -25,6 +26,9 @@
 
         @foreach (var factura in Model)
         {
+            string valorEnteroFormateado = ((long)factura.ValorFactura).ToString("N0", culturaCo);
+            string valorModal = $"${valorEnteroFormateado}";
+
             <div class="facturas-card">
 
                 <div class="facturas-icon">
@@ -36,18 +40,18 @@
                 </div>
 
                 <div style="color: #ECE9DF; font-size: 14px; font-weight: 600; text-align: center; margin-top: 4px;">
-                    Valor: $@factura.ValorFactura
+                    Valor: $@valorEnteroFormateado
                 </div>
 
                 <div class="facturas-buttons">
                     <button type="button" class="facturas-button"
                             onclick="mostrarFactura(
-                        '@factura.IdFactura' ,
-                        '@factura.NomProveedor',
-                        '$@factura.ValorFactura',
-                        '@factura.FechaVencimiento.ToString("dd/MM/yyyy")',
-                        '@(factura.EstadoFactura ? "Activa" : "Inactiva")'
-                        )">
+                                '@factura.IdFactura',
+                                '@factura.NomProveedor',
+                                '@valorModal',
+                                '@factura.FechaVencimiento.ToString("dd/MM/yyyy")',
+                                '@(factura.EstadoFactura ? "Activa" : "Inactiva")'
+                            )">
                         Consultar
                     </button>
 
@@ -146,11 +150,6 @@
 </div>
 
 <style>
-
-    /* =========================================
-            CONTENEDOR GENERAL
-            ========================================= */
-
     .facturas-container {
         width: 100%;
         min-height: calc(100vh - 120px);
@@ -160,10 +159,6 @@
         padding-top: 10px;
         box-sizing: border-box;
     }
-
-    /* =========================================
-            ENCABEZADO Y BOTÓN VENCIMIENTOS
-            ========================================= */
 
     .facturas-header-banner {
         width: 100%;
@@ -175,13 +170,13 @@
         margin-bottom: 20px;
     }
 
-        .facturas-header-banner h2 {
-            margin: 0;
-            color: #2E4F3E;
-            font-size: 36px;
-            font-weight: 800;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+    .facturas-header-banner h2 {
+        margin: 0;
+        color: #2E4F3E;
+        font-size: 36px;
+        font-weight: 800;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
     .btn-vencimientos {
         background-color: #385141;
@@ -195,15 +190,11 @@
         transition: background-color 0.2s ease;
     }
 
-        .btn-vencimientos:hover {
-            background-color: #2E4F3E;
-            color: white;
-            text-decoration: none;
-        }
-
-    /* =========================================
-            WRAPPER DE TARJETAS
-            ========================================= */
+    .btn-vencimientos:hover {
+        background-color: #2E4F3E;
+        color: white;
+        text-decoration: none;
+    }
 
     .facturas-cards-wrapper {
         width: 100%;
@@ -215,10 +206,6 @@
         padding-top: 10px;
         box-sizing: border-box;
     }
-
-    /* =========================================
-            TARJETA GENERAL
-            ========================================= */
 
     .facturas-card {
         width: 280px;
@@ -235,10 +222,6 @@
         box-shadow: 0 5px 10px rgba(0, 0, 0, 0.18);
     }
 
-    /* =========================================
-            ICONO CIRCULAR (CAMIÓN)
-            ========================================= */
-
     .facturas-icon {
         width: 95px;
         height: 95px;
@@ -254,15 +237,11 @@
         box-sizing: border-box;
     }
 
-        .facturas-icon i {
-            font-size: 44px;
-            color: #2E4F3E;
-            line-height: 1;
-        }
-
-    /* =========================================
-            NOMBRE DE LA TARJETA
-            ========================================= */
+    .facturas-icon i {
+        font-size: 44px;
+        color: #2E4F3E;
+        line-height: 1;
+    }
 
     .facturas-name {
         width: 90%;
@@ -274,15 +253,11 @@
         text-align: center;
     }
 
-        .facturas-name h2 {
-            margin: 0;
-            font-size: 26px;
-            color: #ECE9DF;
-        }
-
-    /* =========================================
-            BOTONES INTERNOS DE LA TARJETA
-            ========================================= */
+    .facturas-name h2 {
+        margin: 0;
+        font-size: 26px;
+        color: #ECE9DF;
+    }
 
     .facturas-buttons {
         width: 100%;
@@ -313,15 +288,11 @@
         justify-content: center;
     }
 
-        .facturas-button:hover {
-            background-color: #DCD9CF;
-            color: #355B43;
-            text-decoration: none;
-        }
-
-    /* =========================================
-            ENLACE DE AGREGAR (REGISTRAR FACTURA)
-            ========================================= */
+    .facturas-button:hover {
+        background-color: #DCD9CF;
+        color: #355B43;
+        text-decoration: none;
+    }
 
     .facturas-link {
         display: block;
@@ -332,19 +303,15 @@
         color: inherit;
     }
 
-        .facturas-link:hover {
-            text-decoration: none;
-            color: inherit;
-        }
+    .facturas-link:hover {
+        text-decoration: none;
+        color: inherit;
+    }
 
     .agregar-card:hover {
         transform: translateY(-2px);
         transition: transform 0.2s ease;
     }
-
-    /* =========================================
-            CÍRCULO DEL SIGNO +
-            ========================================= */
 
     .facturas-plus {
         width: 105px;
@@ -363,10 +330,6 @@
         font-size: 58px;
     }
 
-    /* =========================================
-            TEXTO REGISTRAR FACTURA
-            ========================================= */
-
     .facturas-title {
         width: 100%;
         margin-top: 35px;
@@ -376,10 +339,6 @@
         font-weight: 800;
         text-align: center;
     }
-
-    /* =========================================
-            MENSAJE DE ÉXITO
-            ========================================= */
 
     .mensaje-exito {
         position: fixed;
@@ -419,10 +378,6 @@
         }
     }
 
-    /* =========================================
-            RESPONSIVE
-            ========================================= */
-
     @@media (max-width: 750px) {
         .facturas-cards-wrapper {
             gap: 25px;
@@ -435,10 +390,6 @@
             padding: 0 20px;
         }
     }
-
-    /* =========================================
-                MODAL DE CONSULTA
-                ========================================= */
 
     .modal-facturaproveedor {
         position: fixed;
@@ -456,11 +407,6 @@
         z-index: 1000;
     }
 
-
-    /* =========================================
-            TARJETA DE DETALLES
-            ========================================= */
-
     .consulta-card {
         width: 100%;
         max-width: 600px;
@@ -473,11 +419,6 @@
         max-height: none;
     }
 
-
-    /* =========================================
-            ENCABEZADO
-            ========================================= */
-
     .consulta-header {
         display: flex;
         align-items: center;
@@ -485,17 +426,12 @@
         margin-bottom: 18px;
     }
 
-        .consulta-header h2 {
-            margin: 0;
-            color: white;
-            font-size: 28px;
-            font-weight: 800;
-        }
-
-
-    /* =========================================
-            BOTÓN X
-            ========================================= */
+    .consulta-header h2 {
+        margin: 0;
+        color: white;
+        font-size: 28px;
+        font-weight: 800;
+    }
 
     .btn-cerrar-x {
         width: 38px;
@@ -511,15 +447,10 @@
         justify-content: center;
     }
 
-        .btn-cerrar-x:hover {
-            color: white;
-            transform: scale(1.1);
-        }
-
-
-    /* =========================================
-            CAMPOS
-            ========================================= */
+    .btn-cerrar-x:hover {
+        color: white;
+        transform: scale(1.1);
+    }
 
     .dato-facturaproveedor {
         background-color: #5E875E;
@@ -530,25 +461,20 @@
         box-sizing: border-box;
     }
 
-        .dato-facturaproveedor span {
-            display: block;
-            font-size: 13px;
-            font-weight: 700;
-            margin-bottom: 3px;
-        }
+    .dato-facturaproveedor span {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 3px;
+    }
 
-        .dato-facturaproveedor strong {
-            display: block;
-            font-size: 17px;
-            font-weight: 800;
-            color: white;
-            word-break: break-word;
-        }
-
-
-    /* =========================================
-            BOTÓN CERRAR
-            ========================================= */
+    .dato-facturaproveedor strong {
+        display: block;
+        font-size: 17px;
+        font-weight: 800;
+        color: white;
+        word-break: break-word;
+    }
 
     .btn-cerrar-consulta {
         display: block;
@@ -565,11 +491,10 @@
         transition: 0.2s;
     }
 
-        .btn-cerrar-consulta:hover {
-            background-color: #ffffff;
-            transform: scale(1.03);
-        }
-
+    .btn-cerrar-consulta:hover {
+        background-color: #ffffff;
+        transform: scale(1.03);
+    }
 </style>
 
 <script>

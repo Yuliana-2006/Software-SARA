@@ -1,82 +1,142 @@
-﻿using Microsoft.AspNetCore.Mvc.Rendering;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
 using Software_SARA.Dtos;
 using Software_SARA.Repositories.Models;
 using Software_SARA.Utilities;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Software_SARA.Repositories
 {
     public class FacServPubRepository
     {
         private readonly SarabdContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public FacServPubRepository(SarabdContext context)
+        public FacServPubRepository(SarabdContext context, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
+        }
+
+        private List<int> ObtenerIdsUsuariosSedeActual()
+        {
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (httpContext == null) return new List<int>();
+
+            var sedeIdStr = httpContext.Session.GetString("SedeId");
+            if (!int.TryParse(sedeIdStr, out int sedeId) || sedeId <= 0)
+            {
+                var usuarioIdStr = httpContext.Session.GetString("UsuarioId");
+                if (int.TryParse(usuarioIdStr, out int usuarioId) && usuarioId > 0)
+                {
+                    sedeId = _context.Usuarios
+                        .Where(u => u.IdUsuario == usuarioId)
+                        .Select(u => u.IdSede)
+                        .FirstOrDefault();
+                }
+            }
+
+            if (sedeId <= 0) return new List<int>();
+
+            return _context.Usuarios
+                .Where(u => u.IdSede == sedeId)
+                .Select(u => u.IdUsuario)
+                .ToList();
         }
 
         public async Task<List<Factura>> ObtenerTodasLasFacturasServiciosPublicos()
         {
             var listaFacturas = new List<Factura>();
-            string sql = @"SELECT f.id_factura, f.id_usuario, f.tip_factura, f.id_proveedor, 
-                             s.nom_servicio, f.id_servicio, f.valor_factura, 
-                             f.fecha_reg_factura, f.fecha_vencimiento, f.estado_factura 
-                         FROM SARABD.dbo.factura f
-                         LEFT JOIN SARABD.dbo.servicio s ON f.id_servicio = s.id_servicio
-                         WHERE f.estado_factura = 1 AND f.tip_factura = 0;";
+            var idsUsuariosSede = ObtenerIdsUsuariosSedeActual();
+            if (idsUsuariosSede.Count == 0) return listaFacturas;
+
+            var parametros = idsUsuariosSede.Select((id, idx) => new SqlParameter($"@u{idx}", id)).ToArray();
+            string inClause = string.Join(", ", parametros.Select(p => p.ParameterName));
+
+            string sql = $@"SELECT f.id_factura, f.id_usuario, f.tip_factura, f.id_proveedor,
+                                   s.nom_servicio, f.id_servicio, f.valor_factura,
+                                   f.fecha_reg_factura, f.fecha_vencimiento, f.estado_factura
+                            FROM SARABD.dbo.factura f
+                            LEFT JOIN SARABD.dbo.servicio s ON f.id_servicio = s.id_servicio
+                            WHERE f.estado_factura = 1 AND f.id_servicio IS NOT NULL
+                              AND f.id_usuario IN ({inClause})
+                            ORDER BY f.id_factura DESC;";
 
             DBSaraUtility connectionUtility = new DBSaraUtility();
             connectionUtility.Connect();
 
-            using (SqlCommand command = new SqlCommand(sql, connectionUtility.CONN()))
+            try
             {
-                using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                using (SqlCommand command = new SqlCommand(sql, connectionUtility.CONN()))
                 {
-                    while (await reader.ReadAsync())
+                    command.Parameters.AddRange(parametros);
+
+                    using (SqlDataReader reader = await command.ExecuteReaderAsync())
                     {
-                        var factura = new Factura
+                        while (await reader.ReadAsync())
                         {
-                            IdFactura = reader["id_factura"] != DBNull.Value ? Convert.ToInt32(reader["id_factura"]) : 0,
-                            IdUsuario = reader["id_usuario"] != DBNull.Value ? Convert.ToInt32(reader["id_usuario"]) : 0,
-                            TipFactura = reader["tip_factura"] != DBNull.Value && Convert.ToBoolean(reader["tip_factura"]),
-                            IdProveedor = reader["id_proveedor"] != DBNull.Value ? Convert.ToInt32(reader["id_proveedor"]) : 0,
-                            NomProveedor = reader["nom_servicio"] != DBNull.Value ? reader["nom_servicio"].ToString() : "Sin servicio público",
-                            IdServicio = reader["id_servicio"] != DBNull.Value ? Convert.ToInt32(reader["id_servicio"]) : 0,
-                            ValorFactura = reader["valor_factura"] != DBNull.Value ? Convert.ToDecimal(reader["valor_factura"]) : 0,
-                            FechaRegFactura = reader["fecha_reg_factura"] != DBNull.Value ? DateOnly.FromDateTime(Convert.ToDateTime(reader["fecha_reg_factura"])) : default,
-                            FechaVencimiento = reader["fecha_vencimiento"] != DBNull.Value ? DateOnly.FromDateTime(Convert.ToDateTime(reader["fecha_vencimiento"])) : default,
-                            EstadoFactura = reader["estado_factura"] != DBNull.Value && Convert.ToBoolean(reader["estado_factura"])
-                        };
-                        listaFacturas.Add(factura);
+                            var factura = new Factura
+                            {
+                                IdFactura = reader["id_factura"] != DBNull.Value ? Convert.ToInt32(reader["id_factura"]) : 0,
+                                IdUsuario = reader["id_usuario"] != DBNull.Value ? Convert.ToInt32(reader["id_usuario"]) : 0,
+                                TipFactura = reader["tip_factura"] != DBNull.Value && Convert.ToBoolean(reader["tip_factura"]),
+                                IdProveedor = reader["id_proveedor"] != DBNull.Value ? Convert.ToInt32(reader["id_proveedor"]) : (int?)null,
+                                NomProveedor = reader["nom_servicio"] != DBNull.Value ? reader["nom_servicio"].ToString() : "Sin servicio público",
+                                IdServicio = reader["id_servicio"] != DBNull.Value ? Convert.ToInt32(reader["id_servicio"]) : (int?)null,
+                                ValorFactura = reader["valor_factura"] != DBNull.Value ? Convert.ToDecimal(reader["valor_factura"]) : 0m,
+                                FechaRegFactura = reader["fecha_reg_factura"] != DBNull.Value ? DateOnly.FromDateTime(Convert.ToDateTime(reader["fecha_reg_factura"])) : default,
+                                FechaVencimiento = reader["fecha_vencimiento"] != DBNull.Value ? DateOnly.FromDateTime(Convert.ToDateTime(reader["fecha_vencimiento"])) : default,
+                                EstadoFactura = reader["estado_factura"] != DBNull.Value && Convert.ToBoolean(reader["estado_factura"])
+                            };
+                            listaFacturas.Add(factura);
+                        }
                     }
                 }
             }
+            finally
+            {
+                connectionUtility.Disconnect();
+            }
 
-            connectionUtility.Disconnect();
             return listaFacturas;
         }
 
-        public async Task<Boolean> CreateFacturaServicioPublico(FacServPublicDto facServPublicDto)
+        public async Task<bool> CreateFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
             bool result = false;
-            string SQL = "INSERT INTO SARABD.dbo.factura (id_usuario, tip_factura, id_proveedor, id_servicio, valor_factura, fecha_reg_factura, fecha_vencimiento, estado_factura) VALUES ('" + facServPublicDto.IdUsuario + "', '" + (facServPublicDto.TipFactura ? 1 : 0) + "', " + (facServPublicDto.IdProveedor.HasValue ? "'" + facServPublicDto.IdProveedor.Value + "'" : "NULL") + " , '" + facServPublicDto.IdServicio + "' , '" + facServPublicDto.ValorFactura.ToString(System.Globalization.CultureInfo.InvariantCulture) + "', '" + facServPublicDto.FechaRegFactura.ToString("yyyy-MM-dd") + "', '" + facServPublicDto.FechaVencimiento.ToString("yyyy-MM-dd") + "', '" + (facServPublicDto.EstadoFactura ? 1 : 0) + "');";
+            string SQL = @"INSERT INTO SARABD.dbo.factura
+                           (id_usuario, tip_factura, id_proveedor, id_servicio, valor_factura, fecha_reg_factura, fecha_vencimiento, estado_factura)
+                           VALUES (@IdUsuario, @TipFactura, @IdProveedor, @IdServicio, @ValorFactura, @FechaRegFactura, @FechaVencimiento, @EstadoFactura);";
 
-            DBSaraUtility Connection = new DBSaraUtility();
-            Connection.Connect();
-            using (SqlCommand command = new SqlCommand(SQL, Connection.CONN()))
+            DBSaraUtility connectionUtility = new DBSaraUtility();
+            connectionUtility.Connect();
+
+            try
             {
-                int comando = command.ExecuteNonQuery();
-                if (comando != 0)
+                using (SqlCommand command = new SqlCommand(SQL, connectionUtility.CONN()))
                 {
-                    result = true;
-                }
-                else
-                {
-                    result = false;
+                    command.Parameters.AddWithValue("@IdUsuario", facServPublicDto.IdUsuario);
+                    command.Parameters.AddWithValue("@TipFactura", facServPublicDto.TipFactura ? 1 : 0);
+                    command.Parameters.AddWithValue("@IdProveedor", facServPublicDto.IdProveedor.HasValue ? facServPublicDto.IdProveedor.Value : DBNull.Value);
+                    command.Parameters.AddWithValue("@IdServicio", facServPublicDto.IdServicio.HasValue ? facServPublicDto.IdServicio.Value : DBNull.Value);
+                    command.Parameters.AddWithValue("@ValorFactura", facServPublicDto.ValorFactura);
+                    command.Parameters.AddWithValue("@FechaRegFactura", facServPublicDto.FechaRegFactura.ToString("yyyy-MM-dd"));
+                    command.Parameters.AddWithValue("@FechaVencimiento", facServPublicDto.FechaVencimiento.ToString("yyyy-MM-dd"));
+                    command.Parameters.AddWithValue("@EstadoFactura", facServPublicDto.EstadoFactura ? 1 : 0);
+
+                    int comando = await command.ExecuteNonQueryAsync();
+                    result = comando != 0;
                 }
             }
-            Connection.Disconnect();
+            finally
+            {
+                connectionUtility.Disconnect();
+            }
+
             return result;
         }
 
@@ -88,8 +148,9 @@ namespace Software_SARA.Repositories
             DBSaraUtility connectionUtility = new DBSaraUtility();
             connectionUtility.Connect();
 
-            using (SqlCommand command = new SqlCommand(sql, connectionUtility.CONN()))
+            try
             {
+                using (SqlCommand command = new SqlCommand(sql, connectionUtility.CONN()))
                 using (SqlDataReader reader = await command.ExecuteReaderAsync())
                 {
                     while (await reader.ReadAsync())
@@ -102,56 +163,141 @@ namespace Software_SARA.Repositories
                     }
                 }
             }
+            finally
+            {
+                connectionUtility.Disconnect();
+            }
 
-            connectionUtility.Disconnect();
             return listaServiciosPublicos;
         }
 
-        public async Task<Boolean> EditarFacturaServicioPublico(FacServPublicDto facServPublicDto)
+        public async Task<bool> EditarFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
             bool result = false;
-            string SQL = @"UPDATE SARABD.dbo.factura SET id_usuario = '" + facServPublicDto.IdUsuario + "', " + "id_proveedor = " + (facServPublicDto.IdProveedor.HasValue ? "'" + facServPublicDto.IdProveedor.Value + "'" : "NULL") + ", " + "id_servicio = " + facServPublicDto.IdServicio + ", " + "valor_factura = '" + facServPublicDto.ValorFactura.ToString(System.Globalization.CultureInfo.InvariantCulture) + "', " + "fecha_reg_factura = '" + facServPublicDto.FechaRegFactura.ToString("yyyy-MM-dd") + "', " + "fecha_vencimiento = '" + facServPublicDto.FechaVencimiento.ToString("yyyy-MM-dd") + "', " + "estado_factura = '" + (facServPublicDto.EstadoFactura ? 1 : 0) + "' " + "WHERE id_factura = " + facServPublicDto.IdFactura + ";";
+            string SQL = @"UPDATE SARABD.dbo.factura
+                           SET id_usuario = @IdUsuario,
+                               id_proveedor = @IdProveedor,
+                               id_servicio = @IdServicio,
+                               valor_factura = @ValorFactura,
+                               fecha_reg_factura = @FechaRegFactura,
+                               fecha_vencimiento = @FechaVencimiento,
+                               estado_factura = @EstadoFactura
+                           WHERE id_factura = @IdFactura;";
 
-            DBSaraUtility Connection = new DBSaraUtility();
-            Connection.Connect();
+            DBSaraUtility connectionUtility = new DBSaraUtility();
+            connectionUtility.Connect();
 
-            using (SqlCommand command = new SqlCommand(SQL, Connection.CONN()))
+            try
             {
-                int comando = command.ExecuteNonQuery();
-                if (comando != 0)
+                using (SqlCommand command = new SqlCommand(SQL, connectionUtility.CONN()))
                 {
-                    result = true;
-                }
-                else
-                {
-                    result = false;
+                    command.Parameters.AddWithValue("@IdUsuario", facServPublicDto.IdUsuario);
+                    command.Parameters.AddWithValue("@IdProveedor", facServPublicDto.IdProveedor.HasValue ? facServPublicDto.IdProveedor.Value : DBNull.Value);
+                    command.Parameters.AddWithValue("@IdServicio", facServPublicDto.IdServicio.HasValue ? facServPublicDto.IdServicio.Value : DBNull.Value);
+                    command.Parameters.AddWithValue("@ValorFactura", facServPublicDto.ValorFactura);
+                    command.Parameters.AddWithValue("@FechaRegFactura", facServPublicDto.FechaRegFactura.ToString("yyyy-MM-dd"));
+                    command.Parameters.AddWithValue("@FechaVencimiento", facServPublicDto.FechaVencimiento.ToString("yyyy-MM-dd"));
+                    command.Parameters.AddWithValue("@EstadoFactura", facServPublicDto.EstadoFactura ? 1 : 0);
+                    command.Parameters.AddWithValue("@IdFactura", facServPublicDto.IdFactura);
+
+                    int comando = await command.ExecuteNonQueryAsync();
+                    result = comando != 0;
                 }
             }
+            finally
+            {
+                connectionUtility.Disconnect();
+            }
 
-            Connection.Disconnect();
             return result;
         }
 
-        public async Task<Boolean> ConfirmarPagoFacturaServicioPublico(int idFactura)
+        public async Task<bool> ConfirmarPagoFacturaServicioPublico(int idFactura)
         {
             bool result = false;
-            string SQL = "UPDATE SARABD.dbo.factura SET estado_factura = 0 WHERE id_factura = " + idFactura + ";";
-            DBSaraUtility Connection = new DBSaraUtility();
-            Connection.Connect();
-            using (SqlCommand command = new SqlCommand(SQL, Connection.CONN()))
+            string fechaActual = DateTime.Now.ToString("yyyy-MM-dd");
+            string SQL = "UPDATE SARABD.dbo.factura SET estado_factura = 0, fecha_pago = @FechaPago WHERE id_factura = @IdFactura;";
+
+            DBSaraUtility connectionUtility = new DBSaraUtility();
+            connectionUtility.Connect();
+
+            try
             {
-                int comando = command.ExecuteNonQuery();
-                if (comando != 0)
+                using (SqlCommand command = new SqlCommand(SQL, connectionUtility.CONN()))
                 {
-                    result = true;
-                }
-                else
-                {
-                    result = false;
+                    command.Parameters.AddWithValue("@FechaPago", fechaActual);
+                    command.Parameters.AddWithValue("@IdFactura", idFactura);
+
+                    int comando = await command.ExecuteNonQueryAsync();
+                    result = comando != 0;
                 }
             }
-            Connection.Disconnect();
+            finally
+            {
+                connectionUtility.Disconnect();
+            }
+
             return result;
+        }
+
+        public async Task<List<FacServPublicDto>> ObtenerHistorialFacturasServiciosPublicosAsync()
+        {
+            var lista = new List<FacServPublicDto>();
+            var idsUsuariosSede = ObtenerIdsUsuariosSedeActual();
+            if (idsUsuariosSede.Count == 0) return lista;
+
+            var parametros = idsUsuariosSede.Select((id, idx) => new SqlParameter($"@u{idx}", id)).ToArray();
+            string inClause = string.Join(", ", parametros.Select(p => p.ParameterName));
+
+            string sql = $@"SELECT f.id_factura, f.id_usuario, u.nom_usuario AS nom_usuario,
+                                   f.tip_factura, f.id_proveedor, f.id_servicio, s.nom_servicio,
+                                   f.valor_factura, f.fecha_reg_factura, f.fecha_vencimiento,
+                                   f.fecha_pago, f.estado_factura
+                            FROM SARABD.dbo.factura f
+                            LEFT JOIN SARABD.dbo.usuario u ON f.id_usuario = u.id_usuario
+                            LEFT JOIN SARABD.dbo.servicio s ON f.id_servicio = s.id_servicio
+                            WHERE f.estado_factura = 0 AND f.id_servicio IS NOT NULL
+                              AND f.id_usuario IN ({inClause})
+                            ORDER BY f.id_factura DESC;";
+
+            DBSaraUtility connectionUtility = new DBSaraUtility();
+            connectionUtility.Connect();
+
+            try
+            {
+                using (SqlCommand command = new SqlCommand(sql, connectionUtility.CONN()))
+                {
+                    command.Parameters.AddRange(parametros);
+
+                    using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            lista.Add(new FacServPublicDto
+                            {
+                                IdFactura = reader["id_factura"] != DBNull.Value ? Convert.ToInt32(reader["id_factura"]) : 0,
+                                IdUsuario = reader["id_usuario"] != DBNull.Value ? Convert.ToInt32(reader["id_usuario"]) : 0,
+                                NomUsuario = reader["nom_usuario"] != DBNull.Value ? reader["nom_usuario"].ToString() : "N/D",
+                                TipFactura = reader["tip_factura"] != DBNull.Value && Convert.ToBoolean(reader["tip_factura"]),
+                                IdProveedor = reader["id_proveedor"] != DBNull.Value ? Convert.ToInt32(reader["id_proveedor"]) : (int?)null,
+                                IdServicio = reader["id_servicio"] != DBNull.Value ? Convert.ToInt32(reader["id_servicio"]) : (int?)null,
+                                NomServicio = reader["nom_servicio"] != DBNull.Value ? reader["nom_servicio"].ToString() : "Sin servicio público",
+                                ValorFactura = reader["valor_factura"] != DBNull.Value ? Convert.ToDecimal(reader["valor_factura"]) : 0m,
+                                FechaRegFactura = reader["fecha_reg_factura"] != DBNull.Value ? DateOnly.FromDateTime(Convert.ToDateTime(reader["fecha_reg_factura"])) : default,
+                                FechaVencimiento = reader["fecha_vencimiento"] != DBNull.Value ? DateOnly.FromDateTime(Convert.ToDateTime(reader["fecha_vencimiento"])) : default,
+                                FechaPago = reader["fecha_pago"] != DBNull.Value ? Convert.ToDateTime(reader["fecha_pago"]) : (DateTime?)null,
+                                EstadoFactura = reader["estado_factura"] != DBNull.Value && Convert.ToBoolean(reader["estado_factura"])
+                            });
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                connectionUtility.Disconnect();
+            }
+
+            return lista;
         }
     }
 }

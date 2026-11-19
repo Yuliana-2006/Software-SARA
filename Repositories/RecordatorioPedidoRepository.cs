@@ -1,19 +1,52 @@
 ﻿using System.Data;
 using Microsoft.Data.SqlClient;
 using Software_SARA.Dtos;
+using Software_SARA.Repositories.Models;
 
 namespace Software_SARA.Repositories
 {
     public class RecordatorioPedidoRepository
     {
         private readonly string _connectionString;
+        private readonly SarabdContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public RecordatorioPedidoRepository(IConfiguration configuration)
+        public RecordatorioPedidoRepository(
+            IConfiguration configuration,
+            SarabdContext context,
+            IHttpContextAccessor httpContextAccessor)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection") ?? "";
+            _context = context;
+            _httpContextAccessor = httpContextAccessor;
         }
 
-        // Método auxiliar para traducir el ID del proveedor a su Nombre respectivo
+        private List<int> ObtenerIdsUsuariosSedeActual()
+        {
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (httpContext == null) return new List<int>();
+
+            var sedeIdStr = httpContext.Session.GetString("SedeId");
+            if (!int.TryParse(sedeIdStr, out int sedeId) || sedeId <= 0)
+            {
+                var usuarioIdStr = httpContext.Session.GetString("UsuarioId");
+                if (int.TryParse(usuarioIdStr, out int usuarioId) && usuarioId > 0)
+                {
+                    sedeId = _context.Usuarios
+                        .Where(u => u.IdUsuario == usuarioId)
+                        .Select(u => u.IdSede)
+                        .FirstOrDefault();
+                }
+            }
+
+            if (sedeId <= 0) return new List<int>();
+
+            return _context.Usuarios
+                .Where(u => u.IdSede == sedeId)
+                .Select(u => u.IdUsuario)
+                .ToList();
+        }
+
         private string ObtenerNombreProveedor(string idProveedorStr)
         {
             var proveedores = new Dictionary<string, string>
@@ -32,15 +65,23 @@ namespace Software_SARA.Repositories
         public async Task<List<RecordatorioPedidoDto>> ObtenerTodosLosRecordatorios()
         {
             var lista = new List<RecordatorioPedidoDto>();
+            var idsUsuariosSede = ObtenerIdsUsuariosSedeActual();
+            if (idsUsuariosSede.Count == 0) return lista;
+
+            var parametros = idsUsuariosSede.Select((id, idx) => new SqlParameter($"@u{idx}", id)).ToArray();
+            string inClause = string.Join(", ", parametros.Select(p => p.ParameterName));
 
             using (var conexion = new SqlConnection(_connectionString))
             {
                 await conexion.OpenAsync();
-                // Filtramos para que solo cargue los pendientes en la vista principal
-                string query = "SELECT id_recordatorio, id_usuario, id_proveedor, fecha_reg_recordatorio, fecha_entrega, estado_recordatorio FROM dbo.recordatorio WHERE estado_recordatorio = 0";
+                string query = $@"SELECT id_recordatorio, id_usuario, id_proveedor, fecha_reg_recordatorio, fecha_entrega, estado_recordatorio
+                                 FROM dbo.recordatorio
+                                 WHERE estado_recordatorio = 0 AND id_usuario IN ({inClause})";
 
                 using (var comando = new SqlCommand(query, conexion))
                 {
+                    comando.Parameters.AddRange(parametros);
+
                     using (var lector = await comando.ExecuteReaderAsync())
                     {
                         while (await lector.ReadAsync())
@@ -54,7 +95,7 @@ namespace Software_SARA.Repositories
                             lista.Add(new RecordatorioPedidoDto
                             {
                                 IdRecordatorio = idDb.PadLeft(3, '0'),
-                                Proveedor = $"{idProv} - {nombreProv}", // Muestra Ej: "1 - Colombina" en una línea limpia
+                                Proveedor = $"{idProv} - {nombreProv}",
                                 FechaEntrega = lector["fecha_entrega"] != DBNull.Value ? DateOnly.FromDateTime(Convert.ToDateTime(lector["fecha_entrega"])) : DateOnly.FromDateTime(DateTime.Now),
                                 Estado = estadoTexto
                             });
@@ -99,20 +140,30 @@ namespace Software_SARA.Repositories
 
         public async Task<RecordatorioPedidoDto> ObtenerPorId(int idRecordatorio)
         {
+            var idsUsuariosSede = ObtenerIdsUsuariosSedeActual();
+            if (idsUsuariosSede.Count == 0) return null;
+
+            var parametros = idsUsuariosSede.Select((id, idx) => new SqlParameter($"@u{idx}", id)).ToArray();
+            string inClause = string.Join(", ", parametros.Select(p => p.ParameterName));
+
             using (var conexion = new SqlConnection(_connectionString))
             {
                 await conexion.OpenAsync();
-                string query = "SELECT id_recordatorio, id_usuario, id_proveedor, fecha_reg_recordatorio, fecha_entrega, estado_recordatorio FROM dbo.recordatorio WHERE id_recordatorio = @Id";
+                string query = $@"SELECT id_recordatorio, id_usuario, id_proveedor, fecha_reg_recordatorio, fecha_entrega, estado_recordatorio
+                                 FROM dbo.recordatorio
+                                 WHERE id_recordatorio = @Id AND id_usuario IN ({inClause})";
 
                 using (var comando = new SqlCommand(query, conexion))
                 {
                     comando.Parameters.AddWithValue("@Id", idRecordatorio);
+                    comando.Parameters.AddRange(parametros);
+
                     using (var lector = await comando.ExecuteReaderAsync())
                     {
                         if (await lector.ReadAsync())
                         {
                             int estadoDb = lector["estado_recordatorio"] != DBNull.Value ? Convert.ToInt32(lector["estado_recordatorio"]) : 0;
-                            string estadoTexto = estadoDb == 1 ? "Entregado" : "Pendiente"; // Traduce el estado correctamente a texto
+                            string estadoTexto = estadoDb == 1 ? "Entregado" : "Pendiente";
                             string idDb = lector["id_recordatorio"]?.ToString() ?? "1";
                             string idProv = lector["id_proveedor"]?.ToString() ?? "";
                             string nombreProv = ObtenerNombreProveedor(idProv);

@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Editar Factura de Proveedor";
+    var valorEntero = Model.ValorFactura > 0 ? ((long)Model.ValorFactura).ToString() : string.Empty;
 }
 
 <div class="registro-container">
@@ -9,12 +10,9 @@
     <div class="registro-card">
 
         <!-- TÍTULO -->
-
         <h1>EDITAR FACTURA DE PROVEEDOR</h1>
 
-
         <!-- FORMULARIO -->
-
         <form asp-controller="Proveedores"
               asp-action="EditarFacturaProveedor"
               method="post">
@@ -23,23 +21,15 @@
 
             @if (!ViewData.ModelState.IsValid || ViewData["Mensaje"] != null)
             {
-                <div style="background-color: #a94442; color: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; width: 100%; box-sizing: border-box; box-shadow: 0 4px 8px rgba(0,0,0,0.15);">
-                     <div style="font-weight: 800; font-size: 16px; margin-bottom: 5px;">
-                             Revisa los datos ingresados.
-                     </div>
-
-                     <!-- Muestra el mensaje personalizado del servicio si existe -->
-                     @if (ViewData["Mensaje"] != null)
-                     {
-                         <div style="font-size: 14px; margin-top: 4px;">
-                              - @ViewData["Mensaje"]
-                         </div>
-                     }
-
-                     <!-- Muestra los errores de validación del modelo/formulario -->
-                         <div style="font-size: 14px; margin-top: 4px;">
-                             @Html.ValidationSummary(false, "", new { @style = "list-style-type: none; padding: 0; margin: 0;" })
-                         </div>
+                <div class="error-resumen">
+                    <div class="error-resumen-titulo">Revisa los datos ingresados.</div>
+                    @if (ViewData["Mensaje"] != null)
+                    {
+                        <div class="error-resumen-detalle">@ViewData["Mensaje"]</div>
+                    }
+                    <div class="error-resumen-detalle">
+                        @Html.ValidationSummary(false, "", new { @class = "lista-errores-limpia" })
+                    </div>
                 </div>
             }
 
@@ -53,21 +43,23 @@
                     <select asp-for="IdProveedor" asp-items="ViewBag.Proveedores" class="form-control">
                         <option value="">-- Seleccione un proveedor --</option>
                     </select>
-                    <span asp-validation-for="IdProveedor" class="text-danger"></span>
+                    <span asp-validation-for="IdProveedor" class="error-campo"></span>
                 </div>
 
                 <div class="form-group">
-                    <label>Valor Factura</label>
+                    <label>Valor Factura (mayor a $10.000)</label>
                     <input asp-for="ValorFactura"
-                           type="number"
-                           step="0.01"
+                           id="inputValorFacturaEditar"
+                           type="text"
+                           inputmode="numeric"
+                           autocomplete="off"
+                           value="@valorEntero"
                            class="form-control"
-                           placeholder="0.00" />
-                    <span asp-validation-for="ValorFactura" class="text-danger"></span>
+                           placeholder="Ej: 50000" />
+                    <span asp-validation-for="ValorFactura" class="error-campo"></span>
                 </div>
 
             </div>
-
 
             <!-- FILA 2: Fecha de Registro y Fecha de Vencimiento -->
             <div class="form-row">
@@ -77,7 +69,7 @@
                     <input asp-for="FechaRegFactura"
                            type="date"
                            class="form-control" />
-                    <span asp-validation-for="FechaRegFactura" class="text-danger"></span>
+                    <span asp-validation-for="FechaRegFactura" class="error-campo"></span>
                 </div>
 
                 <div class="form-group">
@@ -85,17 +77,16 @@
                     <input asp-for="FechaVencimiento"
                            type="date"
                            class="form-control" />
-                    <span asp-validation-for="FechaVencimiento" class="text-danger"></span>
+                    <span asp-validation-for="FechaVencimiento" class="error-campo"></span>
                 </div>
 
             </div>
-
 
             <!-- BOTONES -->
             <div class="buttons" style="margin-top: 20px;">
 
                 <button type="submit" class="btn-registrar">
-                    REGISTRAR
+                    GUARDAR CAMBIOS
                 </button>
 
                 <a asp-controller="Proveedores"
@@ -112,11 +103,34 @@
 
 </div>
 
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            function configurarSoloEnteros(input) {
+                if (!input) return;
+
+                input.addEventListener('beforeinput', function (e) {
+                    if (e.data && /[^0-9]/.test(e.data)) {
+                        e.preventDefault();
+                    }
+                });
+
+                input.addEventListener('input', function () {
+                    const limpio = this.value.replace(/[^0-9]/g, '');
+                    if (this.value !== limpio) {
+                        this.value = limpio;
+                    }
+                });
+            }
+
+            configurarSoloEnteros(document.getElementById('inputValorFacturaEditar'));
+        })();
+    </script>
+}
 
 <style>
-
     /* CONTENEDOR */
-
     .registro-container {
         width: 100%;
         min-height: calc(100vh - 120px);
@@ -126,9 +140,7 @@
         padding-top: 5px;
     }
 
-
     /* TARJETA VERDE */
-
     .registro-card {
         width: 100%;
         max-width: 610px;
@@ -140,20 +152,65 @@
         box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
     }
 
+    /* TÍTULO */
+    .registro-card h1 {
+        color: white;
+        text-align: center;
+        font-size: 27px;
+        font-weight: 800;
+        margin: 0 0 22px 0;
+    }
 
-        /* TÍTULO */
+    /* RECUADRO SUPERIOR DE ERRORES */
+    .error-resumen {
+        background-color: #ffe6e6;
+        color: #b30000;
+        border: 1px solid #ffcccc;
+        padding: 12px 16px;
+        border-radius: 12px;
+        margin-bottom: 18px;
+        width: 100%;
+        box-sizing: border-box;
+        font-size: 14px;
+    }
 
-        .registro-card h1 {
-            color: white;
-            text-align: center;
-            font-size: 27px;
-            font-weight: 800;
-            margin: 0 0 22px 0;
-        }
+    .error-resumen-titulo {
+        font-weight: 800;
+        font-size: 15px;
+        margin-bottom: 4px;
+    }
 
+    .error-resumen-detalle {
+        font-weight: 700;
+        margin-top: 4px;
+    }
+
+    .lista-errores-limpia ul {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .lista-errores-limpia li {
+        margin-top: 3px;
+    }
+
+    /* ERROR POR CAMPO (#ffcccc) */
+    .error-campo,
+    .text-danger,
+    .field-validation-error {
+        display: block;
+        color: #ffcccc !important;
+        font-size: 13px;
+        font-weight: 700;
+        margin-top: 5px;
+    }
+
+    .field-validation-valid {
+        display: none;
+    }
 
     /* FILAS DE DOS COLUMNAS */
-
     .form-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -161,21 +218,16 @@
         margin-bottom: 12px;
     }
 
-
     /* GRUPOS */
-
     .form-group {
         margin-bottom: 12px;
     }
-
 
     .form-row .form-group {
         margin-bottom: 0;
     }
 
-
     /* ETIQUETAS */
-
     .form-group label {
         display: block;
         color: white;
@@ -184,9 +236,7 @@
         margin-bottom: 7px;
     }
 
-
     /* CAMPOS */
-
     .form-control {
         width: 100%;
         height: 44px;
@@ -199,27 +249,16 @@
         outline: none;
     }
 
-
-        .form-control:focus {
-            border-color: #2E4F3E;
-            box-shadow: 0 0 0 2px rgba(46, 79, 62, 0.25);
-        }
-
-
-        .form-control::placeholder {
-            color: #777;
-        }
-
-
-    /* ANCHO COMPLETO */
-
-    .full-width {
-        width: 100%;
+    .form-control:focus {
+        border-color: #2E4F3E;
+        box-shadow: 0 0 0 2px rgba(46, 79, 62, 0.25);
     }
 
+    .form-control::placeholder {
+        color: #777;
+    }
 
     /* BOTONES */
-
     .buttons {
         display: flex;
         flex-direction: column;
@@ -227,7 +266,6 @@
         gap: 9px;
         margin-top: 3px;
     }
-
 
     .btn-registrar,
     .btn-cancelar {
@@ -243,9 +281,7 @@
         box-sizing: border-box;
     }
 
-
     /* GUARDAR CAMBIOS */
-
     .btn-registrar {
         border: none;
         background-color: #F8F9FA;
@@ -253,14 +289,11 @@
         cursor: pointer;
     }
 
-
-        .btn-registrar:hover {
-            background-color: #E5E7E8;
-        }
-
+    .btn-registrar:hover {
+        background-color: #E5E7E8;
+    }
 
     /* CANCELAR */
-
     .btn-cancelar {
         background-color: transparent;
         border: 1.5px solid white;
@@ -268,17 +301,13 @@
         text-decoration: none;
     }
 
-
-        .btn-cancelar:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-
+    .btn-cancelar:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
 
     /* RESPONSIVE */
-
     @@media (max-width: 600px) {
-
         .registro-card {
             padding: 22px 18px;
         }
@@ -293,5 +322,4 @@
             width: 100%;
         }
     }
-
 </style>

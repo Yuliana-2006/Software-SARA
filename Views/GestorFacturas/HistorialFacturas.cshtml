@@ -1,27 +1,30 @@
 ﻿@model IEnumerable<Software_SARA.Dtos.FacProveedorDto>
+@using System.Globalization
 
 @{
-    ViewData["Title"] = "Historial de Facturas de Proveedores";
+    ViewData["Title"] = "Historial de Facturas";
+    var culturaCo = new CultureInfo("es-CO");
 }
 
 <div class="container py-4">
-    <!-- Encabezado con título y botón de retorno estilo "Volver a Caja" -->
+    <!-- Encabezado con título y botón de retorno -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fw-bold" style="color: #2D4832;">HISTORIAL DE FACTURAS</h2>
         <a asp-controller="GestorFacturas" asp-action="SelectFactura" class="btn fw-bold" style="border: 2px solid #2D4832; color: #2D4832; border-radius: 20px;">
-            &larr; Volver 
+            &larr; Volver
         </a>
     </div>
 
-    <!-- Contenedor Tabular Estilo Tarjeta con Bordes Redondeados (Idéntico a la referencia) -->
+    <!-- Contenedor Tabular Estilo Tarjeta con Bordes Redondeados -->
     <div class="card shadow-sm border-0" style="border-radius: 16px; background-color: #FFFFFF;">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table mb-0 align-middle text-center">
                     <thead style="border-bottom: 2px solid #dee2e6;">
                         <tr style="color: #2D4832; font-weight: 700; font-size: 15px;">
+                            <th class="py-3">Tipo</th>
                             <th class="py-3">Resp. Ingreso</th>
-                            <th class="py-3">Proveedor</th>
+                            <th class="py-3">Proveedor / Servicio</th>
                             <th class="py-3">Valor Factura</th>
                             <th class="py-3">Fecha Registro</th>
                             <th class="py-3">Fecha Vencimiento</th>
@@ -34,15 +37,26 @@
                         {
                             @foreach (var item in Model)
                             {
+                                bool esServicioPublico = item.TipFactura
+                                    || string.Equals(item.Message, "ServicioPublico", StringComparison.OrdinalIgnoreCase)
+                                    || (item.IdServicio.HasValue && item.IdServicio.Value > 0 && (!item.IdProveedor.HasValue || item.IdProveedor.Value <= 0));
+
+                                string tipoFacturaTexto = esServicioPublico ? "Servicio Público" : "Proveedor";
+                                string conceptoTexto = !string.IsNullOrWhiteSpace(item.NomProveedor)
+                                    ? item.NomProveedor
+                                    : (esServicioPublico ? "Servicio Público" : "Proveedor");
+
+                                string valorEnteroFormateado = ((long)item.ValorFactura).ToString("N0", culturaCo);
+
                                 <tr style="border-bottom: 1px solid #f1f1f1; font-size: 14px; color: #333;">
-                                    <td class="py-3 fw-semibold">@item.NomUsuario</td>
-                                    <td class="py-3">@item.NomProveedor</td>
-                                    <td class="py-3 fw-bold" style="color: #2D4832;">$@item.ValorFactura.ToString("N2")</td>
+                                    <td class="py-3 fw-semibold">@tipoFacturaTexto</td>
+                                    <td class="py-3 fw-semibold">@(string.IsNullOrWhiteSpace(item.NomUsuario) ? "N/D" : item.NomUsuario)</td>
+                                    <td class="py-3">@conceptoTexto</td>
+                                    <td class="py-3 fw-bold" style="color: #2D4832;">$@valorEnteroFormateado</td>
                                     <td class="py-3">@item.FechaRegFactura.ToString("dd/MM/yyyy")</td>
                                     <td class="py-3">@item.FechaVencimiento.ToString("dd/MM/yyyy")</td>
-                                    <td class="py-3">@(item.FechaPago.HasValue ? item.FechaPago.Value.ToString("dd/MM/yyyy") : "N/D")</td> <!-- Muestra la fecha o N/D -->
+                                    <td class="py-3">@(item.FechaPago.HasValue ? item.FechaPago.Value.ToString("dd/MM/yyyy") : "N/D")</td>
                                     <td class="py-3">
-                                        <!-- Etiqueta de estado Inactivo con la misma forma ovalada verde oscura -->
                                         <span class="badge px-3 py-2 fw-bold" style="background-color: #2D4832; color: #FFFFFF; border-radius: 20px; font-size: 12px;">
                                             CANCELADA
                                         </span>
@@ -53,8 +67,8 @@
                         else
                         {
                             <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">
-                                    No hay facturas de proveedores con pago confirmado en el historial.
+                                <td colspan="8" class="text-center py-4 text-muted">
+                                    No hay facturas de proveedores ni de servicios públicos con pago confirmado en el historial.
                                 </td>
                             </tr>
                         }

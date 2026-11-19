@@ -1,10 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Software_SARA.Dtos;
 using Software_SARA.Repositories.Models;
 using Software_SARA.Services;
 using Software_SARA.Utilities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Http;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,11 +17,18 @@ namespace Software_SARA.Controllers
         private readonly SarabdContext _context;
         private readonly EmailService _emailService;
 
-        // 1. CONSTRUCTOR CORREGIDO (Antes decía EmpleadoController)
         public PersonalController(SarabdContext context, EmailService emailService)
         {
             _context = context;
             _emailService = emailService;
+        }
+
+        private string ObtenerNombreSedeGerente()
+        {
+            int gerenteId = int.Parse(HttpContext.Session.GetString("UsuarioId") ?? "0");
+            var gerente = _context.Usuarios.Find(gerenteId);
+            if (gerente == null) return "Sede Principal";
+            return _context.Sedes.Find(gerente.IdSede)?.NomSede ?? "Sede Principal";
         }
 
         [HttpGet]
@@ -37,7 +44,6 @@ namespace Software_SARA.Controllers
             var gerente = _context.Usuarios.Find(gerenteId);
             if (gerente == null) return RedirectToAction("Login", "Acceso");
 
-            // Variable cambiada a 'personal'
             var personal = _context.Usuarios
                 .Where(u => u.IdSede == gerente.IdSede && u.IdRol == idRol && u.EstadoUsuario == true)
                 .ToList();
@@ -57,7 +63,7 @@ namespace Software_SARA.Controllers
 
             ViewBag.IdRol = idRol;
             ViewBag.NombreRol = idRol == 3 ? "TESORERO" : "EMPLEADO";
-            ViewBag.NombreSede = _context.Sedes.Find(gerente.IdSede)?.NomSede ?? "Sede Principal";
+            ViewBag.NombreSede = _context.Sedes.Find(gerente?.IdSede)?.NomSede ?? "Sede Principal";
 
             return View(new PersonalDTO { IdRol = idRol });
         }
@@ -68,14 +74,19 @@ namespace Software_SARA.Controllers
         {
             int gerenteId = int.Parse(HttpContext.Session.GetString("UsuarioId") ?? "0");
             var gerente = _context.Usuarios.Find(gerenteId);
+            if (gerente == null) return RedirectToAction("Login", "Acceso");
 
-            if (_context.Usuarios.Any(u => u.NumDoc.ToString() == dto.NumDoc)) ModelState.AddModelError("NumDoc", "El número de documento ya se encuentra registrado.");
-            if (_context.Usuarios.Any(u => u.Correo == dto.Correo)) ModelState.AddModelError("Correo", "El correo electrónico ya se encuentra registrado.");
+            if (_context.Usuarios.Any(u => u.NumDoc.ToString() == dto.NumDoc))
+                ModelState.AddModelError("NumDoc", "El número de documento ya se encuentra registrado.");
+
+            if (_context.Usuarios.Any(u => u.Correo == dto.Correo))
+                ModelState.AddModelError("Correo", "El correo electrónico ya se encuentra registrado.");
 
             var hoy = DateTime.Today;
             var edad = hoy.Year - dto.FechaNaci.Year;
             if (dto.FechaNaci > DateOnly.FromDateTime(hoy.AddYears(-edad))) edad--;
-            if (edad < 18) ModelState.AddModelError("FechaNaci", "El personal debe ser mayor de 18 años.");
+            if (edad < 18)
+                ModelState.AddModelError("FechaNaci", "El personal debe ser mayor de 18 años.");
 
             if (!ModelState.IsValid)
             {
@@ -95,7 +106,7 @@ namespace Software_SARA.Controllers
                 Telefono = dto.Telefono,
                 DirUsuario = dto.DirUsuario,
                 FechaNaci = dto.FechaNaci,
-                IdRol = dto.IdRol, // Toma el rol (3 o 4) del formulario
+                IdRol = dto.IdRol,
                 IdSede = gerente.IdSede,
                 EstadoUsuario = true
             };
@@ -157,8 +168,10 @@ namespace Software_SARA.Controllers
                 DirUsuario = usuario.DirUsuario,
                 FechaNaci = usuario.FechaNaci
             };
+
             ViewBag.IdUsuario = id;
             ViewBag.NombreRol = dto.IdRol == 3 ? "TESORERO" : "EMPLEADO";
+            ViewBag.NombreSede = ObtenerNombreSedeGerente();
             return View(dto);
         }
 
@@ -169,16 +182,30 @@ namespace Software_SARA.Controllers
             var usuarioDb = _context.Usuarios.AsNoTracking().FirstOrDefault(u => u.IdUsuario == id);
             if (usuarioDb == null) return NotFound();
 
-            if (_context.Usuarios.Any(u => u.NumDoc.ToString() == dto.NumDoc && u.IdUsuario != id)) ModelState.AddModelError("NumDoc", "El documento ya pertenece a otro usuario.");
-            if (_context.Usuarios.Any(u => u.Correo == dto.Correo && u.IdUsuario != id)) ModelState.AddModelError("Correo", "El correo ya pertenece a otro usuario.");
+            if (dto.IdRol != 3 && dto.IdRol != 4)
+                ModelState.AddModelError("IdRol", "Debe seleccionar un rol válido (Tesorero o Empleado).");
+
+            if (_context.Usuarios.Any(u => u.NumDoc.ToString() == dto.NumDoc && u.IdUsuario != id))
+                ModelState.AddModelError("NumDoc", "El documento ya pertenece a otro usuario.");
+
+            if (_context.Usuarios.Any(u => u.Correo == dto.Correo && u.IdUsuario != id))
+                ModelState.AddModelError("Correo", "El correo ya pertenece a otro usuario.");
+
+            var hoy = DateTime.Today;
+            var edad = hoy.Year - dto.FechaNaci.Year;
+            if (dto.FechaNaci > DateOnly.FromDateTime(hoy.AddYears(-edad))) edad--;
+            if (edad < 18)
+                ModelState.AddModelError("FechaNaci", "El personal debe ser mayor de 18 años.");
 
             if (!ModelState.IsValid)
             {
                 ViewBag.IdUsuario = id;
                 ViewBag.NombreRol = dto.IdRol == 3 ? "TESORERO" : "EMPLEADO";
+                ViewBag.NombreSede = ObtenerNombreSedeGerente();
                 return View(dto);
             }
 
+            usuarioDb.IdRol = dto.IdRol;
             usuarioDb.TipDoc = dto.TipoDoc == "CC";
             usuarioDb.NumDoc = int.Parse(dto.NumDoc);
             usuarioDb.NomUsuario = dto.NomUsuario;
@@ -192,13 +219,16 @@ namespace Software_SARA.Controllers
             {
                 _context.Usuarios.Update(usuarioDb);
                 _context.SaveChanges();
-                TempData["MensajeExito"] = "Datos actualizados correctamente.";
+
+                string nombreNuevoRol = usuarioDb.IdRol == 3 ? "Tesorero" : "Empleado";
+                TempData["MensajeExito"] = $"Datos actualizados correctamente. Rol actual: {nombreNuevoRol}.";
             }
             catch (Exception ex)
             {
-                ModelState.AddModelError("", "Error al actualizar: " + ex.Message);
+                ModelState.AddModelError("", "Error al actualizar: " + (ex.InnerException?.Message ?? ex.Message));
                 ViewBag.IdUsuario = id;
                 ViewBag.NombreRol = dto.IdRol == 3 ? "TESORERO" : "EMPLEADO";
+                ViewBag.NombreSede = ObtenerNombreSedeGerente();
                 return View(dto);
             }
 
@@ -209,16 +239,18 @@ namespace Software_SARA.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Eliminar(int id)
         {
+            int rolActual = 3;
             try
             {
                 var usuario = _context.Usuarios.Find(id);
                 if (usuario != null)
                 {
+                    rolActual = usuario.IdRol;
                     bool cajaAbierta = _context.DiaCajas.Any(c => c.IdUsuario == id && c.EstadoDia == true);
                     if (cajaAbierta)
                     {
                         TempData["MensajeError"] = "No se puede desactivar al usuario porque tiene un turno o caja activa.";
-                        return RedirectToAction("SeleccionarRol", new { idRol = usuario.IdRol });
+                        return RedirectToAction("SeleccionarRol", new { idRol = rolActual });
                     }
 
                     usuario.EstadoUsuario = false;
@@ -231,7 +263,6 @@ namespace Software_SARA.Controllers
                 TempData["MensajeError"] = "Error al desactivar: " + ex.Message;
             }
 
-            var rolActual = _context.Usuarios.Find(id)?.IdRol ?? 3;
             return RedirectToAction("SeleccionarRol", new { idRol = rolActual });
         }
     }

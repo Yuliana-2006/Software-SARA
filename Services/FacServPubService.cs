@@ -20,6 +20,7 @@ namespace Software_SARA.Services
         public async Task<FacServPublicDto> CreateFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
             facServPublicDto.EstadoFactura = true;
+            facServPublicDto.FechaRegFactura = DateOnly.FromDateTime(DateTime.Now);
 
             if (facServPublicDto.IdServicio == null || facServPublicDto.IdServicio <= 0)
             {
@@ -28,19 +29,10 @@ namespace Software_SARA.Services
                 return facServPublicDto;
             }
 
-            if (facServPublicDto.ValorFactura < 20000)
+            if (facServPublicDto.ValorFactura <= 10000m)
             {
                 facServPublicDto.Reponse = 0;
-                facServPublicDto.Message = "Ingrese un valor mayor o igual a $20,000 para la factura.";
-                return facServPublicDto;
-            }
-
-            // CORRECCIÓN
-            var hoy = DateOnly.FromDateTime(DateTime.Now);
-            if (facServPublicDto.FechaRegFactura < hoy)
-            {
-                facServPublicDto.Reponse = 0;
-                facServPublicDto.Message = "La fecha de registro no puede ser una fecha anterior a la actual.";
+                facServPublicDto.Message = "Ingrese un valor mayor a $10,000 para la factura.";
                 return facServPublicDto;
             }
 
@@ -86,17 +78,14 @@ namespace Software_SARA.Services
 
         public async Task<List<FacServPublicDto>> ObtenerVencimientosProximos()
         {
-            // CORRECCIÓN
             var fechaActual = DateOnly.FromDateTime(DateTime.Now);
             var fechaLimite = fechaActual.AddDays(10);
 
             var todasLasFacturas = await ObtenerTodasLasFacturasServiciosPublicos();
 
-            var vencimientosProximos = todasLasFacturas
-                .Where(f => f.FechaVencimiento >= fechaActual && f.FechaVencimiento <= fechaLimite)
+            return todasLasFacturas
+                .Where(f => f.EstadoFactura && f.FechaVencimiento >= fechaActual && f.FechaVencimiento <= fechaLimite)
                 .ToList();
-
-            return vencimientosProximos;
         }
 
         public async Task<List<SelectListItem>> ObtenerServiciosPublicos()
@@ -104,7 +93,7 @@ namespace Software_SARA.Services
             return await _facServPubRepository.ObtenerListaServiciosPublicos();
         }
 
-        public async Task<FacServPublicDto> ObtenerFacturaServicioPublicoPorId(int id)
+        public async Task<FacServPublicDto?> ObtenerFacturaServicioPublicoPorId(int id)
         {
             var listaFacturas = await ObtenerTodasLasFacturasServiciosPublicos();
             return listaFacturas.FirstOrDefault(f => f.IdFactura == id);
@@ -112,6 +101,27 @@ namespace Software_SARA.Services
 
         public async Task<FacServPublicDto> EditarFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
+            if (facServPublicDto.IdServicio == null || facServPublicDto.IdServicio <= 0)
+            {
+                facServPublicDto.Reponse = 0;
+                facServPublicDto.Message = "Debe seleccionar un servicio público.";
+                return facServPublicDto;
+            }
+
+            if (facServPublicDto.ValorFactura <= 10000m)
+            {
+                facServPublicDto.Reponse = 0;
+                facServPublicDto.Message = "Ingrese un valor mayor a $10,000 para la factura.";
+                return facServPublicDto;
+            }
+
+            if (facServPublicDto.FechaVencimiento < facServPublicDto.FechaRegFactura)
+            {
+                facServPublicDto.Reponse = 0;
+                facServPublicDto.Message = "La fecha de vencimiento no puede ser inferior a la fecha de registro.";
+                return facServPublicDto;
+            }
+
             var result = await _facServPubRepository.EditarFacturaServicioPublico(facServPublicDto);
             if (result)
             {
@@ -142,6 +152,11 @@ namespace Software_SARA.Services
                 facServPublicDto.Message = "Error al confirmar el pago de la factura de servicio público.";
             }
             return facServPublicDto;
+        }
+
+        public async Task<List<FacServPublicDto>> ObtenerHistorialFacturasServiciosPublicosAsync()
+        {
+            return await _facServPubRepository.ObtenerHistorialFacturasServiciosPublicosAsync();
         }
     }
 }

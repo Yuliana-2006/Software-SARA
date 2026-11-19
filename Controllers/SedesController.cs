@@ -4,18 +4,30 @@ using Software_SARA.Dtos;
 using Software_SARA.Services;
 using Software_SARA.Utilities;
 
-
 namespace Software_SARA.Controllers
 {
     [AuthorizeRole("Dueño")]
     public class SedesController : Controller
-  
     {
         private readonly SedesServices _sedesServices;
 
         public SedesController(SedesServices sedesServices)
         {
             _sedesServices = sedesServices;
+        }
+
+        private List<string> ObtenerDepartamentos()
+        {
+            return new List<string>
+            {
+                "Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar",
+                "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca",
+                "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Guainía",
+                "Guaviare", "Huila", "La Guajira", "Magdalena", "Meta",
+                "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda",
+                "San Andrés y Providencia", "Santander", "Sucre", "Tolima",
+                "Valle del Cauca", "Vaupés", "Vichada"
+            };
         }
 
         // GET: /Sedes/RegistrarSede
@@ -26,52 +38,25 @@ namespace Software_SARA.Controllers
             return View(listaSedes);
         }
 
-
         // GET: /Sedes/CrearSede
         [HttpGet]
         public ActionResult CrearSede()
         {
             SedeDto sedeDto = new();
-            List<string> departamentosColombia = new List<string>
-            {
-                "Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar",
-                "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca",
-                "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Guainía",
-                "Guaviare", "Huila", "La Guajira", "Magdalena", "Meta",
-                "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda",
-                "San Andrés y Providencia", "Santander", "Sucre", "Tolima",
-                "Valle del Cauca", "Vaupés", "Vichada"
-            };
-            ViewBag.Departamentos = new SelectList(departamentosColombia);
+            ViewBag.Departamentos = new SelectList(ObtenerDepartamentos());
             return View(sedeDto);
         }
-
 
         // POST: /Sedes/CrearSede
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> CrearSede(SedeDto sedeDto)
         {
-            // Lista de departamentos para reutilizar si se recarga la vista
-            List<string> departamentosColombia = new List<string>
-            {
-                "Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar",
-                "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca",
-                "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Guainía",
-                "Guaviare", "Huila", "La Guajira", "Magdalena", "Meta",
-                "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda",
-                "San Andrés y Providencia", "Santander", "Sucre", "Tolima",
-                "Valle del Cauca", "Vaupés", "Vichada"
-            };
-
             try
             {
-                // Validar el modelo
                 if (!ModelState.IsValid)
                 {
-                    // Si el modelo no es válido, asignamos el ViewBag antes de retornar la vista
-                    ViewBag.Departamentos = new SelectList(departamentosColombia);
-                    // Si el modelo no es válido, devolver la vista con los errores
+                    ViewBag.Departamentos = new SelectList(ObtenerDepartamentos(), sedeDto.DepSede);
                     var errors = ModelState.Values.SelectMany(v => v.Errors);
                     ViewData["Message"] = string.Join("; ", errors.Select(e => e.ErrorMessage));
                     return View(sedeDto);
@@ -83,13 +68,10 @@ namespace Software_SARA.Controllers
             }
             catch (Exception ex)
             {
-                // Si ocurre cualquier excepción, el ViewBag no sera nulo al recargar
-                ViewBag.Departamentos = new SelectList(departamentosColombia);
-                // Manejar cualquier excepción que ocurra durante la validación
+                ViewBag.Departamentos = new SelectList(ObtenerDepartamentos(), sedeDto.DepSede);
                 ViewData["Mensaje"] = "Error al crear sede: " + ex.Message;
                 return View(sedeDto);
             }
-
         }
 
         // GET: /Sedes/EditarSede
@@ -103,6 +85,7 @@ namespace Software_SARA.Controllers
                 return NotFound(); // Si no existe la sede retorna error
             }
 
+            ViewBag.Departamentos = new SelectList(ObtenerDepartamentos(), sedeDto.DepSede);
             return View(sedeDto);
         }
 
@@ -113,10 +96,9 @@ namespace Software_SARA.Controllers
         {
             try
             {
-                // Validar el modelo
                 if (!ModelState.IsValid)
                 {
-                    // Si el modelo no es válido, devolver la vista con los errores
+                    ViewBag.Departamentos = new SelectList(ObtenerDepartamentos(), sedeDto.DepSede);
                     var errors = ModelState.Values.SelectMany(v => v.Errors);
                     ViewData["Message"] = string.Join("; ", errors.Select(e => e.ErrorMessage));
                     return View(sedeDto);
@@ -128,11 +110,10 @@ namespace Software_SARA.Controllers
             }
             catch (Exception ex)
             {
-                // Manejar cualquier excepción que ocurra durante la validación
+                ViewBag.Departamentos = new SelectList(ObtenerDepartamentos(), sedeDto.DepSede);
                 ViewData["Mensaje"] = "Error al editar sede: " + ex.Message;
                 return View(sedeDto);
             }
-
         }
 
         // GET: /Sedes/EliminarSede
@@ -162,11 +143,9 @@ namespace Software_SARA.Controllers
             }
             catch (Exception ex)
             {
-                // Manejar cualquier excepción que ocurra durante la validación
                 ViewData["Mensaje"] = "Error al eliminar sede: " + ex.Message;
                 return View(sedeDto);
             }
-
         }
 
         // POST: /Sedes/ReactivarSede/5
