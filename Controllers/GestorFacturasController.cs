@@ -1,12 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Software_SARA.Dtos;
-using Software_SARA.Services;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Software_SARA.Dtos;
+using Software_SARA.Services;
+using Software_SARA.Utilities;
 
 namespace Software_SARA.Controllers
 {
+    [AuthorizeRole("Gerente", "Tesorero")]
     public class GestorFacturasController : Controller
     {
         private readonly FacProveedorService _facProveedorService;
