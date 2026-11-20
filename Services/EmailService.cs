@@ -37,7 +37,7 @@ namespace Software_SARA.Services
             };
 
             string notaHtml = (rolNormalizado == "gerente" || rolNormalizado == "dueño")
-                ? @"<div style='background-color: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 15px; border-radius: 5px; margin-bottom: 20px;'>
+                ? @"<div style='background-color: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 15px; border-radius: 5px; margin-bottom: 10px;'>
                         <p style='margin: 0; font-size: 15px;'><strong>Nota importante:</strong> Recuerda que también se aceptan <strong>cédulas extranjeras</strong> para iniciar sesión.</p>
                     </div>"
                 : "";
@@ -75,9 +75,6 @@ namespace Software_SARA.Services
                             </p>
                         </div>
                         {notaHtml}
-                        <div style='text-align: center; margin-top: 30px;'>
-                            <a href='https://localhost:7173/Acceso/Login' style='background-color: #2E4F3E; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 25px; font-weight: bold; font-size: 16px;'>Ingresar a SARA</a>
-                        </div>
                     </div>
                     <div style='background-color: #f9f9f9; padding: 15px; text-align: center; font-size: 12px; color: #888888;'>
                         <p style='margin: 0;'>Este es un correo automático, por favor no responder.</p>
@@ -89,7 +86,7 @@ namespace Software_SARA.Services
             email.Body = builder.ToMessageBody();
 
             using var smtp = new SmtpClient();
-            smtp.Timeout = 15000;
+            smtp.Timeout = 60000;
             await smtp.ConnectAsync(_config["EmailSettings:Host"], int.Parse(_config["EmailSettings:Port"]), SecureSocketOptions.StartTls);
             await smtp.AuthenticateAsync(_config["EmailSettings:User"], _config["EmailSettings:Password"]);
             await smtp.SendAsync(email);
@@ -118,7 +115,7 @@ namespace Software_SARA.Services
             email.Body = builder.ToMessageBody();
 
             using var smtp = new SmtpClient();
-            smtp.Timeout = 15000;
+            smtp.Timeout = 60000;
             await smtp.ConnectAsync(_config["EmailSettings:Host"], int.Parse(_config["EmailSettings:Port"]), SecureSocketOptions.StartTls);
             await smtp.AuthenticateAsync(_config["EmailSettings:User"], _config["EmailSettings:Password"]);
             await smtp.SendAsync(email);

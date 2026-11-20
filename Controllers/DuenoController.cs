@@ -22,29 +22,40 @@ namespace Software_SARA.Controllers
             _emailService = emailService;
         }
 
-        private async Task<string?> ValidarBloqueoEliminacionDuenoAsync(int idUsuario)
+        private async Task<string?> ValidarBloqueoEliminacionDuenoAsync(Usuario dueno)
         {
-            bool tieneGerentes = await _context.Usuarios.AnyAsync(u => u.IdRol == 2);
-            if (tieneGerentes)
+            // Bloquea si el Dueño tiene una sede registrada/asignada
+            if (dueno.IdSede.HasValue)
             {
-                return "No se puede eliminar el Dueño porque existen gerentes registrados/asignados en el sistema.";
+                bool tieneSede = await _context.Sedes.AnyAsync(s => s.IdSede == dueno.IdSede.Value);
+                if (tieneSede)
+                {
+                    return "No se puede eliminar el Dueño porque tiene una sede registrada. Solo puede desactivarlo.";
+                }
+
+                // Bloquea si el Dueño tiene un gerente activo (IdRol == 2 y EstadoUsuario == true)
+                bool tieneGerenteActivo = await _context.Usuarios.AnyAsync(u =>
+                    u.IdRol == 2 &&
+                    u.IdUsuario != dueno.IdUsuario &&
+                    u.EstadoUsuario == true &&
+                    u.IdSede == dueno.IdSede.Value);
+
+                if (tieneGerenteActivo)
+                {
+                    return "No se puede eliminar el Dueño porque tiene un gerente activo. Solo puede desactivarlo.";
+                }
             }
 
-            bool tieneSedes = await _context.Sedes.AnyAsync();
-            if (tieneSedes)
-            {
-                return "No se puede eliminar el Dueño porque existen sedes registradas en el sistema.";
-            }
-
-            bool tieneFacturas = await _context.Facturas.AnyAsync(f => f.IdUsuario == idUsuario);
-            bool tieneRecordatorios = await _context.Recordatorios.AnyAsync(r => r.IdUsuario == idUsuario);
+            // Bloquea si el Dueño tiene información operativa asociada
+            bool tieneFacturas = await _context.Facturas.AnyAsync(f => f.IdUsuario == dueno.IdUsuario);
+            bool tieneRecordatorios = await _context.Recordatorios.AnyAsync(r => r.IdUsuario == dueno.IdUsuario);
             bool tieneCajas = await _context.DiaCajas.AnyAsync(c =>
-                c.IdUsuario == idUsuario ||
-                c.IdUsuarioCierre == idUsuario);
+                c.IdUsuario == dueno.IdUsuario ||
+                c.IdUsuarioCierre == dueno.IdUsuario);
 
             if (tieneFacturas || tieneRecordatorios || tieneCajas)
             {
-                return "No se puede eliminar el Dueño porque tiene información operativa (facturas, recordatorios o caja) asociada.";
+                return "No se puede eliminar el Dueño porque tiene información registrada. Solo puede desactivarlo.";
             }
 
             return null;
@@ -95,7 +106,7 @@ namespace Software_SARA.Controllers
                 DirUsuario = dto.DirUsuario,
                 FechaNaci = dto.FechaNaci,
                 IdRol = 1,
-                IdSede = null, // El Dueño no requiere sede asignada al crearse
+                IdSede = null, // Dueño nuevo: sin sede ni gerentes ni informes
                 EstadoUsuario = true
             };
 
@@ -213,7 +224,6 @@ namespace Software_SARA.Controllers
                 var usuario = await _context.Usuarios.FindAsync(id);
                 if (usuario != null)
                 {
-                    // Se permite activar o inactivar para conservar el historial sin borrar el registro
                     usuario.EstadoUsuario = !usuario.EstadoUsuario;
                     await _context.SaveChangesAsync();
                     TempData["MensajeExito"] = $"Usuario {(usuario.EstadoUsuario ? "Activado" : "Inactivado")} correctamente.";
@@ -237,11 +247,11 @@ namespace Software_SARA.Controllers
                 {
                     if (usuario.EstadoUsuario)
                     {
-                        TempData["MensajeError"] = "No se puede eliminar un usuario ACTIVO. Primero inactívelo.";
+                        TempData["MensajeError"] = "No se puede eliminar un usuario ACTIVO. Primero desactívelo.";
                         return RedirectToAction("Index");
                     }
 
-                    string? motivoBloqueo = await ValidarBloqueoEliminacionDuenoAsync(id);
+                    string? motivoBloqueo = await ValidarBloqueoEliminacionDuenoAsync(usuario);
                     if (!string.IsNullOrEmpty(motivoBloqueo))
                     {
                         TempData["MensajeError"] = motivoBloqueo;
@@ -255,7 +265,7 @@ namespace Software_SARA.Controllers
             }
             catch (Exception)
             {
-                TempData["MensajeError"] = "No se puede eliminar porque el usuario tiene historial (cajas, facturas, sedes, gerentes, etc.).";
+                TempData["MensajeError"] = "No se puede eliminar el Dueño porque tiene una sede o gerente activo. Solo puede desactivarlo.";
             }
             return RedirectToAction("Index");
         }

@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using Software_SARA.Dtos;
 using Software_SARA.Repositories.Models;
 using Software_SARA.Services;
@@ -26,10 +28,41 @@ namespace Software_SARA.Controllers
             _context = context;
         }
 
+        private int? ObtenerIdSedeDuenoSesion()
+        {
+            string? usuarioIdStr = HttpContext.Session.GetString("UsuarioId");
+            if (int.TryParse(usuarioIdStr, out int idDueno))
+            {
+                var dueno = _context.Usuarios
+                    .AsNoTracking()
+                    .FirstOrDefault(u => u.IdUsuario == idDueno);
+
+                if (dueno != null)
+                {
+                    return dueno.IdSede;
+                }
+            }
+
+            string? sedeIdStr = HttpContext.Session.GetString("SedeId");
+            return int.TryParse(sedeIdStr, out int idSede) ? idSede : null;
+        }
+
         private void CargarSedes(int? sedeSeleccionada = null)
         {
+            int? idSedeDueno = ObtenerIdSedeDuenoSesion();
+
+            var querySedes = _context.Sedes.Where(s => s.EstadoSede == true);
+            if (idSedeDueno.HasValue)
+            {
+                querySedes = querySedes.Where(s => s.IdSede == idSedeDueno.Value);
+            }
+            else
+            {
+                querySedes = querySedes.Where(s => false);
+            }
+
             ViewBag.ListaSedes = new SelectList(
-                _context.Sedes.Where(s => s.EstadoSede == true),
+                querySedes.ToList(),
                 "IdSede",
                 "NomSede",
                 sedeSeleccionada
@@ -149,7 +182,18 @@ namespace Software_SARA.Controllers
         {
             try
             {
+                int? idSedeDueno = ObtenerIdSedeDuenoSesion();
                 var listaGerentes = await _gerenteService.ObtenerGerentesAsync();
+
+                if (idSedeDueno.HasValue)
+                {
+                    listaGerentes = listaGerentes.Where(g => g.IdSede == idSedeDueno.Value).ToList();
+                }
+                else
+                {
+                    listaGerentes = new List<GerenteDto>();
+                }
+
                 return View(listaGerentes);
             }
             catch (Exception ex)
