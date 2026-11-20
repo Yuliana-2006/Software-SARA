@@ -1,8 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using Software_SARA.Dtos;
+using Software_SARA.Repositories.Models;
 using Software_SARA.Services;
 using Software_SARA.Utilities;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Software_SARA.Controllers
 {
@@ -10,10 +17,18 @@ namespace Software_SARA.Controllers
     public class SedesController : Controller
     {
         private readonly SedesServices _sedesServices;
+        private readonly SarabdContext _context;
 
-        public SedesController(SedesServices sedesServices)
+        public SedesController(SedesServices sedesServices, SarabdContext context)
         {
             _sedesServices = sedesServices;
+            _context = context;
+        }
+
+        private int? ObtenerIdDuenoSesion()
+        {
+            string? usuarioIdStr = HttpContext.Session.GetString("UsuarioId");
+            return int.TryParse(usuarioIdStr, out int idDueno) ? idDueno : null;
         }
 
         private List<string> ObtenerDepartamentos()
@@ -33,8 +48,28 @@ namespace Software_SARA.Controllers
         [HttpGet]
         public async Task<IActionResult> RegistrarSede()
         {
-            var listaSedes = await _sedesServices.ObtenerTodasLasSedes();
-            return View(listaSedes);
+            int? idDueno = ObtenerIdDuenoSesion();
+            if (!idDueno.HasValue)
+            {
+                return View(new List<SedeDto>());
+            }
+
+            var dueno = await _context.Usuarios
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.IdUsuario == idDueno.Value);
+
+            if (dueno == null || !dueno.IdSede.HasValue)
+            {
+                // Dueño nuevo sin sede registrada: no lee sedes de otro dueño
+                return View(new List<SedeDto>());
+            }
+
+            var todasLasSedes = await _sedesServices.ObtenerTodasLasSedes();
+            var sedesDelDueno = todasLasSedes
+                .Where(s => s.IdSede == dueno.IdSede.Value)
+                .ToList();
+
+            return View(sedesDelDueno);
         }
 
         [HttpGet]
@@ -61,9 +96,30 @@ namespace Software_SARA.Controllers
 
                 var resultado = await _sedesServices.CreateSede(sedeDto);
                 if (resultado.Reponse == 1)
+                {
+                    int? idDueno = ObtenerIdDuenoSesion();
+                    if (idDueno.HasValue)
+                    {
+                        var usuarioDueno = await _context.Usuarios.FindAsync(idDueno.Value);
+                        var sedeCreada = await _context.Sedes
+                            .OrderByDescending(s => s.IdSede)
+                            .FirstOrDefaultAsync(s => s.NomSede == sedeDto.NomSede);
+
+                        if (usuarioDueno != null && sedeCreada != null)
+                        {
+                            usuarioDueno.IdSede = sedeCreada.IdSede;
+                            await _context.SaveChangesAsync();
+                            HttpContext.Session.SetString("SedeId", sedeCreada.IdSede.ToString());
+                            HttpContext.Session.SetString("SedeNombre", sedeCreada.NomSede);
+                        }
+                    }
+
                     TempData["MensajeExito"] = resultado.Message;
+                }
                 else
+                {
                     TempData["MensajeError"] = resultado.Message;
+                }
 
                 return RedirectToAction(nameof(RegistrarSede));
             }
@@ -145,7 +201,6 @@ namespace Software_SARA.Controllers
                     return RedirectToAction(nameof(RegistrarSede));
                 }
 
-                // Aquí se devuelve la vista EliminarSede con el bloqueo y el mensaje sin desactivar
                 var sedeActual = await _sedesServices.ObtenerSedePorId(sedeDto.IdSede) ?? sedeDto;
                 ViewData["Mensaje"] = resultado.Message;
                 ViewBag.Bloqueado = true;
