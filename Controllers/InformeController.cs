@@ -44,6 +44,62 @@ namespace Software_SARA.Controllers
             return RolesPermitidosCorreo.Contains(idRol);
         }
 
+        private (string Tipo, string Nombre) ResolverTipoYNombreFactura(
+            Factura f,
+            List<Proveedor> proveedores,
+            List<Servicio> servicios)
+        {
+            string? nomProv = null;
+            if (f.IdProveedor.HasValue && f.IdProveedor.Value > 0)
+            {
+                nomProv = proveedores.FirstOrDefault(p => p.IdProveedor == f.IdProveedor.Value)?.NomProveedor?.Trim();
+            }
+            if (string.IsNullOrWhiteSpace(nomProv) && !string.IsNullOrWhiteSpace(f.NomProveedor))
+            {
+                nomProv = f.NomProveedor.Trim();
+            }
+
+            string? nomServ = null;
+            if (f.IdServicio.HasValue && f.IdServicio.Value > 0)
+            {
+                nomServ = servicios.FirstOrDefault(s => s.IdServicio == f.IdServicio.Value)?.NomServicio?.Trim();
+            }
+            if (string.IsNullOrWhiteSpace(nomServ) && !string.IsNullOrWhiteSpace(f.NomServicio))
+            {
+                nomServ = f.NomServicio.Trim();
+            }
+
+            bool tieneProv = !string.IsNullOrWhiteSpace(nomProv) || (f.IdProveedor.HasValue && f.IdProveedor.Value > 0);
+            bool tieneServ = !string.IsNullOrWhiteSpace(nomServ) || (f.IdServicio.HasValue && f.IdServicio.Value > 0);
+
+            if (tieneProv && !string.IsNullOrWhiteSpace(nomProv) && (f.TipFactura || !tieneServ))
+            {
+                return ("Proveedor", nomProv);
+            }
+
+            if (tieneServ && !string.IsNullOrWhiteSpace(nomServ) && (!f.TipFactura || !tieneProv))
+            {
+                return ("Servicio", nomServ);
+            }
+
+            if (!string.IsNullOrWhiteSpace(nomProv))
+            {
+                return ("Proveedor", nomProv);
+            }
+
+            if (!string.IsNullOrWhiteSpace(nomServ))
+            {
+                return ("Servicio", nomServ);
+            }
+
+            if (f.TipFactura || tieneProv)
+            {
+                return ("Proveedor", "Proveedor sin nombre");
+            }
+
+            return ("Servicio", "Servicio sin nombre");
+        }
+
         [HttpGet]
         public IActionResult Index()
         {
@@ -222,15 +278,15 @@ namespace Software_SARA.Controllers
 
             foreach (var f in todasFacturas)
             {
-                if (f.TipFactura && f.IdProveedor.HasValue)
+                var (tipoResuelto, nombreResuelto) = ResolverTipoYNombreFactura(f, proveedores, servicios);
+                f.TipFactura = string.Equals(tipoResuelto, "Proveedor", StringComparison.OrdinalIgnoreCase);
+                if (f.TipFactura)
                 {
-                    var prov = proveedores.FirstOrDefault(p => p.IdProveedor == f.IdProveedor);
-                    f.NomProveedor = prov != null ? prov.NomProveedor : "Sin Proveedor";
+                    f.NomProveedor = nombreResuelto;
                 }
-                else if (!f.TipFactura && f.IdServicio.HasValue)
+                else
                 {
-                    var serv = servicios.FirstOrDefault(s => s.IdServicio == f.IdServicio);
-                    f.NomServicio = serv != null ? serv.NomServicio : "Sin Servicio";
+                    f.NomServicio = nombreResuelto;
                 }
             }
 
@@ -568,7 +624,9 @@ namespace Software_SARA.Controllers
                                 foreach (var f in datos.FacturasPendientes)
                                 {
                                     string tipo = f.TipFactura ? "Proveedor" : "Servicio";
-                                    string nombre = f.TipFactura ? (f.NomProveedor ?? "N/D") : (f.NomServicio ?? "N/D");
+                                    string nombre = f.TipFactura
+                                        ? (!string.IsNullOrWhiteSpace(f.NomProveedor) ? f.NomProveedor! : "Proveedor sin nombre")
+                                        : (!string.IsNullOrWhiteSpace(f.NomServicio) ? f.NomServicio! : "Servicio sin nombre");
 
                                     table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(5).Text(f.IdFactura.ToString());
                                     table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(5).Text(tipo);
@@ -606,7 +664,9 @@ namespace Software_SARA.Controllers
                                 foreach (var f in datos.FacturasPagadas)
                                 {
                                     string tipo = f.TipFactura ? "Proveedor" : "Servicio";
-                                    string nombre = f.TipFactura ? (f.NomProveedor ?? "N/D") : (f.NomServicio ?? "N/D");
+                                    string nombre = f.TipFactura
+                                        ? (!string.IsNullOrWhiteSpace(f.NomProveedor) ? f.NomProveedor! : "Proveedor sin nombre")
+                                        : (!string.IsNullOrWhiteSpace(f.NomServicio) ? f.NomServicio! : "Servicio sin nombre");
 
                                     table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(5).Text(f.IdFactura.ToString());
                                     table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(5).Text(tipo);

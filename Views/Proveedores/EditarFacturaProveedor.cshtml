@@ -3,6 +3,13 @@
 @{
     ViewData["Title"] = "Editar Factura de Proveedor";
     var valorEntero = Model.ValorFactura > 0 ? ((long)Model.ValorFactura).ToString() : string.Empty;
+    var mensajeEditar = ViewData["Mensaje"] as string;
+    var erroresUnicosEditar = ViewData.ModelState?.Values
+        .SelectMany(v => v.Errors)
+        .Select(e => e.ErrorMessage)
+        .Where(m => !string.IsNullOrWhiteSpace(m) && !string.Equals(m, mensajeEditar, StringComparison.OrdinalIgnoreCase))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToList() ?? new List<string>();
 }
 
 <div class="registro-container">
@@ -19,17 +26,18 @@
 
             @Html.AntiForgeryToken()
 
-            @if (!ViewData.ModelState.IsValid || ViewData["Mensaje"] != null)
+            @if (!string.IsNullOrWhiteSpace(mensajeEditar) || erroresUnicosEditar.Any())
             {
                 <div class="error-resumen">
                     <div class="error-resumen-titulo">Revisa los datos ingresados.</div>
-                    @if (ViewData["Mensaje"] != null)
+                    @if (!string.IsNullOrWhiteSpace(mensajeEditar))
                     {
-                        <div class="error-resumen-detalle">@ViewData["Mensaje"]</div>
+                        <div class="error-resumen-detalle">@mensajeEditar</div>
                     }
-                    <div class="error-resumen-detalle">
-                        @Html.ValidationSummary(false, "", new { @class = "lista-errores-limpia" })
-                    </div>
+                    @foreach (var err in erroresUnicosEditar)
+                    {
+                        <div class="error-resumen-detalle">@err</div>
+                    }
                 </div>
             }
 
@@ -53,6 +61,7 @@
                            type="text"
                            inputmode="numeric"
                            autocomplete="off"
+                           maxlength="12"
                            value="@valorEntero"
                            class="form-control"
                            placeholder="Ej: 50000" />
@@ -117,7 +126,7 @@
                 });
 
                 input.addEventListener('input', function () {
-                    const limpio = this.value.replace(/[^0-9]/g, '');
+                    const limpio = this.value.replace(/[^0-9]/g, '').slice(0, 12);
                     if (this.value !== limpio) {
                         this.value = limpio;
                     }

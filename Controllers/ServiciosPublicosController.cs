@@ -20,22 +20,106 @@ namespace Software_SARA.Controllers
             _facServPubService = facServPubService;
         }
 
-        private void ValidarDatosFacturaServicio(FacServPublicDto dto)
+        private string FormatearErrorServicio(Exception ex, string accion)
         {
-            if (!dto.IdServicio.HasValue || dto.IdServicio.Value <= 0)
+            var detalle = (ex.InnerException?.Message ?? ex.Message) ?? string.Empty;
+
+            if (detalle.Contains("overflow", StringComparison.OrdinalIgnoreCase) ||
+                detalle.Contains("arithmetic", StringComparison.OrdinalIgnoreCase) ||
+                detalle.Contains("numeric", StringComparison.OrdinalIgnoreCase))
             {
-                ModelState.AddModelError("IdServicio", "Debe seleccionar un servicio público.");
+                return $"El valor ingresado en la factura es demasiado grande para guardarse al {accion}. Ingrese un monto menor.";
             }
 
-            if (dto.ValorFactura <= 10000m)
+            return $"Error al {accion} factura de servicio público. Intente nuevamente.";
+        }
+
+        private void LimpiarMensajesEnInglesYDuplicados(FacServPublicDto dto)
+        {
+            if (ModelState.TryGetValue(nameof(dto.ValorFactura), out var entryValor) && entryValor.Errors.Count > 0)
             {
-                ModelState.AddModelError("ValorFactura", "El valor de la factura debe ser mayor a $10.000.");
+                bool errorEnlaceValor = entryValor.Errors.Any(e =>
+                    e.ErrorMessage.Contains("invalid", StringComparison.OrdinalIgnoreCase) ||
+                    e.ErrorMessage.Contains("value", StringComparison.OrdinalIgnoreCase) ||
+                    e.ErrorMessage.Contains("convert", StringComparison.OrdinalIgnoreCase));
+
+                if (errorEnlaceValor)
+                {
+                    entryValor.Errors.Clear();
+                    entryValor.Errors.Add("Ingrese un valor numérico válido mayor a $10.000.");
+                }
+            }
+
+            if (ModelState.TryGetValue(nameof(dto.IdServicio), out var entryServ) && entryServ.Errors.Count > 0)
+            {
+                bool errorEnlaceServ = entryServ.Errors.Any(e =>
+                    e.ErrorMessage.Contains("invalid", StringComparison.OrdinalIgnoreCase) ||
+                    e.ErrorMessage.Contains("value", StringComparison.OrdinalIgnoreCase) ||
+                    e.ErrorMessage.Contains("convert", StringComparison.OrdinalIgnoreCase));
+
+                if (errorEnlaceServ)
+                {
+                    entryServ.Errors.Clear();
+                    entryServ.Errors.Add("Debe seleccionar un servicio público.");
+                }
+            }
+
+            foreach (var key in ModelState.Keys.ToList())
+            {
+                var state = ModelState[key];
+                if (state == null || state.Errors.Count == 0) continue;
+
+                var erroresLimpios = state.Errors
+                    .Select(e =>
+                    {
+                        if (e.ErrorMessage.Contains("is invalid", StringComparison.OrdinalIgnoreCase) ||
+                            e.ErrorMessage.Contains("The value", StringComparison.OrdinalIgnoreCase))
+                        {
+                            return "Revise el valor ingresado en el campo.";
+                        }
+                        return e.ErrorMessage.Trim();
+                    })
+                    .Where(m => !string.IsNullOrWhiteSpace(m))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                state.Errors.Clear();
+                foreach (var msg in erroresLimpios)
+                {
+                    state.Errors.Add(msg);
+                }
+            }
+        }
+
+        private void ValidarDatosFacturaServicio(FacServPublicDto dto)
+        {
+            LimpiarMensajesEnInglesYDuplicados(dto);
+
+            if (!dto.IdServicio.HasValue || dto.IdServicio.Value <= 0)
+            {
+                if (!ModelState.ContainsKey(nameof(dto.IdServicio)) || ModelState[nameof(dto.IdServicio)]!.Errors.Count == 0)
+                    ModelState.AddModelError("IdServicio", "Debe seleccionar un servicio público.");
+            }
+
+            if (!ModelState.ContainsKey(nameof(dto.ValorFactura)) || ModelState[nameof(dto.ValorFactura)]!.Errors.Count == 0)
+            {
+                if (dto.ValorFactura <= 10000m)
+                {
+                    ModelState.AddModelError("ValorFactura", "El valor de la factura debe ser mayor a $10.000.");
+                }
+                else if (dto.ValorFactura > 999999999999.99m)
+                {
+                    ModelState.AddModelError("ValorFactura", "El valor de la factura es demasiado grande.");
+                }
             }
 
             if (dto.FechaVencimiento < dto.FechaRegFactura)
             {
-                ModelState.AddModelError("FechaVencimiento", "La fecha de vencimiento no puede ser inferior a la fecha de registro.");
+                if (!ModelState.ContainsKey(nameof(dto.FechaVencimiento)) || ModelState[nameof(dto.FechaVencimiento)]!.Errors.Count == 0)
+                    ModelState.AddModelError("FechaVencimiento", "La fecha de vencimiento no puede ser inferior a la fecha de registro.");
             }
+
+            LimpiarMensajesEnInglesYDuplicados(dto);
         }
 
         [HttpGet]
@@ -120,16 +204,17 @@ namespace Software_SARA.Controllers
                         ViewData["Mensaje"] = mensajeError;
                     }
 
+                    LimpiarMensajesEnInglesYDuplicados(facServPublicDto);
                     return View(facServPublicDto);
                 }
 
                 TempData["MensajeExito"] = resultado.Message;
                 return RedirectToAction(nameof(FacturasServiciosPublicos));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 ViewBag.Servicios = await _facServPubService.ObtenerServiciosPublicos();
-                ViewData["Mensaje"] = "Error al crear factura de servicio público. Intente nuevamente.";
+                ViewData["Mensaje"] = FormatearErrorServicio(ex, "crear");
                 return View(facServPublicDto);
             }
         }
@@ -182,10 +267,10 @@ namespace Software_SARA.Controllers
                 TempData["MensajeExito"] = resultado.Message;
                 return RedirectToAction(nameof(FacturasServiciosPublicos));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 ViewBag.Servicios = await _facServPubService.ObtenerServiciosPublicos();
-                ViewData["Mensaje"] = "Error al editar factura de servicio público. Intente nuevamente.";
+                ViewData["Mensaje"] = FormatearErrorServicio(ex, "editar");
                 return View(facServPublicDto);
             }
         }
