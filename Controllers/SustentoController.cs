@@ -98,6 +98,8 @@ namespace Software_SARA.Controllers
                         SELECT 
                             f.id_factura, 
                             f.tip_factura, 
+                            f.id_proveedor,
+                            f.id_servicio,
                             f.fecha_vencimiento, 
                             f.valor_factura,
                             p.nom_proveedor,
@@ -120,11 +122,20 @@ namespace Software_SARA.Controllers
                         {
                             while (reader.Read())
                             {
-                                bool esProveedor = Convert.ToBoolean(reader["tip_factura"]);
+                                bool tipFacturaBool = reader["tip_factura"] != DBNull.Value && Convert.ToBoolean(reader["tip_factura"]);
+                                int? idProveedor = reader["id_proveedor"] != DBNull.Value ? Convert.ToInt32(reader["id_proveedor"]) : null;
+                                int? idServicio = reader["id_servicio"] != DBNull.Value ? Convert.ToInt32(reader["id_servicio"]) : null;
+                                string? nomProveedor = reader["nom_proveedor"] != DBNull.Value ? reader["nom_proveedor"].ToString()?.Trim() : null;
+                                string? nomServicio = reader["nom_servicio"] != DBNull.Value ? reader["nom_servicio"].ToString()?.Trim() : null;
+
+                                bool esProveedor = (idProveedor.HasValue && idProveedor.Value > 0)
+                                    || !string.IsNullOrWhiteSpace(nomProveedor)
+                                    || (!idServicio.HasValue && tipFacturaBool);
+
                                 string tipoStr = esProveedor ? "Proveedor" : "Servicio";
                                 string nombreTercero = esProveedor
-                                    ? (reader["nom_proveedor"] != DBNull.Value ? reader["nom_proveedor"].ToString() : "Desconocido")
-                                    : (reader["nom_servicio"] != DBNull.Value ? reader["nom_servicio"].ToString() : "Desconocido");
+                                    ? (!string.IsNullOrWhiteSpace(nomProveedor) ? nomProveedor! : "Proveedor")
+                                    : (!string.IsNullOrWhiteSpace(nomServicio) ? nomServicio! : "Servicio");
 
                                 var item = new SustentoItemDTO
                                 {
