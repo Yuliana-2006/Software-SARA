@@ -26,11 +26,22 @@ namespace Software_SARA.Controllers
         // IDs de roles en base de datos
         private const int IdRolEmpleadoExcluido = 3;
         private const int IdRolTesoreroFijo = 4;
+        private static readonly HashSet<int> RolesPermitidosCorreo = new HashSet<int> { 1, 2, 3 };
 
         public InformeController(SarabdContext context, EmailService emailService)
         {
             _context = context;
             _emailService = emailService;
+        }
+
+        private bool EsFechaFutura(DateTime fecha)
+        {
+            return fecha.Date > DateTime.Today;
+        }
+
+        private bool EsRolPermitidoCorreo(int idRol)
+        {
+            return RolesPermitidosCorreo.Contains(idRol);
         }
 
         [HttpGet]
@@ -43,6 +54,12 @@ namespace Software_SARA.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Generar(DateTime fechaSeleccionada)
         {
+            if (EsFechaFutura(fechaSeleccionada))
+            {
+                TempData["MensajeError"] = "No se puede generar un informe para una fecha futura.";
+                return RedirectToAction("Index");
+            }
+
             var datos = ObtenerDatosInforme(fechaSeleccionada);
 
             if (datos == null)
@@ -57,6 +74,12 @@ namespace Software_SARA.Controllers
         [HttpGet]
         public IActionResult Preview(DateTime fechaSeleccionada)
         {
+            if (EsFechaFutura(fechaSeleccionada))
+            {
+                TempData["MensajeError"] = "No se puede generar un informe para una fecha futura.";
+                return RedirectToAction("Index");
+            }
+
             var datos = ObtenerDatosInforme(fechaSeleccionada);
             if (datos == null) return RedirectToAction("Index");
             return View(datos);
@@ -65,6 +88,12 @@ namespace Software_SARA.Controllers
         [HttpGet]
         public IActionResult DescargarPDF(DateTime fechaSeleccionada)
         {
+            if (EsFechaFutura(fechaSeleccionada))
+            {
+                TempData["MensajeError"] = "No se puede generar un informe para una fecha futura.";
+                return RedirectToAction("Index");
+            }
+
             var datos = ObtenerDatosInforme(fechaSeleccionada);
             if (datos == null) return NotFound();
 
@@ -76,6 +105,12 @@ namespace Software_SARA.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EnviarCorreo(DateTime fechaSeleccionada, string emailDestino)
         {
+            if (EsFechaFutura(fechaSeleccionada))
+            {
+                TempData["MensajeError"] = "No se puede generar un informe para una fecha futura.";
+                return RedirectToAction("Index");
+            }
+
             if (string.IsNullOrWhiteSpace(emailDestino))
             {
                 TempData["MensajeError"] = "Por favor, seleccione un destinatario de la lista.";
@@ -93,7 +128,7 @@ namespace Software_SARA.Controllers
 
                 string correoLimpio = emailDestino.Trim();
                 var destinatariosAutorizados = datos.UsuariosCorreo
-                    .Where(u => !string.IsNullOrWhiteSpace(u.Correo) && u.IdRol != IdRolEmpleadoExcluido)
+                    .Where(u => !string.IsNullOrWhiteSpace(u.Correo) && EsRolPermitidoCorreo(u.IdRol))
                     .ToList();
 
                 var usuarioDestino = destinatariosAutorizados
@@ -101,7 +136,7 @@ namespace Software_SARA.Controllers
 
                 if (usuarioDestino == null)
                 {
-                    TempData["MensajeError"] = "El correo seleccionado solo puede pertenecer a un Tesorero, Gerente o Dueño autorizado.";
+                    TempData["MensajeError"] = "El correo seleccionado solo puede pertenecer a un usuario autorizado (ID de rol 1, 2 o 3).";
                     return RedirectToAction("Preview", new { fechaSeleccionada = fechaSeleccionada.ToString("yyyy-MM-dd") });
                 }
 
@@ -133,6 +168,9 @@ namespace Software_SARA.Controllers
 
         private InformeCajaDTO? ObtenerDatosInforme(DateTime fecha)
         {
+            if (EsFechaFutura(fecha))
+                return null;
+
             var sedeIdStr = HttpContext.Session.GetString("SedeId");
             int sedeId = string.IsNullOrEmpty(sedeIdStr) ? 1 : int.Parse(sedeIdStr);
 
@@ -372,30 +410,20 @@ namespace Software_SARA.Controllers
             Dictionary<int, string> mapaRoles)
         {
             var usuariosConCorreo = usuariosActivos
-                .Where(u => !string.IsNullOrWhiteSpace(u.Correo) && u.IdRol != IdRolEmpleadoExcluido)
+                .Where(u => !string.IsNullOrWhiteSpace(u.Correo) && EsRolPermitidoCorreo(u.IdRol))
                 .ToList();
 
             var (_, usuarioActual) = ObtenerPerfilYUsuarioActual(usuariosConCorreo, mapaRoles);
 
-            var rolesDestinoPermitidos = new HashSet<string> { "tesorero", "gerente", "dueno" };
-
-            var destinatarios = usuariosConCorreo.Where(u =>
-            {
-                if (u.IdRol == IdRolEmpleadoExcluido) return false;
-                string cat = ObtenerCategoriaRolUsuario(u, mapaRoles);
-                if (cat == "empleado") return false;
-                return rolesDestinoPermitidos.Contains(cat);
-            }).ToList();
+            var destinatarios = usuariosConCorreo
+                .Where(u => EsRolPermitidoCorreo(u.IdRol))
+                .ToList();
 
             if (usuarioActual != null &&
                 !string.IsNullOrWhiteSpace(usuarioActual.Correo) &&
-                usuarioActual.IdRol != IdRolEmpleadoExcluido)
+                EsRolPermitidoCorreo(usuarioActual.IdRol))
             {
-                string catActual = ObtenerCategoriaRolUsuario(usuarioActual, mapaRoles);
-                if (catActual != "empleado")
-                {
-                    destinatarios.Add(usuarioActual);
-                }
+                destinatarios.Add(usuarioActual);
             }
 
             if (sede != null)
@@ -413,8 +441,8 @@ namespace Software_SARA.Controllers
                     var valId = propIdDueno.GetValue(sede);
                     if (valId != null && int.TryParse(valId.ToString(), out int idDueno) && idDueno > 0)
                     {
-                        var usuarioDueno = usuariosConCorreo.FirstOrDefault(u => u.IdUsuario == idDueno && u.IdRol != IdRolEmpleadoExcluido);
-                        if (usuarioDueno != null && ObtenerCategoriaRolUsuario(usuarioDueno, mapaRoles) != "empleado")
+                        var usuarioDueno = usuariosConCorreo.FirstOrDefault(u => u.IdUsuario == idDueno && EsRolPermitidoCorreo(u.IdRol));
+                        if (usuarioDueno != null)
                         {
                             destinatarios.Add(usuarioDueno);
                         }
@@ -433,29 +461,15 @@ namespace Software_SARA.Controllers
                     var usuarioPorCorreo = usuariosConCorreo.FirstOrDefault(u =>
                         string.Equals(u.Correo?.Trim(), correoDueno, StringComparison.OrdinalIgnoreCase));
 
-                    if (usuarioPorCorreo != null)
+                    if (usuarioPorCorreo != null && EsRolPermitidoCorreo(usuarioPorCorreo.IdRol))
                     {
-                        if (usuarioPorCorreo.IdRol != IdRolEmpleadoExcluido &&
-                            ObtenerCategoriaRolUsuario(usuarioPorCorreo, mapaRoles) != "empleado")
-                        {
-                            destinatarios.Add(usuarioPorCorreo);
-                        }
-                    }
-                    else
-                    {
-                        destinatarios.Add(new Usuario
-                        {
-                            NomUsuario = "Dueño de Sede",
-                            ApelliUsuario = sede.NomSede ?? "",
-                            Correo = correoDueno,
-                            EstadoUsuario = true
-                        });
+                        destinatarios.Add(usuarioPorCorreo);
                     }
                 }
             }
 
             return destinatarios
-                .Where(u => !string.IsNullOrWhiteSpace(u.Correo) && u.IdRol != IdRolEmpleadoExcluido)
+                .Where(u => !string.IsNullOrWhiteSpace(u.Correo) && EsRolPermitidoCorreo(u.IdRol))
                 .GroupBy(u => u.Correo!.Trim().ToLowerInvariant())
                 .Select(g => g.First())
                 .OrderBy(u => u.NomUsuario)

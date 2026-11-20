@@ -54,22 +54,20 @@ namespace Software_SARA.Controllers
                 return View(new List<SedeDto>());
             }
 
+            // Garantiza que el dueño mantenga su sede en null y vea todas las sedes registradas
             var dueno = await _context.Usuarios
-                .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.IdUsuario == idDueno.Value);
 
-            if (dueno == null || !dueno.IdSede.HasValue)
+            if (dueno != null && dueno.IdSede.HasValue)
             {
-                // Dueño nuevo sin sede registrada: no lee sedes de otro dueño
-                return View(new List<SedeDto>());
+                dueno.IdSede = null;
+                await _context.SaveChangesAsync();
+                HttpContext.Session.Remove("SedeId");
+                HttpContext.Session.Remove("SedeNombre");
             }
 
             var todasLasSedes = await _sedesServices.ObtenerTodasLasSedes();
-            var sedesDelDueno = todasLasSedes
-                .Where(s => s.IdSede == dueno.IdSede.Value)
-                .ToList();
-
-            return View(sedesDelDueno);
+            return View(todasLasSedes);
         }
 
         [HttpGet]
@@ -90,38 +88,32 @@ namespace Software_SARA.Controllers
                 {
                     ViewBag.Departamentos = new SelectList(ObtenerDepartamentos(), sedeDto.DepSede);
                     var errors = ModelState.Values.SelectMany(v => v.Errors);
-                    ViewData["Message"] = string.Join("; ", errors.Select(e => e.ErrorMessage));
+                    ViewData["Mensaje"] = string.Join("; ", errors.Select(e => e.ErrorMessage));
                     return View(sedeDto);
                 }
 
                 var resultado = await _sedesServices.CreateSede(sedeDto);
                 if (resultado.Reponse == 1)
                 {
+                    // El dueño no debe tener sede asignada (queda en null)
                     int? idDueno = ObtenerIdDuenoSesion();
                     if (idDueno.HasValue)
                     {
                         var usuarioDueno = await _context.Usuarios.FindAsync(idDueno.Value);
-                        var sedeCreada = await _context.Sedes
-                            .OrderByDescending(s => s.IdSede)
-                            .FirstOrDefaultAsync(s => s.NomSede == sedeDto.NomSede);
-
-                        if (usuarioDueno != null && sedeCreada != null)
+                        if (usuarioDueno != null && usuarioDueno.IdSede.HasValue)
                         {
-                            usuarioDueno.IdSede = sedeCreada.IdSede;
+                            usuarioDueno.IdSede = null;
                             await _context.SaveChangesAsync();
-                            HttpContext.Session.SetString("SedeId", sedeCreada.IdSede.ToString());
-                            HttpContext.Session.SetString("SedeNombre", sedeCreada.NomSede);
                         }
                     }
 
                     TempData["MensajeExito"] = resultado.Message;
-                }
-                else
-                {
-                    TempData["MensajeError"] = resultado.Message;
+                    return RedirectToAction(nameof(RegistrarSede));
                 }
 
-                return RedirectToAction(nameof(RegistrarSede));
+                ViewBag.Departamentos = new SelectList(ObtenerDepartamentos(), sedeDto.DepSede);
+                ViewData["Mensaje"] = resultado.Message;
+                return View(sedeDto);
             }
             catch (Exception ex)
             {
@@ -155,17 +147,20 @@ namespace Software_SARA.Controllers
                 {
                     ViewBag.Departamentos = new SelectList(ObtenerDepartamentos(), sedeDto.DepSede);
                     var errors = ModelState.Values.SelectMany(v => v.Errors);
-                    ViewData["Message"] = string.Join("; ", errors.Select(e => e.ErrorMessage));
+                    ViewData["Mensaje"] = string.Join("; ", errors.Select(e => e.ErrorMessage));
                     return View(sedeDto);
                 }
 
                 var resultado = await _sedesServices.EditarSede(sedeDto);
                 if (resultado.Reponse == 1)
+                {
                     TempData["MensajeExito"] = resultado.Message;
-                else
-                    TempData["MensajeError"] = resultado.Message;
+                    return RedirectToAction(nameof(RegistrarSede));
+                }
 
-                return RedirectToAction(nameof(RegistrarSede));
+                ViewBag.Departamentos = new SelectList(ObtenerDepartamentos(), sedeDto.DepSede);
+                ViewData["Mensaje"] = resultado.Message;
+                return View(sedeDto);
             }
             catch (Exception ex)
             {
@@ -230,7 +225,7 @@ namespace Software_SARA.Controllers
             }
             catch (Exception ex)
             {
-                TempData["Mensaje"] = "Error al reactivar la sede: " + ex.Message;
+                TempData["MensajeError"] = "Error al reactivar la sede: " + ex.Message;
                 return RedirectToAction(nameof(RegistrarSede));
             }
         }

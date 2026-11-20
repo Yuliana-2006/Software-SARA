@@ -1,6 +1,7 @@
 ﻿@model Software_SARA.Dtos.PersonalDTO
 @{
     ViewData["Title"] = "Editar " + ViewBag.NombreRol;
+    var fechaMaxima = DateTime.Today.AddYears(-18).ToString("yyyy-MM-dd");
 }
 
 <style>
@@ -84,7 +85,7 @@
             </div>
         }
 
-        <form asp-action="Editar" method="post">
+        <form asp-action="Editar" asp-route-id="@ViewBag.IdUsuario" method="post">
             @Html.AntiForgeryToken()
             <input type="hidden" name="id" value="@ViewBag.IdUsuario" />
 
@@ -158,7 +159,7 @@
 
             <div class="mb-4">
                 <label asp-for="FechaNaci" class="fw-bold">Fecha de Nacimiento</label>
-                <input asp-for="FechaNaci" type="date" class="form-control sara-input-pill" />
+                <input asp-for="FechaNaci" type="date" max="@fechaMaxima" class="form-control sara-input-pill" />
                 <span asp-validation-for="FechaNaci" class="error-campo"></span>
             </div>
 

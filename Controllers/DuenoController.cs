@@ -106,7 +106,7 @@ namespace Software_SARA.Controllers
                 DirUsuario = dto.DirUsuario,
                 FechaNaci = dto.FechaNaci,
                 IdRol = 1,
-                IdSede = null, // Dueño nuevo: sin sede ni gerentes ni informes
+                IdSede = null, // Dueño nuevo: sin sede asignada (igual que administrador)
                 EstadoUsuario = true
             };
 
@@ -170,7 +170,7 @@ namespace Software_SARA.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Editar(int id, DuenoDTO dto)
         {
-            var usuarioDb = await _context.Usuarios.AsNoTracking().FirstOrDefaultAsync(u => u.IdUsuario == id);
+            var usuarioDb = await _context.Usuarios.FirstOrDefaultAsync(u => u.IdUsuario == id);
             if (usuarioDb == null) return NotFound();
 
             var hoy = DateTime.Today;
@@ -199,16 +199,16 @@ namespace Software_SARA.Controllers
             usuarioDb.Telefono = dto.Telefono;
             usuarioDb.DirUsuario = dto.DirUsuario;
             usuarioDb.FechaNaci = dto.FechaNaci;
+            usuarioDb.IdSede = null;
 
             try
             {
-                _context.Usuarios.Update(usuarioDb);
                 await _context.SaveChangesAsync();
                 TempData["MensajeExito"] = "Datos actualizados correctamente.";
             }
             catch (Exception ex)
             {
-                ModelState.AddModelError("", "Error al actualizar: " + ex.Message);
+                ModelState.AddModelError("", "Error al actualizar: " + (ex.InnerException?.Message ?? ex.Message));
                 ViewBag.IdUsuario = id;
                 return View(dto);
             }

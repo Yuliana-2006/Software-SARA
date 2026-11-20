@@ -50,6 +50,17 @@
         margin-bottom: 35px;
     }
 
+    .alert-error-eliminar {
+        background-color: #842029;
+        color: #ffffff;
+        border: 2px solid #f5c2c7;
+        border-radius: 14px;
+        padding: 12px 16px;
+        margin-bottom: 24px;
+        font-weight: 700;
+        font-size: 0.98rem;
+    }
+
     .btn-container {
         display: flex;
         justify-content: center;
@@ -100,14 +111,22 @@
 
 <div class="confirm-container">
     <div class="card-confirm">
+        @if (TempData["MensajeError"] != null)
+        {
+            <div class="alert-error-eliminar">
+                @TempData["MensajeError"]
+            </div>
+        }
+
         <div class="confirm-text">
             ¿Desea Eliminar<br />
             al gerente<br />
             seleccionado?
         </div>
 
-        <form asp-controller="Gerentes" asp-action="Eliminar" method="post">
-            <input type="hidden" asp-for="Id" />
+        <form asp-controller="Gerentes" asp-action="Eliminar" asp-route-id="@Model.Id" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
             
             <div class="btn-container">
                 <button type="submit" class="btn-pill-confirmar">Confirmar</button>

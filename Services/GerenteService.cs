@@ -22,35 +22,90 @@ namespace Software_SARA.Services
 
         public async Task<string?> ValidarDependenciasGerenteAsync(int idUsuario)
         {
-            bool tieneFacturas = await _context.Facturas.AnyAsync(f => f.IdUsuario == idUsuario);
-            bool tieneRecordatorios = await _context.Recordatorios.AnyAsync(r => r.IdUsuario == idUsuario);
-            bool tieneCajas = await _context.DiaCajas.AnyAsync(c =>
-                c.IdUsuario == idUsuario ||
-                c.IdUsuarioCierre == idUsuario);
+            var gerenteDb = await _context.Usuarios
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.IdUsuario == idUsuario);
 
-            if (tieneFacturas || tieneRecordatorios || tieneCajas)
+            if (gerenteDb == null)
+                return null;
+
+            bool tieneFacturas = await _context.Facturas
+                .AsNoTracking()
+                .AnyAsync(f => f.IdUsuario == idUsuario);
+            if (tieneFacturas)
+                return "No se puede eliminar ni desactivar el gerente porque tiene facturas asociadas.";
+
+            bool tieneRecordatorios = await _context.Recordatorios
+                .AsNoTracking()
+                .AnyAsync(r => r.IdUsuario == idUsuario);
+            if (tieneRecordatorios)
+                return "No se puede eliminar ni desactivar el gerente porque tiene recordatorios asociados.";
+
+            bool tieneCajas = await _context.DiaCajas
+                .AsNoTracking()
+                .AnyAsync(c => c.IdUsuario == idUsuario || c.IdUsuarioCierre == idUsuario);
+            if (tieneCajas)
+                return "No se puede eliminar ni desactivar el gerente porque tiene información de caja asociada.";
+
+            if (gerenteDb.IdSede.HasValue && gerenteDb.IdSede.Value > 0)
             {
-                return "No se puede eliminar ni desactivar el gerente porque tiene información operativa (facturas, recordatorios o caja) asociada.";
+                int sedeId = gerenteDb.IdSede.Value;
+
+                bool tieneTesoreroOEmpleado = await _context.Usuarios
+                    .AsNoTracking()
+                    .AnyAsync(u =>
+                        u.IdUsuario != idUsuario &&
+                        u.IdSede == sedeId &&
+                        u.IdRol != 1 &&
+                        u.IdRol != 2);
+
+                if (tieneTesoreroOEmpleado)
+                    return "No se puede eliminar ni desactivar el gerente porque tiene un tesorero o empleado asociado en la sede.";
             }
 
             return null;
         }
 
+        public async Task<string?> CambiarEstadoGerenteAsync(int idUsuario)
+        {
+            var usuario = await _context.Usuarios.FindAsync(idUsuario);
+            if (usuario == null)
+                return "El gerente no existe en el sistema.";
+
+            if (usuario.EstadoUsuario)
+            {
+                string? motivoBloqueo = await ValidarDependenciasGerenteAsync(idUsuario);
+                if (!string.IsNullOrEmpty(motivoBloqueo))
+                    return motivoBloqueo;
+            }
+
+            usuario.EstadoUsuario = !usuario.EstadoUsuario;
+            await _context.SaveChangesAsync();
+            return null;
+        }
+
         public async Task<List<GerenteDto>> ObtenerGerentesAsync()
         {
-            var gerentes = await _context.Usuarios.Where(u => u.IdRol == 2).ToListAsync();
-            var sedesDict = _context.Sedes.ToDictionary(s => s.IdSede, s => s.NomSede);
+            var gerentes = await _context.Usuarios
+                .AsNoTracking()
+                .Where(u => u.IdRol == 2)
+                .ToListAsync();
+
+            var sedesDict = await _context.Sedes
+                .AsNoTracking()
+                .ToDictionaryAsync(s => s.IdSede, s => s.NomSede);
 
             return gerentes.Select(g => new GerenteDto
             {
                 Id = g.IdUsuario,
                 Nombres = g.NomUsuario ?? string.Empty,
                 Apellidos = g.ApelliUsuario ?? string.Empty,
+                TipoDocumento = g.TipDoc ? "CC" : "CE",
                 NumeroDocumento = g.NumDoc.ToString(),
                 Correo = g.Correo ?? string.Empty,
                 Telefono = g.Telefono ?? string.Empty,
                 Direccion = g.DirUsuario ?? string.Empty,
-                IdSede = g.IdSede ?? 0,
+                IdSede = g.IdSede,
                 Sede = g.IdSede.HasValue && sedesDict.ContainsKey(g.IdSede.Value) ? sedesDict[g.IdSede.Value] : string.Empty,
                 FechaNacimiento = g.FechaNaci.ToDateTime(TimeOnly.MinValue)
             }).ToList();
@@ -62,7 +117,11 @@ namespace Software_SARA.Services
             if (g == null) return null;
 
             var nombreSede = g.IdSede.HasValue
-                ? (_context.Sedes.Where(s => s.IdSede == g.IdSede.Value).Select(s => s.NomSede).FirstOrDefault() ?? string.Empty)
+                ? (await _context.Sedes
+                    .AsNoTracking()
+                    .Where(s => s.IdSede == g.IdSede.Value)
+                    .Select(s => s.NomSede)
+                    .FirstOrDefaultAsync() ?? string.Empty)
                 : string.Empty;
 
             return new GerenteDto
@@ -70,11 +129,12 @@ namespace Software_SARA.Services
                 Id = g.IdUsuario,
                 Nombres = g.NomUsuario ?? string.Empty,
                 Apellidos = g.ApelliUsuario ?? string.Empty,
+                TipoDocumento = g.TipDoc ? "CC" : "CE",
                 NumeroDocumento = g.NumDoc.ToString(),
                 Correo = g.Correo ?? string.Empty,
                 Telefono = g.Telefono ?? string.Empty,
                 Direccion = g.DirUsuario ?? string.Empty,
-                IdSede = g.IdSede ?? 0,
+                IdSede = g.IdSede,
                 Sede = nombreSede,
                 FechaNacimiento = g.FechaNaci.ToDateTime(TimeOnly.MinValue)
             };
@@ -82,9 +142,13 @@ namespace Software_SARA.Services
 
         public async Task<string?> ValidarYCrearGerenteAsync(GerenteDto gerente)
         {
-            if (_context.Usuarios.Any(u => u.NumDoc.ToString() == gerente.NumeroDocumento))
+            if (!gerente.IdSede.HasValue || gerente.IdSede.Value <= 0)
+                return "La sede es obligatoria.";
+
+            if (await _context.Usuarios.AnyAsync(u => u.NumDoc.ToString() == gerente.NumeroDocumento))
                 return "El número de documento ya está registrado en el sistema.";
-            if (_context.Usuarios.Any(u => u.Correo == gerente.Correo))
+
+            if (await _context.Usuarios.AnyAsync(u => u.Correo == gerente.Correo))
                 return "El correo electrónico ya está registrado en el sistema.";
 
             var nuevoUsuario = new Usuario
@@ -98,7 +162,7 @@ namespace Software_SARA.Services
                 DirUsuario = gerente.Direccion ?? string.Empty,
                 FechaNaci = DateOnly.FromDateTime(gerente.FechaNacimiento ?? DateTime.Now.AddYears(-18)),
                 IdRol = 2,
-                IdSede = gerente.IdSede,
+                IdSede = gerente.IdSede.Value,
                 EstadoUsuario = true
             };
 
@@ -135,17 +199,21 @@ namespace Software_SARA.Services
 
         public async Task<string?> ValidarYActualizarGerenteAsync(GerenteDto gerente)
         {
+            if (!gerente.IdSede.HasValue || gerente.IdSede.Value <= 0)
+                return "La sede es obligatoria.";
+
             var usuarioDb = await _context.Usuarios.FindAsync(gerente.Id);
             if (usuarioDb == null) return "El gerente no existe en la base de datos.";
 
-            if (usuarioDb.EstadoUsuario == false && gerente.IdSede != usuarioDb.IdSede)
+            if (usuarioDb.EstadoUsuario == false && gerente.IdSede.Value != usuarioDb.IdSede)
             {
                 return "No se puede reasignar o modificar un gerente inactivo con información asociada.";
             }
 
-            if (_context.Usuarios.Any(u => u.NumDoc.ToString() == gerente.NumeroDocumento && u.IdUsuario != gerente.Id))
+            if (await _context.Usuarios.AnyAsync(u => u.NumDoc.ToString() == gerente.NumeroDocumento && u.IdUsuario != gerente.Id))
                 return "El número de documento ya pertenece a otro usuario.";
-            if (_context.Usuarios.Any(u => u.Correo == gerente.Correo && u.IdUsuario != gerente.Id))
+
+            if (await _context.Usuarios.AnyAsync(u => u.Correo == gerente.Correo && u.IdUsuario != gerente.Id))
                 return "El correo electrónico ya pertenece a otro usuario.";
 
             usuarioDb.TipDoc = (gerente.TipoDocumento == "CC" || gerente.TipoDocumento == "1");
@@ -155,20 +223,20 @@ namespace Software_SARA.Services
             usuarioDb.Correo = gerente.Correo ?? string.Empty;
             usuarioDb.Telefono = gerente.Telefono ?? string.Empty;
             usuarioDb.DirUsuario = gerente.Direccion ?? string.Empty;
-            usuarioDb.IdSede = gerente.IdSede;
+            usuarioDb.IdSede = gerente.IdSede.Value;
 
             if (gerente.FechaNacimiento.HasValue)
                 usuarioDb.FechaNaci = DateOnly.FromDateTime(gerente.FechaNacimiento.Value);
 
             try
             {
-                _context.Usuarios.Update(usuarioDb);
                 await _context.SaveChangesAsync();
             }
             catch (Exception ex)
             {
-                return "Error al actualizar en BD: " + ex.Message;
+                return "Error al actualizar en BD: " + (ex.InnerException?.Message ?? ex.Message);
             }
+
             return null;
         }
 
@@ -182,9 +250,16 @@ namespace Software_SARA.Services
             if (!string.IsNullOrEmpty(motivoBloqueo))
                 return motivoBloqueo;
 
-            _context.Usuarios.Remove(usuario);
-            await _context.SaveChangesAsync();
-            return null;
+            try
+            {
+                _context.Usuarios.Remove(usuario);
+                await _context.SaveChangesAsync();
+                return null;
+            }
+            catch (DbUpdateException ex)
+            {
+                return "No se puede eliminar el gerente porque tiene información relacionada en la base de datos: " + (ex.InnerException?.Message ?? ex.Message);
+            }
         }
     }
 }
