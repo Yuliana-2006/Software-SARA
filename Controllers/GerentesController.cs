@@ -28,41 +28,16 @@ namespace Software_SARA.Controllers
             _context = context;
         }
 
-        private int? ObtenerIdSedeDuenoSesion()
-        {
-            string? usuarioIdStr = HttpContext.Session.GetString("UsuarioId");
-            if (int.TryParse(usuarioIdStr, out int idDueno))
-            {
-                var dueno = _context.Usuarios
-                    .AsNoTracking()
-                    .FirstOrDefault(u => u.IdUsuario == idDueno);
-
-                if (dueno != null)
-                {
-                    return dueno.IdSede;
-                }
-            }
-
-            string? sedeIdStr = HttpContext.Session.GetString("SedeId");
-            return int.TryParse(sedeIdStr, out int idSede) ? idSede : null;
-        }
-
         private void CargarSedes(int? sedeSeleccionada = null)
         {
-            int? idSedeDueno = ObtenerIdSedeDuenoSesion();
-
-            var querySedes = _context.Sedes.Where(s => s.EstadoSede == true);
-            if (idSedeDueno.HasValue)
-            {
-                querySedes = querySedes.Where(s => s.IdSede == idSedeDueno.Value);
-            }
-            else
-            {
-                querySedes = querySedes.Where(s => false);
-            }
+            var sedesActivas = _context.Sedes
+                .AsNoTracking()
+                .Where(s => s.EstadoSede == true)
+                .OrderBy(s => s.NomSede)
+                .ToList();
 
             ViewBag.ListaSedes = new SelectList(
-                querySedes.ToList(),
+                sedesActivas,
                 "IdSede",
                 "NomSede",
                 sedeSeleccionada
@@ -89,9 +64,9 @@ namespace Software_SARA.Controllers
 
         private void ValidarDatosGerente(GerenteDto gerente, int? idIgnorar = null)
         {
-            if (gerente.IdSede <= 0)
+            if (!gerente.IdSede.HasValue || gerente.IdSede.Value <= 0)
             {
-                ModelState.AddModelError("IdSede", "Debe seleccionar una sede válida.");
+                ModelState.AddModelError("IdSede", "La sede es obligatoria.");
             }
 
             if (string.IsNullOrWhiteSpace(gerente.NumeroDocumento))
@@ -182,18 +157,7 @@ namespace Software_SARA.Controllers
         {
             try
             {
-                int? idSedeDueno = ObtenerIdSedeDuenoSesion();
                 var listaGerentes = await _gerenteService.ObtenerGerentesAsync();
-
-                if (idSedeDueno.HasValue)
-                {
-                    listaGerentes = listaGerentes.Where(g => g.IdSede == idSedeDueno.Value).ToList();
-                }
-                else
-                {
-                    listaGerentes = new List<GerenteDto>();
-                }
-
                 return View(listaGerentes);
             }
             catch (Exception ex)
@@ -324,11 +288,19 @@ namespace Software_SARA.Controllers
 
         [HttpPost, ActionName("Eliminar")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EliminarConfirmado(int id)
+        public async Task<IActionResult> EliminarConfirmado(int id, int? Id)
         {
+            int idGerente = id > 0 ? id : (Id ?? 0);
+
+            if (idGerente <= 0)
+            {
+                TempData["MensajeError"] = "El identificador del gerente no es válido.";
+                return RedirectToAction("Index");
+            }
+
             try
             {
-                string? error = await _gerenteService.EliminarGerenteAsync(id);
+                string? error = await _gerenteService.EliminarGerenteAsync(idGerente);
                 if (error != null)
                 {
                     TempData["MensajeError"] = error;

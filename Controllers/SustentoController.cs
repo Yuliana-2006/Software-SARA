@@ -122,20 +122,48 @@ namespace Software_SARA.Controllers
                         {
                             while (reader.Read())
                             {
-                                bool tipFacturaBool = reader["tip_factura"] != DBNull.Value && Convert.ToBoolean(reader["tip_factura"]);
-                                int? idProveedor = reader["id_proveedor"] != DBNull.Value ? Convert.ToInt32(reader["id_proveedor"]) : null;
-                                int? idServicio = reader["id_servicio"] != DBNull.Value ? Convert.ToInt32(reader["id_servicio"]) : null;
-                                string? nomProveedor = reader["nom_proveedor"] != DBNull.Value ? reader["nom_proveedor"].ToString()?.Trim() : null;
-                                string? nomServicio = reader["nom_servicio"] != DBNull.Value ? reader["nom_servicio"].ToString()?.Trim() : null;
+                                string? nomProveedor = reader["nom_proveedor"] != DBNull.Value
+                                    ? reader["nom_proveedor"].ToString()?.Trim()
+                                    : null;
 
-                                bool esProveedor = (idProveedor.HasValue && idProveedor.Value > 0)
-                                    || !string.IsNullOrWhiteSpace(nomProveedor)
-                                    || (!idServicio.HasValue && tipFacturaBool);
+                                string? nomServicio = reader["nom_servicio"] != DBNull.Value
+                                    ? reader["nom_servicio"].ToString()?.Trim()
+                                    : null;
 
-                                string tipoStr = esProveedor ? "Proveedor" : "Servicio";
-                                string nombreTercero = esProveedor
-                                    ? (!string.IsNullOrWhiteSpace(nomProveedor) ? nomProveedor! : "Proveedor")
-                                    : (!string.IsNullOrWhiteSpace(nomServicio) ? nomServicio! : "Servicio");
+                                bool tipFactura = reader["tip_factura"] != DBNull.Value && Convert.ToBoolean(reader["tip_factura"]);
+                                bool tieneIdProveedor = reader["id_proveedor"] != DBNull.Value;
+                                bool tieneIdServicio = reader["id_servicio"] != DBNull.Value;
+
+                                bool esProveedor = !string.IsNullOrWhiteSpace(nomProveedor) || (tieneIdProveedor && !tieneIdServicio) || tipFactura;
+
+                                string tipoStr;
+                                string nombreTercero;
+
+                                if (esProveedor && !string.IsNullOrWhiteSpace(nomProveedor))
+                                {
+                                    tipoStr = "Proveedor";
+                                    nombreTercero = nomProveedor;
+                                }
+                                else if (!esProveedor && !string.IsNullOrWhiteSpace(nomServicio))
+                                {
+                                    tipoStr = "Servicio";
+                                    nombreTercero = nomServicio;
+                                }
+                                else if (!string.IsNullOrWhiteSpace(nomProveedor))
+                                {
+                                    tipoStr = "Proveedor";
+                                    nombreTercero = nomProveedor;
+                                }
+                                else if (!string.IsNullOrWhiteSpace(nomServicio))
+                                {
+                                    tipoStr = "Servicio";
+                                    nombreTercero = nomServicio;
+                                }
+                                else
+                                {
+                                    tipoStr = tipFactura ? "Proveedor" : "Servicio";
+                                    nombreTercero = tipFactura ? "Proveedor sin nombre" : "Servicio sin nombre";
+                                }
 
                                 var item = new SustentoItemDTO
                                 {

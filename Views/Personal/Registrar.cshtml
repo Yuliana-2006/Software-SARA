@@ -1,6 +1,10 @@
 ﻿@model Software_SARA.Dtos.PersonalDTO
 @{
-    ViewData["Title"] = "Registrar " + ViewBag.NombreRol;
+    var rolActual = Model?.IdRol ?? (ViewBag.IdRol is int r ? r : 3);
+    var nombreRol = ViewBag.NombreRol?.ToString() ?? (rolActual == 4 ? "EMPLEADO" : "TESORERO");
+    var nombreSede = ViewBag.NombreSede?.ToString() ?? "Sede Principal";
+    ViewData["Title"] = "Registrar " + nombreRol;
+    var fechaMaxima = DateTime.Today.AddYears(-18).ToString("yyyy-MM-dd");
 }
 
 <style>
@@ -74,35 +78,36 @@
 
 <div class="container py-4">
     <div class="sara-form-container">
-        <h2 class="text-center fw-bold m-0">REGISTRAR @ViewBag.NombreRol</h2>
-        <p class="text-center fw-bold mb-4">Sede asignada: @ViewBag.NombreSede</p>
+        <h2 class="text-center fw-bold m-0">REGISTRAR @nombreRol</h2>
+        <p class="text-center fw-bold mb-4">Sede asignada: @nombreSede</p>
 
         @if (!ViewData.ModelState.IsValid)
         {
             <div class="error-resumen">
                 Revisa los datos ingresados.
+                <div asp-validation-summary="All" class="mt-1 small"></div>
             </div>
         }
 
         <form asp-action="Registrar" method="post">
             @Html.AntiForgeryToken()
-            <input type="hidden" asp-for="IdRol" />
+            <input type="hidden" asp-for="IdRol" value="@rolActual" />
 
             <div class="mb-3">
                 <label class="fw-bold">Sede de Registro</label>
-                <input value="@ViewBag.NombreSede" class="form-control sara-input-pill" readonly />
+                <input value="@nombreSede" class="form-control sara-input-pill" readonly />
             </div>
 
             <div class="row g-2 mb-3">
                 <div class="col-4">
-                    <label class="fw-bold">Tipo Doc.</label>
-                    <select name="tipoDocString" class="form-select sara-input-pill">
+                    <label asp-for="TipoDoc" class="fw-bold">Tipo Doc.</label>
+                    <select asp-for="TipoDoc" class="form-select sara-input-pill">
                         <option value="CC">CC</option>
                         <option value="CE">CE</option>
                     </select>
                 </div>
                 <div class="col-8">
-                    <label class="fw-bold">Núm.Documento</label>
+                    <label asp-for="NumDoc" class="fw-bold">Núm.Documento</label>
                     <input asp-for="NumDoc"
                            type="text"
                            id="inputDocumento"
@@ -117,12 +122,12 @@
 
             <div class="row g-2 mb-3">
                 <div class="col-6">
-                    <label class="fw-bold">Nombres</label>
+                    <label asp-for="NomUsuario" class="fw-bold">Nombres</label>
                     <input asp-for="NomUsuario" class="form-control sara-input-pill" />
                     <span asp-validation-for="NomUsuario" class="error-campo"></span>
                 </div>
                 <div class="col-6">
-                    <label class="fw-bold">Apellidos</label>
+                    <label asp-for="ApelliUsuario" class="fw-bold">Apellidos</label>
                     <input asp-for="ApelliUsuario" class="form-control sara-input-pill" />
                     <span asp-validation-for="ApelliUsuario" class="error-campo"></span>
                 </div>
@@ -130,7 +135,7 @@
 
             <div class="row g-2 mb-3">
                 <div class="col-6">
-                    <label class="fw-bold">Teléfono </label>
+                    <label asp-for="Telefono" class="fw-bold">Teléfono </label>
                     <input asp-for="Telefono"
                            type="text"
                            id="inputTelefono"
@@ -141,26 +146,26 @@
                     <span asp-validation-for="Telefono" class="error-campo"></span>
                 </div>
                 <div class="col-6">
-                    <label class="fw-bold">Correo Electrónico</label>
+                    <label asp-for="Correo" class="fw-bold">Correo Electrónico</label>
                     <input asp-for="Correo" type="email" class="form-control sara-input-pill" />
                     <span asp-validation-for="Correo" class="error-campo"></span>
                 </div>
             </div>
 
             <div class="mb-3">
-                <label class="fw-bold">Dirección de Vivienda</label>
+                <label asp-for="DirUsuario" class="fw-bold">Dirección de Vivienda</label>
                 <input asp-for="DirUsuario" class="form-control sara-input-pill" />
                 <span asp-validation-for="DirUsuario" class="error-campo"></span>
             </div>
 
             <div class="mb-4">
-                <label class="fw-bold">Fecha de Nacimiento</label>
-                <input asp-for="FechaNaci" type="date" class="form-control sara-input-pill" />
+                <label asp-for="FechaNaci" class="fw-bold">Fecha de Nacimiento</label>
+                <input asp-for="FechaNaci" type="date" max="@fechaMaxima" class="form-control sara-input-pill" />
                 <span asp-validation-for="FechaNaci" class="error-campo"></span>
             </div>
 
             <button type="submit" class="sara-btn-submit">REGISTRAR</button>
-            <a asp-action="SeleccionarRol" asp-route-idRol="@Model.IdRol" class="sara-btn-cancel">CANCELAR</a>
+            <a asp-action="SeleccionarRol" asp-route-idRol="@rolActual" class="sara-btn-cancel">CANCELAR</a>
         </form>
     </div>
 </div>

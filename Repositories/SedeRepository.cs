@@ -122,7 +122,6 @@ namespace Software_SARA.Repositories
 
         public async Task<bool> EliminarSede(int idSede)
         {
-            // Bloqueo de seguridad en repositorio: nunca desactivar si tiene información asociada
             if (await TieneInformacionAsociadaAsync(idSede))
             {
                 return false;

@@ -37,8 +37,8 @@ namespace Software_SARA.Dtos
         public string? Sede { get; set; }
 
         [Required(ErrorMessage = "La sede es obligatoria.")]
-        [Range(1, int.MaxValue, ErrorMessage = "Debe seleccionar una sede válida.")]
-        public int IdSede { get; set; }
+        [Range(1, int.MaxValue, ErrorMessage = "La sede es obligatoria.")]
+        public int? IdSede { get; set; }
 
         [Required(ErrorMessage = "La fecha de nacimiento es obligatoria.")]
         public DateTime? FechaNacimiento { get; set; }

@@ -2,7 +2,13 @@
 
 @{
     ViewData["Title"] = "Editar Factura de Servicio Público";
-    var valorEntero = Model.ValorFactura > 0 ? ((long)Model.ValorFactura).ToString() : string.Empty;
+    var mensajeEditar = ViewData["Mensaje"] as string;
+    var erroresUnicosEditar = ViewData.ModelState?.Values
+        .SelectMany(v => v.Errors)
+        .Select(e => e.ErrorMessage)
+        .Where(m => !string.IsNullOrWhiteSpace(m) && !string.Equals(m, mensajeEditar, StringComparison.OrdinalIgnoreCase))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToList() ?? new List<string>();
 }
 
 <div class="registro-container">
@@ -17,21 +23,24 @@
 
             @Html.AntiForgeryToken()
 
-            @if (!ViewData.ModelState.IsValid || ViewData["Mensaje"] != null)
+            @if (!string.IsNullOrWhiteSpace(mensajeEditar) || erroresUnicosEditar.Any())
             {
                 <div class="error-resumen">
                     <div class="error-resumen-titulo">Revisa los datos ingresados.</div>
-                    @if (ViewData["Mensaje"] != null)
+                    @if (!string.IsNullOrWhiteSpace(mensajeEditar))
                     {
-                        <div class="error-resumen-detalle">@ViewData["Mensaje"]</div>
+                        <div class="error-resumen-detalle">@mensajeEditar</div>
                     }
-                    <div class="error-resumen-detalle">
-                        @Html.ValidationSummary(false, "", new { @class = "lista-errores-limpia" })
-                    </div>
+                    @foreach (var err in erroresUnicosEditar)
+                    {
+                        <div class="error-resumen-detalle">@err</div>
+                    }
                 </div>
             }
 
             <input type="hidden" asp-for="IdFactura" />
+            <input type="hidden" asp-for="EstadoFactura" />
+            <input type="hidden" asp-for="TipFactura" />
 
             <!-- FILA 1: Servicio y Valor Factura -->
             <div class="form-row">
@@ -50,7 +59,7 @@
                            type="text"
                            inputmode="numeric"
                            autocomplete="off"
-                           value="@valorEntero"
+                           maxlength="12"
                            class="form-control"
                            placeholder="Ej: 25000" />
                     <span asp-validation-for="ValorFactura" class="error-campo"></span>
@@ -102,6 +111,14 @@
             const inputValor = document.getElementById('inputValorServicioEditar');
             if (!inputValor) return;
 
+            if (inputValor.value) {
+                const limpioInicial = inputValor.value.replace(/\D/g, '');
+                if (limpioInicial) {
+                    const num = Number(limpioInicial);
+                    inputValor.value = Number.isFinite(num) && num > 0 ? String(Math.trunc(num)) : '';
+                }
+            }
+
             inputValor.addEventListener('beforeinput', function (e) {
                 if (e.data && /[^0-9]/.test(e.data)) {
                     e.preventDefault();
@@ -109,7 +126,7 @@
             });
 
             inputValor.addEventListener('input', function () {
-                const limpio = this.value.replace(/[^0-9]/g, '');
+                const limpio = this.value.replace(/[^0-9]/g, '').slice(0, 12);
                 if (this.value !== limpio) {
                     this.value = limpio;
                 }

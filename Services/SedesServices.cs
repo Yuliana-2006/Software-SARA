@@ -44,7 +44,12 @@ namespace Software_SARA.Services
                 return "No se puede desactivar ni eliminar la sede porque tiene información operativa (facturas, recordatorios o caja) registrada.";
             }
 
-            return "No se puede desactivar ni eliminar la sede porque tiene usuarios asignados.";
+            return null;
+        }
+
+        private static string NormalizarTexto(string? valor)
+        {
+            return (valor ?? string.Empty).Trim().ToLowerInvariant();
         }
 
         public async Task<SedeDto> CreateSede(SedeDto sedeDto)
@@ -53,8 +58,14 @@ namespace Software_SARA.Services
 
             var listaSedesExistentes = await ObtenerTodasLasSedes();
 
-            bool nombreExiste = listaSedesExistentes.Any(s => s.NomSede.Trim().ToLower() == sedeDto.NomSede.Trim().ToLower());
-            bool direccionExiste = listaSedesExistentes.Any(s => s.DirSede.Trim().ToLower() == sedeDto.DirSede.Trim().ToLower());
+            string nombreNuevo = NormalizarTexto(sedeDto.NomSede);
+            string ciudadNueva = NormalizarTexto(sedeDto.CiuSede);
+            string direccionNueva = NormalizarTexto(sedeDto.DirSede);
+
+            bool nombreExiste = listaSedesExistentes.Any(s => NormalizarTexto(s.NomSede) == nombreNuevo);
+            bool direccionEnMismaCiudadExiste = listaSedesExistentes.Any(s =>
+                NormalizarTexto(s.CiuSede) == ciudadNueva &&
+                NormalizarTexto(s.DirSede) == direccionNueva);
 
             if (nombreExiste)
             {
@@ -63,10 +74,10 @@ namespace Software_SARA.Services
                 return sedeDto;
             }
 
-            if (direccionExiste)
+            if (direccionEnMismaCiudadExiste)
             {
                 sedeDto.Reponse = 0;
-                sedeDto.Message = "Ya existe una sede registrada con esa dirección física.";
+                sedeDto.Message = "Ya existe una sede registrada con esa dirección en la misma ciudad.";
                 return sedeDto;
             }
 
@@ -80,7 +91,7 @@ namespace Software_SARA.Services
             else
             {
                 sedeDto.Reponse = 0;
-                sedeDto.Message = "La Sede ya existe.";
+                sedeDto.Message = "No se pudo crear la sede.";
             }
             return sedeDto;
         }
@@ -112,8 +123,18 @@ namespace Software_SARA.Services
         {
             var listaSedesExistentes = await ObtenerTodasLasSedes();
 
-            bool nombreConflicto = listaSedesExistentes.Any(s => s.IdSede != sedeDto.IdSede && s.NomSede.Trim().ToLower() == sedeDto.NomSede.Trim().ToLower());
-            bool direccionConflicto = listaSedesExistentes.Any(s => s.IdSede != sedeDto.IdSede && s.DirSede.Trim().ToLower() == sedeDto.DirSede.Trim().ToLower());
+            string nombreEditado = NormalizarTexto(sedeDto.NomSede);
+            string ciudadEditada = NormalizarTexto(sedeDto.CiuSede);
+            string direccionEditada = NormalizarTexto(sedeDto.DirSede);
+
+            bool nombreConflicto = listaSedesExistentes.Any(s =>
+                s.IdSede != sedeDto.IdSede &&
+                NormalizarTexto(s.NomSede) == nombreEditado);
+
+            bool direccionEnMismaCiudadConflicto = listaSedesExistentes.Any(s =>
+                s.IdSede != sedeDto.IdSede &&
+                NormalizarTexto(s.CiuSede) == ciudadEditada &&
+                NormalizarTexto(s.DirSede) == direccionEditada);
 
             if (nombreConflicto)
             {
@@ -122,10 +143,10 @@ namespace Software_SARA.Services
                 return sedeDto;
             }
 
-            if (direccionConflicto)
+            if (direccionEnMismaCiudadConflicto)
             {
                 sedeDto.Reponse = 0;
-                sedeDto.Message = "La dirección física ya pertenece a otra sede existente.";
+                sedeDto.Message = "Ya existe otra sede con esa dirección en la misma ciudad.";
                 return sedeDto;
             }
 

@@ -23,17 +23,11 @@ namespace Software_SARA.Controllers
         private readonly SarabdContext _context;
         private readonly EmailService _emailService;
 
-        // IDs de roles autorizados: 1 = Dueño, 2 = Gerente, 3 = Tesorero
-        private const int IdRolDueno = 1;
-        private const int IdRolGerente = 2;
-        private const int IdRolTesorero = 3;
+        // IDs de roles en base de datos
+        private const int IdRolEmpleadoExcluido = 3;
+        private const int IdRolTesoreroFijo = 4;
+        private static readonly HashSet<int> RolesPermitidosCorreo = new HashSet<int> { 1, 2, 3 };
 
-        private static readonly HashSet<int> RolesAutorizadosIds = new HashSet<int>
-        {
-            IdRolDueno,
-            IdRolGerente,
-            IdRolTesorero
-        };
 
         public InformeController(SarabdContext context, EmailService emailService)
         {
@@ -46,43 +40,67 @@ namespace Software_SARA.Controllers
             return fecha.Date > DateTime.Today;
         }
 
-        private bool EsRolAutorizado(int idRol)
+
+        private bool EsRolPermitidoCorreo(int idRol)
         {
-            return RolesAutorizadosIds.Contains(idRol);
+            return RolesPermitidosCorreo.Contains(idRol);
         }
 
-        private IActionResult? ValidarAccesoInforme()
+        private (string Tipo, string Nombre) ResolverTipoYNombreFactura(
+            Factura f,
+            List<Proveedor> proveedores,
+            List<Servicio> servicios)
         {
-            var usuariosActivos = _context.Usuarios
-                .Include(u => u.IdRolNavigation)
-                .Where(u => u.EstadoUsuario == true)
-                .ToList();
-
-            var mapaRoles = ObtenerMapaRolesDesdeBd();
-            var (perfilActual, usuarioActual) = ObtenerPerfilYUsuarioActual(usuariosActivos, mapaRoles);
-
-            if (usuarioActual != null && EsRolAutorizado(usuarioActual.IdRol))
+            string? nomProv = null;
+            if (f.IdProveedor.HasValue && f.IdProveedor.Value > 0)
             {
-                return null;
+                nomProv = proveedores.FirstOrDefault(p => p.IdProveedor == f.IdProveedor.Value)?.NomProveedor?.Trim();
+            }
+            if (string.IsNullOrWhiteSpace(nomProv) && !string.IsNullOrWhiteSpace(f.NomProveedor))
+            {
+                nomProv = f.NomProveedor.Trim();
             }
 
-            string? rolIdSesionStr = HttpContext.Session.GetString("IdRol")
-                                  ?? HttpContext.Session.GetString("RolId")
-                                  ?? User?.FindFirst("IdRol")?.Value
-                                  ?? User?.FindFirst("RolId")?.Value;
-
-            if (int.TryParse(rolIdSesionStr, out int rolIdSesion) && EsRolAutorizado(rolIdSesion))
+            string? nomServ = null;
+            if (f.IdServicio.HasValue && f.IdServicio.Value > 0)
             {
-                return null;
+                nomServ = servicios.FirstOrDefault(s => s.IdServicio == f.IdServicio.Value)?.NomServicio?.Trim();
+            }
+            if (string.IsNullOrWhiteSpace(nomServ) && !string.IsNullOrWhiteSpace(f.NomServicio))
+            {
+                nomServ = f.NomServicio.Trim();
             }
 
-            if (perfilActual == "dueno" || perfilActual == "gerente" || perfilActual == "tesorero")
+            bool tieneProv = !string.IsNullOrWhiteSpace(nomProv) || (f.IdProveedor.HasValue && f.IdProveedor.Value > 0);
+            bool tieneServ = !string.IsNullOrWhiteSpace(nomServ) || (f.IdServicio.HasValue && f.IdServicio.Value > 0);
+
+            if (tieneProv && !string.IsNullOrWhiteSpace(nomProv) && (f.TipFactura || !tieneServ))
             {
-                return null;
+                return ("Proveedor", nomProv);
             }
 
-            TempData["MensajeError"] = "Solo los roles autorizados (Dueño [1], Gerente [2] y Tesorero [3]) pueden acceder o generar informes.";
-            return RedirectToAction("Index", "Home");
+            if (tieneServ && !string.IsNullOrWhiteSpace(nomServ) && (!f.TipFactura || !tieneProv))
+            {
+                return ("Servicio", nomServ);
+            }
+
+            if (!string.IsNullOrWhiteSpace(nomProv))
+            {
+                return ("Proveedor", nomProv);
+            }
+
+            if (!string.IsNullOrWhiteSpace(nomServ))
+            {
+                return ("Servicio", nomServ);
+            }
+
+            if (f.TipFactura || tieneProv)
+            {
+                return ("Proveedor", "Proveedor sin nombre");
+            }
+
+            return ("Servicio", "Servicio sin nombre");
+
         }
 
         [HttpGet]
@@ -98,12 +116,11 @@ namespace Software_SARA.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Generar(DateTime fechaSeleccionada)
         {
-            var accesoDenegado = ValidarAccesoInforme();
-            if (accesoDenegado != null) return accesoDenegado;
 
             if (EsFechaFutura(fechaSeleccionada))
             {
-                TempData["MensajeError"] = $"No se puede generar un informe para el {fechaSeleccionada:dd/MM/yyyy} porque es una fecha futura.";
+                TempData["MensajeError"] = "No se puede generar un informe para una fecha futura.";
+
                 return RedirectToAction("Index");
             }
 
@@ -121,12 +138,11 @@ namespace Software_SARA.Controllers
         [HttpGet]
         public IActionResult Preview(DateTime fechaSeleccionada)
         {
-            var accesoDenegado = ValidarAccesoInforme();
-            if (accesoDenegado != null) return accesoDenegado;
 
             if (EsFechaFutura(fechaSeleccionada))
             {
-                TempData["MensajeError"] = $"No se puede consultar un informe para el {fechaSeleccionada:dd/MM/yyyy} porque es una fecha futura.";
+                TempData["MensajeError"] = "No se puede generar un informe para una fecha futura.";
+
                 return RedirectToAction("Index");
             }
 
@@ -138,12 +154,9 @@ namespace Software_SARA.Controllers
         [HttpGet]
         public IActionResult DescargarPDF(DateTime fechaSeleccionada)
         {
-            var accesoDenegado = ValidarAccesoInforme();
-            if (accesoDenegado != null) return accesoDenegado;
-
             if (EsFechaFutura(fechaSeleccionada))
             {
-                TempData["MensajeError"] = $"No se puede descargar un informe para el {fechaSeleccionada:dd/MM/yyyy} porque es una fecha futura.";
+                TempData["MensajeError"] = "No se puede generar un informe para una fecha futura.";
                 return RedirectToAction("Index");
             }
 
@@ -158,12 +171,9 @@ namespace Software_SARA.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EnviarCorreo(DateTime fechaSeleccionada, string emailDestino)
         {
-            var accesoDenegado = ValidarAccesoInforme();
-            if (accesoDenegado != null) return accesoDenegado;
-
             if (EsFechaFutura(fechaSeleccionada))
             {
-                TempData["MensajeError"] = $"No se puede enviar un informe para el {fechaSeleccionada:dd/MM/yyyy} porque es una fecha futura.";
+                TempData["MensajeError"] = "No se puede generar un informe para una fecha futura.";
                 return RedirectToAction("Index");
             }
 
@@ -184,7 +194,7 @@ namespace Software_SARA.Controllers
 
                 string correoLimpio = emailDestino.Trim();
                 var destinatariosAutorizados = datos.UsuariosCorreo
-                    .Where(u => !string.IsNullOrWhiteSpace(u.Correo) && EsRolAutorizado(u.IdRol))
+                    .Where(u => !string.IsNullOrWhiteSpace(u.Correo) && EsRolPermitidoCorreo(u.IdRol))
                     .ToList();
 
                 var usuarioDestino = destinatariosAutorizados
@@ -192,7 +202,7 @@ namespace Software_SARA.Controllers
 
                 if (usuarioDestino == null)
                 {
-                    TempData["MensajeError"] = "El correo seleccionado solo puede pertenecer a un usuario autorizado con rol 1 (Dueño), 2 (Gerente) o 3 (Tesorero).";
+                    TempData["MensajeError"] = "El correo seleccionado solo puede pertenecer a un usuario autorizado (ID de rol 1, 2 o 3).";
                     return RedirectToAction("Preview", new { fechaSeleccionada = fechaSeleccionada.ToString("yyyy-MM-dd") });
                 }
 
@@ -326,19 +336,15 @@ namespace Software_SARA.Controllers
 
             foreach (var f in todasFacturas)
             {
-                var (tipo, nombre) = ResolverTipoYNombreFactura(f, proveedores, servicios);
-
-                if (tipo == "Proveedor")
+                var (tipoResuelto, nombreResuelto) = ResolverTipoYNombreFactura(f, proveedores, servicios);
+                f.TipFactura = string.Equals(tipoResuelto, "Proveedor", StringComparison.OrdinalIgnoreCase);
+                if (f.TipFactura)
                 {
-                    f.TipFactura = true;
-                    f.NomProveedor = nombre;
-                    f.NomServicio = null;
+                    f.NomProveedor = nombreResuelto;
                 }
                 else
                 {
-                    f.TipFactura = false;
-                    f.NomServicio = nombre;
-                    f.NomProveedor = null;
+                    f.NomServicio = nombreResuelto;
                 }
             }
 
@@ -505,24 +511,76 @@ namespace Software_SARA.Controllers
             List<Usuario> usuariosActivos,
             Dictionary<int, string> mapaRoles)
         {
-            // Solo los roles 1 (Dueño), 2 (Gerente) y 3 (Tesorero) pueden aparecer en la lista de correo
-            var usuariosAutorizados = usuariosActivos
-                .Where(u => !string.IsNullOrWhiteSpace(u.Correo) && EsRolAutorizado(u.IdRol))
+            var usuariosConCorreo = usuariosActivos
+                .Where(u => !string.IsNullOrWhiteSpace(u.Correo) && EsRolPermitidoCorreo(u.IdRol))
                 .ToList();
+                
+                
+                
+                
+            var (_, usuarioActual) = ObtenerPerfilYUsuarioActual(usuariosConCorreo, mapaRoles);
+            
+            
+            
+            
 
             var destinatarios = new List<Usuario>();
 
-            var dueno = usuariosAutorizados.FirstOrDefault(u => u.IdRol == IdRolDueno);
-            if (dueno != null) destinatarios.Add(dueno);
+            var destinatarios = usuariosConCorreo
+                .Where(u => EsRolPermitidoCorreo(u.IdRol))
+                .ToList();
 
-            var gerente = usuariosAutorizados.FirstOrDefault(u => u.IdRol == IdRolGerente);
-            if (gerente != null) destinatarios.Add(gerente);
+            if (usuarioActual != null &&
+                !string.IsNullOrWhiteSpace(usuarioActual.Correo) &&
+                EsRolPermitidoCorreo(usuarioActual.IdRol))
+            {
+                destinatarios.Add(usuarioActual);
+            }
 
-            var tesorero = usuariosAutorizados.FirstOrDefault(u => u.IdRol == IdRolTesorero);
-            if (tesorero != null) destinatarios.Add(tesorero);
+            if (sede != null)
+            {
+                var propsSede = sede.GetType().GetProperties();
+
+                var propIdDueno = propsSede.FirstOrDefault(p =>
+                    (p.Name.Contains("Dueno", StringComparison.OrdinalIgnoreCase) ||
+                     p.Name.Contains("Dueño", StringComparison.OrdinalIgnoreCase) ||
+                     p.Name.Contains("Propietario", StringComparison.OrdinalIgnoreCase)) &&
+                    (p.PropertyType == typeof(int) || p.PropertyType == typeof(int?)));
+
+                if (propIdDueno != null)
+                {
+                    var valId = propIdDueno.GetValue(sede);
+                    if (valId != null && int.TryParse(valId.ToString(), out int idDueno) && idDueno > 0)
+                    {
+                        var usuarioDueno = usuariosConCorreo.FirstOrDefault(u => u.IdUsuario == idDueno && EsRolPermitidoCorreo(u.IdRol));
+                        if (usuarioDueno != null)
+                        {
+                            destinatarios.Add(usuarioDueno);
+                        }
+                    }
+                }
+
+                var propCorreoDueno = propsSede.FirstOrDefault(p =>
+                    p.Name.Contains("Correo", StringComparison.OrdinalIgnoreCase) &&
+                    (p.Name.Contains("Dueno", StringComparison.OrdinalIgnoreCase) ||
+                     p.Name.Contains("Dueño", StringComparison.OrdinalIgnoreCase) ||
+                     p.Name.Contains("Propietario", StringComparison.OrdinalIgnoreCase)));
+
+                var correoDueno = propCorreoDueno?.GetValue(sede)?.ToString()?.Trim();
+                if (!string.IsNullOrWhiteSpace(correoDueno))
+                {
+                    var usuarioPorCorreo = usuariosConCorreo.FirstOrDefault(u =>
+                        string.Equals(u.Correo?.Trim(), correoDueno, StringComparison.OrdinalIgnoreCase));
+
+                    if (usuarioPorCorreo != null && EsRolPermitidoCorreo(usuarioPorCorreo.IdRol))
+                    {
+                        destinatarios.Add(usuarioPorCorreo);
+                    }
+                }
+            }
 
             return destinatarios
-                .Where(u => !string.IsNullOrWhiteSpace(u.Correo) && EsRolAutorizado(u.IdRol))
+                .Where(u => !string.IsNullOrWhiteSpace(u.Correo) && EsRolPermitidoCorreo(u.IdRol))
                 .GroupBy(u => u.Correo!.Trim().ToLowerInvariant())
                 .Select(g => g.First())
                 .OrderBy(u => u.IdRol)
@@ -621,11 +679,10 @@ namespace Software_SARA.Controllers
 
                                 foreach (var f in datos.FacturasPendientes)
                                 {
-                                    bool esProveedor = f.TipFactura || (f.IdProveedor.HasValue && f.IdProveedor.Value > 0) || !string.IsNullOrWhiteSpace(f.NomProveedor);
-                                    string tipo = esProveedor ? "Proveedor" : "Servicio";
-                                    string nombre = esProveedor
-                                        ? (!string.IsNullOrWhiteSpace(f.NomProveedor) ? f.NomProveedor! : "Proveedor")
-                                        : (!string.IsNullOrWhiteSpace(f.NomServicio) ? f.NomServicio! : "Servicio");
+                                    string tipo = f.TipFactura ? "Proveedor" : "Servicio";
+                                    string nombre = f.TipFactura
+                                        ? (!string.IsNullOrWhiteSpace(f.NomProveedor) ? f.NomProveedor! : "Proveedor sin nombre")
+                                        : (!string.IsNullOrWhiteSpace(f.NomServicio) ? f.NomServicio! : "Servicio sin nombre");
 
                                     table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(5).Text(f.IdFactura.ToString());
                                     table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(5).Text(tipo);
@@ -662,11 +719,10 @@ namespace Software_SARA.Controllers
 
                                 foreach (var f in datos.FacturasPagadas)
                                 {
-                                    bool esProveedor = f.TipFactura || (f.IdProveedor.HasValue && f.IdProveedor.Value > 0) || !string.IsNullOrWhiteSpace(f.NomProveedor);
-                                    string tipo = esProveedor ? "Proveedor" : "Servicio";
-                                    string nombre = esProveedor
-                                        ? (!string.IsNullOrWhiteSpace(f.NomProveedor) ? f.NomProveedor! : "Proveedor")
-                                        : (!string.IsNullOrWhiteSpace(f.NomServicio) ? f.NomServicio! : "Servicio");
+                                    string tipo = f.TipFactura ? "Proveedor" : "Servicio";
+                                    string nombre = f.TipFactura
+                                        ? (!string.IsNullOrWhiteSpace(f.NomProveedor) ? f.NomProveedor! : "Proveedor sin nombre")
+                                        : (!string.IsNullOrWhiteSpace(f.NomServicio) ? f.NomServicio! : "Servicio sin nombre");
 
                                     table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(5).Text(f.IdFactura.ToString());
                                     table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(5).Text(tipo);

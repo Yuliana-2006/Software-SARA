@@ -11,13 +11,6 @@
         <!-- TÍTULO -->
         <h1>EDITAR SEDE</h1>
 
-        @if (!ViewData.ModelState.IsValid)
-        {
-            <div class="error-resumen">
-                Revisa los datos ingresados.
-            </div>
-        }
-
         <!-- FORMULARIO -->
         <form asp-controller="Sedes"
               asp-action="EditarSede"
@@ -27,34 +20,19 @@
 
             @if (!ViewData.ModelState.IsValid || ViewData["Mensaje"] != null)
             {
-                <div style="background-color: #a94442; color: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; width: 100%; box-sizing: border-box; box-shadow: 0 4px 8px rgba(0,0,0,0.15);">
-                     <div style="font-weight: 800; font-size: 16px; margin-bottom: 5px;">
-                             Revisa los datos ingresados.
-                     </div>
+                <div class="error-resumen">
+                    <div>Revisa los datos ingresados.</div>
 
-                     <!-- Muestra el mensaje personalizado del servicio si existe -->
-                     @if (ViewData["Mensaje"] != null)
-                     {
-                         <div style="font-size: 14px; margin-top: 4px;">
-                              - @ViewData["Mensaje"]
-                         </div>
-                     }
+                    @if (ViewData["Mensaje"] != null)
+                    {
+                        <div style="margin-top: 4px;">@ViewData["Mensaje"]</div>
+                    }
 
-                     <!-- Muestra los errores de validación del modelo/formulario -->
-                         <div style="font-size: 14px; margin-top: 4px;">
-                             @Html.ValidationSummary(false, "", new { @style = "list-style-type: none; padding: 0; margin: 0;" })
-                         </div>
                 </div>
             }
 
             <input type="hidden" asp-for="IdSede" />
-
-            @if (ViewData["Mensaje"] != null)
-            {
-                <div class="error-resumen">
-                    @ViewData["Mensaje"]
-                </div>
-            }
+            <input type="hidden" asp-for="EstadoSede" />
 
             <!-- FILA 1 -->
             <div class="form-row">
@@ -154,14 +132,12 @@
             const inputTel = document.getElementById('inputTelSedeEditar');
             if (!inputTel) return;
 
-            // Impide escribir letras, puntos, espacios o caracteres especiales
             inputTel.addEventListener('beforeinput', function (e) {
                 if (e.data && /[^0-9]/.test(e.data)) {
                     e.preventDefault();
                 }
             });
 
-            // Limpia cualquier carácter no numérico y limita a 10 dígitos
             inputTel.addEventListener('input', function () {
                 const limpio = this.value.replace(/[^0-9]/g, '').slice(0, 10);
                 if (this.value !== limpio) {
@@ -173,7 +149,6 @@
 }
 
 <style>
-    /* CONTENEDOR */
     .registro-container {
         width: 100%;
         min-height: calc(100vh - 120px);
@@ -183,7 +158,6 @@
         padding-top: 5px;
     }
 
-    /* TARJETA VERDE */
     .registro-card {
         width: 100%;
         max-width: 610px;
@@ -195,7 +169,6 @@
         box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
     }
 
-    /* TÍTULO */
     .registro-card h1 {
         color: white;
         text-align: center;
@@ -204,7 +177,6 @@
         margin: 0 0 22px 0;
     }
 
-    /* RESUMEN DE ERROR SUPERIOR */
     .error-resumen {
         color: #721c24;
         background-color: #ffe6e6;
@@ -215,7 +187,6 @@
         font-weight: 700;
     }
 
-    /* ERROR POR CAMPO (#ffcccc) */
     .error-campo,
     .field-validation-error {
         display: block;
@@ -229,7 +200,6 @@
         display: none;
     }
 
-    /* FILAS DE DOS COLUMNAS */
     .form-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -237,7 +207,6 @@
         margin-bottom: 12px;
     }
 
-    /* GRUPOS */
     .form-group {
         margin-bottom: 12px;
     }
@@ -246,7 +215,6 @@
         margin-bottom: 0;
     }
 
-    /* ETIQUETAS */
     .form-group label {
         display: block;
         color: white;
@@ -255,7 +223,6 @@
         margin-bottom: 7px;
     }
 
-    /* CAMPOS */
     .form-control {
         width: 100%;
         height: 44px;
@@ -277,12 +244,10 @@
         color: #777;
     }
 
-    /* ANCHO COMPLETO */
     .full-width {
         width: 100%;
     }
 
-    /* BOTONES */
     .buttons {
         display: flex;
         flex-direction: column;
@@ -305,7 +270,6 @@
         box-sizing: border-box;
     }
 
-    /* GUARDAR CAMBIOS */
     .btn-registrar {
         border: none;
         background-color: #F8F9FA;
@@ -317,7 +281,6 @@
         background-color: #E5E7E8;
     }
 
-    /* CANCELAR */
     .btn-cancelar {
         background-color: transparent;
         border: 1.5px solid white;
@@ -330,7 +293,6 @@
         color: white;
     }
 
-    /* RESPONSIVE */
     @@media (max-width: 600px) {
         .registro-card {
             padding: 22px 18px;

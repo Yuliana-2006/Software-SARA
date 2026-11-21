@@ -32,7 +32,7 @@ namespace Software_SARA.Services
                 "dueño" => "Ahora eres el <strong>Dueño</strong> del sistema SARA. Tienes el control total para gestionar tus sedes y gerentes.",
                 "gerente" => "Ahora eres un <strong>Gerente</strong> de sede en el sistema SARA. ¡Estás a cargo de la operación de tu supermercado!",
                 "tesorero" => "Ahora haces parte del equipo de <strong>Tesorería</strong> en el sistema SARA. Tu gestión financiera es clave para nosotros.",
-                "empleado" or "trabajador" => "Ahora haces parte del equipo de <strong>Trabajadores</strong> en el sistema SARA. ¡Gracias por unirte a bordo!",
+                "empleado" or "Empleado" => "Ahora haces parte del equipo de <strong>Empleados</strong> en el sistema SARA. ¡Gracias por unirte!",
                 _ => $"Tu cuenta ha sido creada con el rol de <strong>{rol}</strong> en el sistema SARA."
             };
 
