@@ -1,21 +1,28 @@
-using Microsoft.Data.SqlClient;
 using System;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.Data.SqlClient;
 
 namespace Software_SARA.Utilities
 {
     public class DBSaraUtility
     {
-  
-        static string SERVER = "DESKTOP-YULIANA";
+        // --- DATOS DE MONSTERASP ---
+        static string SERVER = "db81718.databaseasp.net";
+        static string DB_NAME = "SARAPRUEBA"; 
+        
+        // El usuario en MonsterASP suele ser el mismo ID del servidor: db81718
+        static string USER = "db81718"; 
+        
+        // Pon aquí la contraseña real que te dio MonsterASP
+        static string PASSWORD = "3229634208"; 
 
-        static string DB_NAME = "SARABD";
+        // Cadena de conexión corregida (usando comillas y variables)
+        static string Conn = $"Server={SERVER};Database={DB_NAME};User Id={USER};Password={PASSWORD};Encrypt=False;MultipleActiveResultSets=True;";
 
-        static string Conn = "Server=" + SERVER + ";Database=" + DB_NAME + ";Trusted_Connection=True;TrustServerCertificate=True;";
-
-        //mi conxion:
+        // Conexión
         SqlConnection Con = new SqlConnection(Conn);
 
-        //procedimiento para abrir la conexion a la base de datos
+        // Procedimiento para abrir la conexión a la base de datos
         public void Connect()
         {
             try
@@ -29,7 +36,7 @@ namespace Software_SARA.Utilities
             }
         }
 
-        //procedimiento para cerrar la conexion a la base de datos
+        // Procedimiento para cerrar la conexión a la base de datos
         public void Disconnect()
         {
             try
@@ -43,7 +50,7 @@ namespace Software_SARA.Utilities
             }
         }
 
-        //Funcion que retorna la conexion a la base de datos
+        // Función que retorna la conexión a la base de datos
         public SqlConnection CONN()
         {
             return Con;
