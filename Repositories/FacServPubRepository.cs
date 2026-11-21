@@ -1,13 +1,14 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
 using Software_SARA.Dtos;
 using Software_SARA.Repositories.Models;
 using Software_SARA.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Software_SARA.Repositories
 {
@@ -125,27 +126,30 @@ namespace Software_SARA.Repositories
 
         public async Task<bool> CreateFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
-            // Consulta SQL para insertar una nueva factura de servicio público en la base de datos
             bool result = false;
-            string SQL = @"INSERT INTO SARABD.dbo.factura
-                           (id_usuario, tip_factura, id_proveedor, id_servicio, valor_factura, fecha_reg_factura, fecha_vencimiento, estado_factura)
-                           VALUES (@IdUsuario, @TipFactura, @IdProveedor, @IdServicio, @ValorFactura, @FechaRegFactura, @FechaVencimiento, @EstadoFactura);";
+            string sql = "SARABD.dbo.InsertarFacturaServicio";
 
             DBSaraUtility connectionUtility = new DBSaraUtility();
             connectionUtility.Connect();
 
             try
             {
-                using (SqlCommand command = new SqlCommand(SQL, connectionUtility.CONN()))
+                using (SqlCommand command = new SqlCommand(sql, connectionUtility.CONN()))
                 {
-                    command.Parameters.AddWithValue("@IdUsuario", facServPublicDto.IdUsuario);
-                    command.Parameters.AddWithValue("@TipFactura", facServPublicDto.TipFactura ? 1 : 0);
-                    command.Parameters.AddWithValue("@IdProveedor", facServPublicDto.IdProveedor.HasValue ? facServPublicDto.IdProveedor.Value : DBNull.Value);
-                    command.Parameters.AddWithValue("@IdServicio", facServPublicDto.IdServicio.HasValue ? facServPublicDto.IdServicio.Value : DBNull.Value);
-                    command.Parameters.AddWithValue("@ValorFactura", facServPublicDto.ValorFactura);
-                    command.Parameters.AddWithValue("@FechaRegFactura", facServPublicDto.FechaRegFactura.ToString("yyyy-MM-dd"));
-                    command.Parameters.AddWithValue("@FechaVencimiento", facServPublicDto.FechaVencimiento.ToString("yyyy-MM-dd"));
-                    command.Parameters.AddWithValue("@EstadoFactura", facServPublicDto.EstadoFactura ? 1 : 0);
+                    command.CommandType = CommandType.StoredProcedure;
+
+                    command.Parameters.Add("@id_usuario", SqlDbType.Int).Value = facServPublicDto.IdUsuario;
+                    command.Parameters.Add("@tip_factura", SqlDbType.Bit).Value = facServPublicDto.TipFactura;
+                    command.Parameters.Add("@id_proveedor", SqlDbType.Int).Value =
+                        facServPublicDto.IdProveedor.HasValue ? facServPublicDto.IdProveedor.Value : DBNull.Value;
+                    command.Parameters.Add("@id_servicio", SqlDbType.Int).Value =
+                        facServPublicDto.IdServicio.HasValue ? facServPublicDto.IdServicio.Value : DBNull.Value;
+                    command.Parameters.Add("@valor_factura", SqlDbType.Decimal).Value = facServPublicDto.ValorFactura;
+                    command.Parameters.Add("@fecha_reg_factura", SqlDbType.Date).Value =
+                        facServPublicDto.FechaRegFactura.ToDateTime(TimeOnly.MinValue);
+                    command.Parameters.Add("@fecha_vencimiento", SqlDbType.Date).Value =
+                        facServPublicDto.FechaVencimiento.ToDateTime(TimeOnly.MinValue);
+                    command.Parameters.Add("@estado_factura", SqlDbType.Bit).Value = facServPublicDto.EstadoFactura;
 
                     int comando = await command.ExecuteNonQueryAsync();
                     result = comando != 0;
