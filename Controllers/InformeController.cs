@@ -28,7 +28,6 @@ namespace Software_SARA.Controllers
         private const int IdRolTesoreroFijo = 4;
         private static readonly HashSet<int> RolesPermitidosCorreo = new HashSet<int> { 1, 2, 3 };
 
-
         public InformeController(SarabdContext context, EmailService emailService)
         {
             _context = context;
@@ -39,7 +38,6 @@ namespace Software_SARA.Controllers
         {
             return fecha.Date > DateTime.Today;
         }
-
 
         private bool EsRolPermitidoCorreo(int idRol)
         {
@@ -100,15 +98,11 @@ namespace Software_SARA.Controllers
             }
 
             return ("Servicio", "Servicio sin nombre");
-
         }
 
         [HttpGet]
         public IActionResult Index()
         {
-            var accesoDenegado = ValidarAccesoInforme();
-            if (accesoDenegado != null) return accesoDenegado;
-
             return View();
         }
 
@@ -116,11 +110,9 @@ namespace Software_SARA.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Generar(DateTime fechaSeleccionada)
         {
-
             if (EsFechaFutura(fechaSeleccionada))
             {
                 TempData["MensajeError"] = "No se puede generar un informe para una fecha futura.";
-
                 return RedirectToAction("Index");
             }
 
@@ -138,11 +130,9 @@ namespace Software_SARA.Controllers
         [HttpGet]
         public IActionResult Preview(DateTime fechaSeleccionada)
         {
-
             if (EsFechaFutura(fechaSeleccionada))
             {
                 TempData["MensajeError"] = "No se puede generar un informe para una fecha futura.";
-
                 return RedirectToAction("Index");
             }
 
@@ -232,54 +222,6 @@ namespace Software_SARA.Controllers
             return RedirectToAction("Preview", new { fechaSeleccionada = fechaSeleccionada.ToString("yyyy-MM-dd") });
         }
 
-        private (string Tipo, string Nombre) ResolverTipoYNombreFactura(
-            Factura f,
-            List<Proveedor> proveedores,
-            List<Servicio> servicios)
-        {
-            bool tieneProveedor = f.IdProveedor.HasValue && f.IdProveedor.Value > 0;
-            bool tieneServicio = f.IdServicio.HasValue && f.IdServicio.Value > 0;
-
-            if (tieneProveedor)
-            {
-                var prov = proveedores.FirstOrDefault(p => p.IdProveedor == f.IdProveedor!.Value);
-                string nombreProveedor = !string.IsNullOrWhiteSpace(prov?.NomProveedor)
-                    ? prov!.NomProveedor!
-                    : (!string.IsNullOrWhiteSpace(f.NomProveedor)
-                        ? f.NomProveedor!
-                        : (!string.IsNullOrWhiteSpace(f.Concepto) ? f.Concepto! : "Proveedor"));
-
-                return ("Proveedor", nombreProveedor);
-            }
-
-            if (tieneServicio)
-            {
-                var serv = servicios.FirstOrDefault(s => s.IdServicio == f.IdServicio!.Value);
-                string nombreServicio = !string.IsNullOrWhiteSpace(serv?.NomServicio)
-                    ? serv!.NomServicio!
-                    : (!string.IsNullOrWhiteSpace(f.NomServicio)
-                        ? f.NomServicio!
-                        : (!string.IsNullOrWhiteSpace(f.Concepto) ? f.Concepto! : "Servicio"));
-
-                return ("Servicio", nombreServicio);
-            }
-
-            if (f.TipFactura)
-            {
-                string nombreProvFallback = !string.IsNullOrWhiteSpace(f.NomProveedor)
-                    ? f.NomProveedor!
-                    : (!string.IsNullOrWhiteSpace(f.Concepto) ? f.Concepto! : "Proveedor");
-                return ("Proveedor", nombreProvFallback);
-            }
-            else
-            {
-                string nombreServFallback = !string.IsNullOrWhiteSpace(f.NomServicio)
-                    ? f.NomServicio!
-                    : (!string.IsNullOrWhiteSpace(f.Concepto) ? f.Concepto! : "Servicio");
-                return ("Servicio", nombreServFallback);
-            }
-        }
-
         private InformeCajaDTO? ObtenerDatosInforme(DateTime fecha)
         {
             if (EsFechaFutura(fecha))
@@ -296,8 +238,8 @@ namespace Software_SARA.Controllers
                 .Where(u => u.EstadoUsuario == true)
                 .ToList();
 
-            var (perfilActual, usuarioActual) = ObtenerPerfilYUsuarioActual(usuariosActivos, mapaRoles);
-            bool esDueno = perfilActual == "dueno" || usuarioActual?.IdRol == IdRolDueno;
+            var (perfilActual, _) = ObtenerPerfilYUsuarioActual(usuariosActivos, mapaRoles);
+            bool esDueno = perfilActual == "dueno";
 
             var usuariosSede = _context.Usuarios
                 .Where(u => u.IdSede == sedeId)
@@ -376,24 +318,26 @@ namespace Software_SARA.Controllers
             if (string.IsNullOrWhiteSpace(textoRol)) return string.Empty;
             string t = textoRol.Trim().ToLowerInvariant();
 
-            if (t.Contains("dueñ") || t.Contains("duen") || t.Contains("propiet"))
-                return "dueno";
-            if (t.Contains("geren"))
-                return "gerente";
             if (t.Contains("tesor"))
                 return "tesorero";
+            if (t.Contains("geren"))
+                return "gerente";
+            if (t.Contains("dueñ") || t.Contains("duen") || t.Contains("propiet"))
+                return "dueno";
+            if (t.Contains("emple") || t.Contains("cajer") || t.Contains("auxil"))
+                return "empleado";
 
             return string.Empty;
         }
 
         private Dictionary<int, string> ObtenerMapaRolesDesdeBd()
         {
-            var mapa = new Dictionary<int, string>
+            var mapa = new Dictionary<int, string>();
+
+            if (IdRolTesoreroFijo > 0)
             {
-                [IdRolDueno] = "dueno",
-                [IdRolGerente] = "gerente",
-                [IdRolTesorero] = "tesorero"
-            };
+                mapa[IdRolTesoreroFijo] = "tesorero";
+            }
 
             var dbSetRolesProp = _context.GetType().GetProperties()
                 .FirstOrDefault(p => p.Name.Equals("Rols", StringComparison.OrdinalIgnoreCase) ||
@@ -419,8 +363,7 @@ namespace Software_SARA.Controllers
                         var nombreVal = propNombre?.GetValue(rol)?.ToString() ?? string.Empty;
                         string categoria = NormalizarCategoriaRol(nombreVal);
 
-                        if (idVal != null && int.TryParse(idVal.ToString(), out int idRol) &&
-                            EsRolAutorizado(idRol) && !string.IsNullOrEmpty(categoria))
+                        if (idVal != null && int.TryParse(idVal.ToString(), out int idRol) && !string.IsNullOrEmpty(categoria))
                         {
                             mapa[idRol] = categoria;
                         }
@@ -428,19 +371,30 @@ namespace Software_SARA.Controllers
                 }
             }
 
+            if (IdRolEmpleadoExcluido > 0)
+            {
+                mapa[IdRolEmpleadoExcluido] = "empleado";
+            }
+
+            if (IdRolTesoreroFijo > 0)
+            {
+                mapa[IdRolTesoreroFijo] = "tesorero";
+            }
+
             return mapa;
         }
 
         private string ObtenerCategoriaRolUsuario(Usuario usuario, Dictionary<int, string> mapaRoles)
         {
-            if (!EsRolAutorizado(usuario.IdRol))
+            if (usuario.IdRol == IdRolEmpleadoExcluido)
             {
-                return string.Empty;
+                return "empleado";
             }
 
-            if (usuario.IdRol == IdRolDueno) return "dueno";
-            if (usuario.IdRol == IdRolGerente) return "gerente";
-            if (usuario.IdRol == IdRolTesorero) return "tesorero";
+            if (IdRolTesoreroFijo > 0 && usuario.IdRol == IdRolTesoreroFijo)
+            {
+                return "tesorero";
+            }
 
             if (mapaRoles.TryGetValue(usuario.IdRol, out string catDesdeMapa) && !string.IsNullOrEmpty(catDesdeMapa))
             {
@@ -514,17 +468,8 @@ namespace Software_SARA.Controllers
             var usuariosConCorreo = usuariosActivos
                 .Where(u => !string.IsNullOrWhiteSpace(u.Correo) && EsRolPermitidoCorreo(u.IdRol))
                 .ToList();
-                
-                
-                
-                
-            var (_, usuarioActual) = ObtenerPerfilYUsuarioActual(usuariosConCorreo, mapaRoles);
-            
-            
-            
-            
 
-            var destinatarios = new List<Usuario>();
+            var (_, usuarioActual) = ObtenerPerfilYUsuarioActual(usuariosConCorreo, mapaRoles);
 
             var destinatarios = usuariosConCorreo
                 .Where(u => EsRolPermitidoCorreo(u.IdRol))
@@ -583,8 +528,7 @@ namespace Software_SARA.Controllers
                 .Where(u => !string.IsNullOrWhiteSpace(u.Correo) && EsRolPermitidoCorreo(u.IdRol))
                 .GroupBy(u => u.Correo!.Trim().ToLowerInvariant())
                 .Select(g => g.First())
-                .OrderBy(u => u.IdRol)
-                .ThenBy(u => u.NomUsuario)
+                .OrderBy(u => u.NomUsuario)
                 .ToList();
         }
 
