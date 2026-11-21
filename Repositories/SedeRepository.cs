@@ -52,9 +52,7 @@ namespace Software_SARA.Repositories
         public async Task<bool> CreateSede(SedeDto sedeDto)
         {
             bool result = false;
-            string sql = @"INSERT INTO SARABD.dbo.Sede
-                           (nom_sede, dir_sede, tel_sede, estado_sede, ciu_sede, dep_sede, barrio_sede)
-                           VALUES (@NomSede, @DirSede, @TelSede, @EstadoSede, @CiuSede, @DepSede, @BarrioSede);";
+            string sql = "dbo.InsertarSede";
 
             DBSaraUtility connection = new DBSaraUtility();
             connection.Connect();
@@ -62,13 +60,14 @@ namespace Software_SARA.Repositories
             {
                 using (SqlCommand command = new SqlCommand(sql, connection.CONN()))
                 {
-                    command.Parameters.AddWithValue("@NomSede", sedeDto.NomSede ?? string.Empty);
-                    command.Parameters.AddWithValue("@DirSede", sedeDto.DirSede ?? string.Empty);
-                    command.Parameters.AddWithValue("@TelSede", sedeDto.TelSede ?? string.Empty);
-                    command.Parameters.AddWithValue("@EstadoSede", sedeDto.EstadoSede ? 1 : 0);
-                    command.Parameters.AddWithValue("@CiuSede", sedeDto.CiuSede ?? string.Empty);
-                    command.Parameters.AddWithValue("@DepSede", sedeDto.DepSede ?? string.Empty);
-                    command.Parameters.AddWithValue("@BarrioSede", sedeDto.BarrioSede ?? string.Empty);
+                    command.CommandType = System.Data.CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@nom_sede", sedeDto.NomSede ?? string.Empty);
+                    command.Parameters.AddWithValue("@dir_sede", sedeDto.DirSede ?? string.Empty);
+                    command.Parameters.AddWithValue("@tel_sede", sedeDto.TelSede ?? string.Empty);
+                    command.Parameters.AddWithValue("@estado_sede", sedeDto.EstadoSede);
+                    command.Parameters.AddWithValue("@ciu_sede", sedeDto.CiuSede ?? string.Empty);
+                    command.Parameters.AddWithValue("@dep_sede", sedeDto.DepSede ?? string.Empty);
+                    command.Parameters.AddWithValue("@barrio_sede", sedeDto.BarrioSede ?? string.Empty);
 
                     int comando = await command.ExecuteNonQueryAsync();
                     result = comando != 0;

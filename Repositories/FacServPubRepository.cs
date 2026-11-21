@@ -1,13 +1,14 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
 using Software_SARA.Dtos;
 using Software_SARA.Repositories.Models;
 using Software_SARA.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Software_SARA.Repositories
 {
@@ -75,14 +76,12 @@ namespace Software_SARA.Repositories
             var parametros = idsUsuariosSede.Select((id, idx) => new SqlParameter($"@u{idx}", id)).ToArray();
             string inClause = string.Join(", ", parametros.Select(p => p.ParameterName));
 
-            string sql = $@"SELECT f.id_factura, f.id_usuario, f.tip_factura, f.id_proveedor,
-                                   s.nom_servicio, f.id_servicio, f.valor_factura,
-                                   f.fecha_reg_factura, f.fecha_vencimiento, f.estado_factura
-                            FROM SARABD.dbo.factura f
-                            LEFT JOIN SARABD.dbo.servicio s ON f.id_servicio = s.id_servicio
-                            WHERE f.estado_factura = 1 AND f.id_servicio IS NOT NULL
-                              AND f.id_usuario IN ({inClause})
-                            ORDER BY f.id_factura DESC;";
+            string sql = $@"SELECT id_factura, id_usuario, tip_factura, id_proveedor,
+                           nom_servicio, id_servicio, valor_factura,
+                           fecha_reg_factura, fecha_vencimiento, estado_factura
+                    FROM SARABD.dbo.vw_FacturasNombresServiciosActivas
+                    WHERE id_usuario IN ({inClause})
+                    ORDER BY id_factura DESC;";
 
             DBSaraUtility connectionUtility = new DBSaraUtility();
             connectionUtility.Connect();
@@ -125,27 +124,30 @@ namespace Software_SARA.Repositories
 
         public async Task<bool> CreateFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
-            // Consulta SQL para insertar una nueva factura de servicio público en la base de datos
             bool result = false;
-            string SQL = @"INSERT INTO SARABD.dbo.factura
-                           (id_usuario, tip_factura, id_proveedor, id_servicio, valor_factura, fecha_reg_factura, fecha_vencimiento, estado_factura)
-                           VALUES (@IdUsuario, @TipFactura, @IdProveedor, @IdServicio, @ValorFactura, @FechaRegFactura, @FechaVencimiento, @EstadoFactura);";
+            string sql = "SARABD.dbo.InsertarFacturaServicio";
 
             DBSaraUtility connectionUtility = new DBSaraUtility();
             connectionUtility.Connect();
 
             try
             {
-                using (SqlCommand command = new SqlCommand(SQL, connectionUtility.CONN()))
+                using (SqlCommand command = new SqlCommand(sql, connectionUtility.CONN()))
                 {
-                    command.Parameters.AddWithValue("@IdUsuario", facServPublicDto.IdUsuario);
-                    command.Parameters.AddWithValue("@TipFactura", facServPublicDto.TipFactura ? 1 : 0);
-                    command.Parameters.AddWithValue("@IdProveedor", facServPublicDto.IdProveedor.HasValue ? facServPublicDto.IdProveedor.Value : DBNull.Value);
-                    command.Parameters.AddWithValue("@IdServicio", facServPublicDto.IdServicio.HasValue ? facServPublicDto.IdServicio.Value : DBNull.Value);
-                    command.Parameters.AddWithValue("@ValorFactura", facServPublicDto.ValorFactura);
-                    command.Parameters.AddWithValue("@FechaRegFactura", facServPublicDto.FechaRegFactura.ToString("yyyy-MM-dd"));
-                    command.Parameters.AddWithValue("@FechaVencimiento", facServPublicDto.FechaVencimiento.ToString("yyyy-MM-dd"));
-                    command.Parameters.AddWithValue("@EstadoFactura", facServPublicDto.EstadoFactura ? 1 : 0);
+                    command.CommandType = CommandType.StoredProcedure;
+
+                    command.Parameters.Add("@id_usuario", SqlDbType.Int).Value = facServPublicDto.IdUsuario;
+                    command.Parameters.Add("@tip_factura", SqlDbType.Bit).Value = facServPublicDto.TipFactura;
+                    command.Parameters.Add("@id_proveedor", SqlDbType.Int).Value =
+                        facServPublicDto.IdProveedor.HasValue ? facServPublicDto.IdProveedor.Value : DBNull.Value;
+                    command.Parameters.Add("@id_servicio", SqlDbType.Int).Value =
+                        facServPublicDto.IdServicio.HasValue ? facServPublicDto.IdServicio.Value : DBNull.Value;
+                    command.Parameters.Add("@valor_factura", SqlDbType.Decimal).Value = facServPublicDto.ValorFactura;
+                    command.Parameters.Add("@fecha_reg_factura", SqlDbType.Date).Value =
+                        facServPublicDto.FechaRegFactura.ToDateTime(TimeOnly.MinValue);
+                    command.Parameters.Add("@fecha_vencimiento", SqlDbType.Date).Value =
+                        facServPublicDto.FechaVencimiento.ToDateTime(TimeOnly.MinValue);
+                    command.Parameters.Add("@estado_factura", SqlDbType.Bit).Value = facServPublicDto.EstadoFactura;
 
                     int comando = await command.ExecuteNonQueryAsync();
                     result = comando != 0;
@@ -268,16 +270,13 @@ namespace Software_SARA.Repositories
             var parametros = idsUsuariosSede.Select((id, idx) => new SqlParameter($"@u{idx}", id)).ToArray();
             string inClause = string.Join(", ", parametros.Select(p => p.ParameterName));
 
-            string sql = $@"SELECT f.id_factura, f.id_usuario, u.nom_usuario AS nom_usuario,
-                                   f.tip_factura, f.id_proveedor, f.id_servicio, s.nom_servicio,
-                                   f.valor_factura, f.fecha_reg_factura, f.fecha_vencimiento,
-                                   f.fecha_pago, f.estado_factura
-                            FROM SARABD.dbo.factura f
-                            LEFT JOIN SARABD.dbo.usuario u ON f.id_usuario = u.id_usuario
-                            LEFT JOIN SARABD.dbo.servicio s ON f.id_servicio = s.id_servicio
-                            WHERE f.estado_factura = 0 AND f.id_servicio IS NOT NULL
-                              AND f.id_usuario IN ({inClause})
-                            ORDER BY f.id_factura DESC;";
+            string sql = $@"SELECT id_factura, id_usuario, nom_usuario,
+                           id_servicio, nom_servicio, valor_factura,
+                           fecha_reg_factura, fecha_vencimiento, fecha_pago,
+                           estado_factura
+                    FROM SARABD.dbo.vw_FacturasServiciosPagoConfirmadoConUsuario
+                    WHERE id_usuario IN ({inClause})
+                    ORDER BY id_factura DESC;";
 
             DBSaraUtility connectionUtility = new DBSaraUtility();
             connectionUtility.Connect();
@@ -297,8 +296,6 @@ namespace Software_SARA.Repositories
                                 IdFactura = reader["id_factura"] != DBNull.Value ? Convert.ToInt32(reader["id_factura"]) : 0,
                                 IdUsuario = reader["id_usuario"] != DBNull.Value ? Convert.ToInt32(reader["id_usuario"]) : 0,
                                 NomUsuario = reader["nom_usuario"] != DBNull.Value ? reader["nom_usuario"].ToString() : "N/D",
-                                TipFactura = reader["tip_factura"] != DBNull.Value && Convert.ToBoolean(reader["tip_factura"]),
-                                IdProveedor = reader["id_proveedor"] != DBNull.Value ? Convert.ToInt32(reader["id_proveedor"]) : (int?)null,
                                 IdServicio = reader["id_servicio"] != DBNull.Value ? Convert.ToInt32(reader["id_servicio"]) : (int?)null,
                                 NomServicio = reader["nom_servicio"] != DBNull.Value ? reader["nom_servicio"].ToString() : "Sin servicio público",
                                 ValorFactura = reader["valor_factura"] != DBNull.Value ? Convert.ToDecimal(reader["valor_factura"]) : 0m,
