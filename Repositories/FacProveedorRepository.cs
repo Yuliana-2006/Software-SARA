@@ -67,7 +67,7 @@ namespace Software_SARA.Repositories
                 .ToList();
         }
 
-        public async Task<List<Factura>> ObtenerTodasLasFacturasProveedores()
+        public virtual async Task<List<Factura>> ObtenerTodasLasFacturasProveedores()
         {
             var listaFacturas = new List<Factura>();
             var idsUsuariosSede = ObtenerIdsUsuariosSedeActual();
@@ -124,7 +124,7 @@ namespace Software_SARA.Repositories
             return listaFacturas;
         }
 
-        public async Task<bool> CreateFacturaProveedor(FacProveedorDto facProveedorDto)
+        public virtual async Task<bool> CreateFacturaProveedor(FacProveedorDto facProveedorDto)
         {
             bool result = false;
             string SQL = @"INSERT INTO SARABD.dbo.factura
@@ -190,7 +190,7 @@ namespace Software_SARA.Repositories
             return listaProveedores;
         }
 
-        public async Task<bool> EditarFacturaProveedor(FacProveedorDto facProveedorDto)
+        public virtual async Task<bool> EditarFacturaProveedor(FacProveedorDto facProveedorDto)
         {
             bool result = false;
             string SQL = @"UPDATE SARABD.dbo.factura
