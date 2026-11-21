@@ -79,7 +79,7 @@ namespace Software_SARA.Repositories
             string sql = $@"SELECT id_factura, id_usuario, tip_factura, id_proveedor,
                        nom_proveedor, id_servicio, valor_factura,
                        fecha_reg_factura, fecha_vencimiento, estado_factura
-                FROM SARABD.dbo.vw_FacturasNombresProveedoresActivas
+                FROM dbo.vw_FacturasNombresProveedoresActivas
                 WHERE id_usuario IN ({inClause})
                 ORDER BY id_factura DESC;";
 
@@ -125,7 +125,7 @@ namespace Software_SARA.Repositories
         public async Task<bool> CreateFacturaProveedor(FacProveedorDto facProveedorDto)
         {
             bool result = false;
-            string sql = "SARABD.dbo.InsertarFacturaProveedor";
+            string sql = "dbo.InsertarFacturaProveedor";
 
             DBSaraUtility connectionUtility = new DBSaraUtility();
             connectionUtility.Connect();
@@ -164,7 +164,7 @@ namespace Software_SARA.Repositories
         public async Task<List<SelectListItem>> ObtenerListaProveedores()
         {
             var listaProveedores = new List<SelectListItem>();
-            string sql = "SELECT id_proveedor, nom_proveedor FROM SARABD.dbo.proveedor ORDER BY nom_proveedor ASC;";
+            string sql = "SELECT id_proveedor, nom_proveedor FROM dbo.proveedor ORDER BY nom_proveedor ASC;";
 
             DBSaraUtility connectionUtility = new DBSaraUtility();
             connectionUtility.Connect();
@@ -195,7 +195,7 @@ namespace Software_SARA.Repositories
         public async Task<bool> EditarFacturaProveedor(FacProveedorDto facProveedorDto)
         {
             bool result = false;
-            string SQL = @"UPDATE SARABD.dbo.factura
+            string SQL = @"UPDATE dbo.factura
                            SET id_usuario = @IdUsuario,
                                id_proveedor = @IdProveedor,
                                id_servicio = @IdServicio,
@@ -237,7 +237,7 @@ namespace Software_SARA.Repositories
         {
             bool result = false;
             string fechaActual = DateTime.Now.ToString("yyyy-MM-dd");
-            string SQL = "UPDATE SARABD.dbo.factura SET estado_factura = 0, fecha_pago = @FechaPago WHERE id_factura = @IdFactura;";
+            string SQL = "UPDATE dbo.factura SET estado_factura = 0, fecha_pago = @FechaPago WHERE id_factura = @IdFactura;";
 
             DBSaraUtility connectionUtility = new DBSaraUtility();
             connectionUtility.Connect();
@@ -273,7 +273,7 @@ namespace Software_SARA.Repositories
                            id_proveedor, nom_proveedor, valor_factura,
                            fecha_reg_factura, fecha_vencimiento, fecha_pago,
                            estado_factura
-                    FROM SARABD.dbo.vw_FacturasProveedoresPagoConfirmadoConUsuario
+                    FROM dbo.vw_FacturasProveedoresPagoConfirmadoConUsuario
                     WHERE id_usuario IN ({inClause})
                     ORDER BY id_factura DESC;";
 

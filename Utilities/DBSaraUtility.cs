@@ -8,7 +8,7 @@ namespace Software_SARA.Utilities
     {
         // --- DATOS DE MONSTERASP ---
         static string SERVER = "db81718.databaseasp.net";
-        static string DB_NAME = "SARAPRUEBA"; 
+        static string DB_NAME = "db81718"; 
         
         // El usuario en MonsterASP suele ser el mismo ID del servidor: db81718
         static string USER = "db81718"; 
