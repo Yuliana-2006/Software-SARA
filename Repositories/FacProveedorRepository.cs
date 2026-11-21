@@ -76,14 +76,12 @@ namespace Software_SARA.Repositories
             var parametros = idsUsuariosSede.Select((id, idx) => new SqlParameter($"@u{idx}", id)).ToArray();
             string inClause = string.Join(", ", parametros.Select(p => p.ParameterName));
 
-            string sql = $@"SELECT f.id_factura, f.id_usuario, f.tip_factura, f.id_proveedor,
-                                   p.nom_proveedor, f.id_servicio, f.valor_factura,
-                                   f.fecha_reg_factura, f.fecha_vencimiento, f.estado_factura
-                            FROM SARABD.dbo.factura f
-                            LEFT JOIN SARABD.dbo.proveedor p ON f.id_proveedor = p.id_proveedor
-                            WHERE f.estado_factura = 1 AND f.id_proveedor IS NOT NULL
-                              AND f.id_usuario IN ({inClause})
-                            ORDER BY f.id_factura DESC;";
+            string sql = $@"SELECT id_factura, id_usuario, tip_factura, id_proveedor,
+                       nom_proveedor, id_servicio, valor_factura,
+                       fecha_reg_factura, fecha_vencimiento, estado_factura
+                FROM SARABD.dbo.vw_FacturasNombresProveedoresActivas
+                WHERE id_usuario IN ({inClause})
+                ORDER BY id_factura DESC;";
 
             DBSaraUtility connectionUtility = new DBSaraUtility();
             connectionUtility.Connect();
@@ -262,7 +260,6 @@ namespace Software_SARA.Repositories
 
             return result;
         }
-
         public async Task<List<FacProveedorDto>> ObtenerHistorialFacturasProveedoresAsync()
         {
             var lista = new List<FacProveedorDto>();
@@ -272,16 +269,13 @@ namespace Software_SARA.Repositories
             var parametros = idsUsuariosSede.Select((id, idx) => new SqlParameter($"@u{idx}", id)).ToArray();
             string inClause = string.Join(", ", parametros.Select(p => p.ParameterName));
 
-            string sql = $@"SELECT f.id_factura, f.id_usuario, u.nom_usuario AS nom_usuario,
-                                   f.tip_factura, f.id_proveedor, p.nom_proveedor,
-                                   f.id_servicio, f.valor_factura, f.fecha_reg_factura,
-                                   f.fecha_vencimiento, f.fecha_pago, f.estado_factura
-                            FROM SARABD.dbo.factura f
-                            LEFT JOIN SARABD.dbo.usuario u ON f.id_usuario = u.id_usuario
-                            LEFT JOIN SARABD.dbo.proveedor p ON f.id_proveedor = p.id_proveedor
-                            WHERE f.estado_factura = 0 AND f.id_proveedor IS NOT NULL
-                              AND f.id_usuario IN ({inClause})
-                            ORDER BY f.id_factura DESC;";
+            string sql = $@"SELECT id_factura, id_usuario, nom_usuario,
+                           id_proveedor, nom_proveedor, valor_factura,
+                           fecha_reg_factura, fecha_vencimiento, fecha_pago,
+                           estado_factura
+                    FROM SARABD.dbo.vw_FacturasProveedoresPagoConfirmadoConUsuario
+                    WHERE id_usuario IN ({inClause})
+                    ORDER BY id_factura DESC;";
 
             DBSaraUtility connectionUtility = new DBSaraUtility();
             connectionUtility.Connect();
@@ -301,10 +295,8 @@ namespace Software_SARA.Repositories
                                 IdFactura = reader["id_factura"] != DBNull.Value ? Convert.ToInt32(reader["id_factura"]) : 0,
                                 IdUsuario = reader["id_usuario"] != DBNull.Value ? Convert.ToInt32(reader["id_usuario"]) : 0,
                                 NomUsuario = reader["nom_usuario"] != DBNull.Value ? reader["nom_usuario"].ToString() : "N/D",
-                                TipFactura = reader["tip_factura"] != DBNull.Value && Convert.ToBoolean(reader["tip_factura"]),
                                 IdProveedor = reader["id_proveedor"] != DBNull.Value ? Convert.ToInt32(reader["id_proveedor"]) : (int?)null,
                                 NomProveedor = reader["nom_proveedor"] != DBNull.Value ? reader["nom_proveedor"].ToString() : "Sin Proveedor",
-                                IdServicio = reader["id_servicio"] != DBNull.Value ? Convert.ToInt32(reader["id_servicio"]) : (int?)null,
                                 ValorFactura = reader["valor_factura"] != DBNull.Value ? Convert.ToDecimal(reader["valor_factura"]) : 0m,
                                 FechaRegFactura = reader["fecha_reg_factura"] != DBNull.Value ? DateOnly.FromDateTime(Convert.ToDateTime(reader["fecha_reg_factura"])) : default,
                                 FechaVencimiento = reader["fecha_vencimiento"] != DBNull.Value ? DateOnly.FromDateTime(Convert.ToDateTime(reader["fecha_vencimiento"])) : default,
@@ -322,5 +314,6 @@ namespace Software_SARA.Repositories
 
             return lista;
         }
+
     }
 }

@@ -76,14 +76,12 @@ namespace Software_SARA.Repositories
             var parametros = idsUsuariosSede.Select((id, idx) => new SqlParameter($"@u{idx}", id)).ToArray();
             string inClause = string.Join(", ", parametros.Select(p => p.ParameterName));
 
-            string sql = $@"SELECT f.id_factura, f.id_usuario, f.tip_factura, f.id_proveedor,
-                                   s.nom_servicio, f.id_servicio, f.valor_factura,
-                                   f.fecha_reg_factura, f.fecha_vencimiento, f.estado_factura
-                            FROM SARABD.dbo.factura f
-                            LEFT JOIN SARABD.dbo.servicio s ON f.id_servicio = s.id_servicio
-                            WHERE f.estado_factura = 1 AND f.id_servicio IS NOT NULL
-                              AND f.id_usuario IN ({inClause})
-                            ORDER BY f.id_factura DESC;";
+            string sql = $@"SELECT id_factura, id_usuario, tip_factura, id_proveedor,
+                           nom_servicio, id_servicio, valor_factura,
+                           fecha_reg_factura, fecha_vencimiento, estado_factura
+                    FROM SARABD.dbo.vw_FacturasNombresServiciosActivas
+                    WHERE id_usuario IN ({inClause})
+                    ORDER BY id_factura DESC;";
 
             DBSaraUtility connectionUtility = new DBSaraUtility();
             connectionUtility.Connect();
@@ -272,16 +270,13 @@ namespace Software_SARA.Repositories
             var parametros = idsUsuariosSede.Select((id, idx) => new SqlParameter($"@u{idx}", id)).ToArray();
             string inClause = string.Join(", ", parametros.Select(p => p.ParameterName));
 
-            string sql = $@"SELECT f.id_factura, f.id_usuario, u.nom_usuario AS nom_usuario,
-                                   f.tip_factura, f.id_proveedor, f.id_servicio, s.nom_servicio,
-                                   f.valor_factura, f.fecha_reg_factura, f.fecha_vencimiento,
-                                   f.fecha_pago, f.estado_factura
-                            FROM SARABD.dbo.factura f
-                            LEFT JOIN SARABD.dbo.usuario u ON f.id_usuario = u.id_usuario
-                            LEFT JOIN SARABD.dbo.servicio s ON f.id_servicio = s.id_servicio
-                            WHERE f.estado_factura = 0 AND f.id_servicio IS NOT NULL
-                              AND f.id_usuario IN ({inClause})
-                            ORDER BY f.id_factura DESC;";
+            string sql = $@"SELECT id_factura, id_usuario, nom_usuario,
+                           id_servicio, nom_servicio, valor_factura,
+                           fecha_reg_factura, fecha_vencimiento, fecha_pago,
+                           estado_factura
+                    FROM SARABD.dbo.vw_FacturasServiciosPagoConfirmadoConUsuario
+                    WHERE id_usuario IN ({inClause})
+                    ORDER BY id_factura DESC;";
 
             DBSaraUtility connectionUtility = new DBSaraUtility();
             connectionUtility.Connect();
@@ -301,8 +296,6 @@ namespace Software_SARA.Repositories
                                 IdFactura = reader["id_factura"] != DBNull.Value ? Convert.ToInt32(reader["id_factura"]) : 0,
                                 IdUsuario = reader["id_usuario"] != DBNull.Value ? Convert.ToInt32(reader["id_usuario"]) : 0,
                                 NomUsuario = reader["nom_usuario"] != DBNull.Value ? reader["nom_usuario"].ToString() : "N/D",
-                                TipFactura = reader["tip_factura"] != DBNull.Value && Convert.ToBoolean(reader["tip_factura"]),
-                                IdProveedor = reader["id_proveedor"] != DBNull.Value ? Convert.ToInt32(reader["id_proveedor"]) : (int?)null,
                                 IdServicio = reader["id_servicio"] != DBNull.Value ? Convert.ToInt32(reader["id_servicio"]) : (int?)null,
                                 NomServicio = reader["nom_servicio"] != DBNull.Value ? reader["nom_servicio"].ToString() : "Sin servicio público",
                                 ValorFactura = reader["valor_factura"] != DBNull.Value ? Convert.ToDecimal(reader["valor_factura"]) : 0m,
