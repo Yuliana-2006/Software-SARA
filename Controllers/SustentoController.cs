@@ -98,6 +98,8 @@ namespace Software_SARA.Controllers
                         SELECT 
                             f.id_factura, 
                             f.tip_factura, 
+                            f.id_proveedor,
+                            f.id_servicio,
                             f.fecha_vencimiento, 
                             f.valor_factura,
                             p.nom_proveedor,
@@ -120,11 +122,48 @@ namespace Software_SARA.Controllers
                         {
                             while (reader.Read())
                             {
-                                bool esProveedor = Convert.ToBoolean(reader["tip_factura"]);
-                                string tipoStr = esProveedor ? "Proveedor" : "Servicio";
-                                string nombreTercero = esProveedor
-                                    ? (reader["nom_proveedor"] != DBNull.Value ? reader["nom_proveedor"].ToString() : "Desconocido")
-                                    : (reader["nom_servicio"] != DBNull.Value ? reader["nom_servicio"].ToString() : "Desconocido");
+                                string? nomProveedor = reader["nom_proveedor"] != DBNull.Value
+                                    ? reader["nom_proveedor"].ToString()?.Trim()
+                                    : null;
+
+                                string? nomServicio = reader["nom_servicio"] != DBNull.Value
+                                    ? reader["nom_servicio"].ToString()?.Trim()
+                                    : null;
+
+                                bool tipFactura = reader["tip_factura"] != DBNull.Value && Convert.ToBoolean(reader["tip_factura"]);
+                                bool tieneIdProveedor = reader["id_proveedor"] != DBNull.Value;
+                                bool tieneIdServicio = reader["id_servicio"] != DBNull.Value;
+
+                                bool esProveedor = !string.IsNullOrWhiteSpace(nomProveedor) || (tieneIdProveedor && !tieneIdServicio) || tipFactura;
+
+                                string tipoStr;
+                                string nombreTercero;
+
+                                if (esProveedor && !string.IsNullOrWhiteSpace(nomProveedor))
+                                {
+                                    tipoStr = "Proveedor";
+                                    nombreTercero = nomProveedor;
+                                }
+                                else if (!esProveedor && !string.IsNullOrWhiteSpace(nomServicio))
+                                {
+                                    tipoStr = "Servicio";
+                                    nombreTercero = nomServicio;
+                                }
+                                else if (!string.IsNullOrWhiteSpace(nomProveedor))
+                                {
+                                    tipoStr = "Proveedor";
+                                    nombreTercero = nomProveedor;
+                                }
+                                else if (!string.IsNullOrWhiteSpace(nomServicio))
+                                {
+                                    tipoStr = "Servicio";
+                                    nombreTercero = nomServicio;
+                                }
+                                else
+                                {
+                                    tipoStr = tipFactura ? "Proveedor" : "Servicio";
+                                    nombreTercero = tipFactura ? "Proveedor sin nombre" : "Servicio sin nombre";
+                                }
 
                                 var item = new SustentoItemDTO
                                 {

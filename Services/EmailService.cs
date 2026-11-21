@@ -1,7 +1,6 @@
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
-using MimeKit.Utils;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.IO;
@@ -18,33 +17,40 @@ namespace Software_SARA.Services
             _config = config;
         }
 
-        // 1. ENVIAR CONTRASEÑA (Se mantiene igual, con logo)
+        // 1. ENVIAR CONTRASEÑA (CON LOGO Y NOTA SOLO PARA DUEÑO Y GERENTE)
         public async Task EnviarPasswordAsync(string destinatario, string nombre, string password, string rol, string numDocumento)
         {
-            // ... (Tu código actual de enviar contraseña se queda igual)
             var email = new MimeMessage();
             email.From.Add(new MailboxAddress(_config["EmailSettings:FromName"], _config["EmailSettings:FromEmail"]));
             email.To.Add(new MailboxAddress(nombre, destinatario));
             email.Subject = $"Bienvenido a SARA - Tu cuenta como {rol}";
 
-            string mensajeRol = rol.ToLower() switch
+            string rolNormalizado = rol.Trim().ToLower();
+
+            string mensajeRol = rolNormalizado switch
             {
                 "dueño" => "Ahora eres el <strong>Dueño</strong> del sistema SARA. Tienes el control total para gestionar tus sedes y gerentes.",
                 "gerente" => "Ahora eres un <strong>Gerente</strong> de sede en el sistema SARA. ¡Estás a cargo de la operación de tu supermercado!",
                 "tesorero" => "Ahora haces parte del equipo de <strong>Tesorería</strong> en el sistema SARA. Tu gestión financiera es clave para nosotros.",
-                "empleado" or "trabajador" => "Ahora haces parte del equipo de <strong>Trabajadores</strong> en el sistema SARA. ¡Gracias por unirte a bordo!",
+                "empleado" or "Empleado" => "Ahora haces parte del equipo de <strong>Empleados</strong> en el sistema SARA. ¡Gracias por unirte!",
                 _ => $"Tu cuenta ha sido creada con el rol de <strong>{rol}</strong> en el sistema SARA."
             };
 
+            string notaHtml = (rolNormalizado == "gerente" || rolNormalizado == "dueño")
+                ? @"<div style='background-color: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 15px; border-radius: 5px; margin-bottom: 10px;'>
+                        <p style='margin: 0; font-size: 15px;'><strong>Nota importante:</strong> Recuerda que también se aceptan <strong>cédulas extranjeras</strong> para iniciar sesión.</p>
+                    </div>"
+                : "";
+
             var builder = new BodyBuilder();
             string imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "logo.png");
-            string logoHtml = "";
+            string logoHtml;
 
             if (File.Exists(imagePath))
             {
                 var image = builder.LinkedResources.Add(imagePath);
                 image.ContentId = "sara_logo_cid";
-                logoHtml = $"<img src='cid:sara_logo_cid' alt='SARA Logo' style='width: 160px; max-width: 100%; height: auto; display: block; margin: 0 auto 10px auto;'>";
+                logoHtml = "<img src='cid:sara_logo_cid' alt='SARA Logo' style='width: 160px; max-width: 100%; height: auto; display: block; margin: 0 auto 10px auto;'>";
             }
             else
             {
@@ -68,12 +74,7 @@ namespace Software_SARA.Services
                                 <span style='background-color: #2E4F3E; color: white; padding: 5px 10px; border-radius: 5px; font-family: monospace; font-size: 18px; letter-spacing: 2px;'>{password}</span>
                             </p>
                         </div>
-                        <div style='background-color: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 15px; border-radius: 5px; margin-bottom: 20px;'>
-                            <p style='margin: 0; font-size: 15px;'><strong>Nota importante:</strong> Recuerda que también se aceptan <strong>cédulas extranjeras</strong> para iniciar sesión.</p>
-                        </div>
-                        <div style='text-align: center; margin-top: 30px;'>
-                            <a href='https://localhost:7173/Acceso/Login' style='background-color: #2E4F3E; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 25px; font-weight: bold; font-size: 16px;'>Ingresar a SARA</a>
-                        </div>
+                        {notaHtml}
                     </div>
                     <div style='background-color: #f9f9f9; padding: 15px; text-align: center; font-size: 12px; color: #888888;'>
                         <p style='margin: 0;'>Este es un correo automático, por favor no responder.</p>
@@ -85,7 +86,7 @@ namespace Software_SARA.Services
             email.Body = builder.ToMessageBody();
 
             using var smtp = new SmtpClient();
-            smtp.Timeout = 15000;
+            smtp.Timeout = 60000;
             await smtp.ConnectAsync(_config["EmailSettings:Host"], int.Parse(_config["EmailSettings:Port"]), SecureSocketOptions.StartTls);
             await smtp.AuthenticateAsync(_config["EmailSettings:User"], _config["EmailSettings:Password"]);
             await smtp.SendAsync(email);
@@ -97,15 +98,10 @@ namespace Software_SARA.Services
         {
             var email = new MimeMessage();
             email.From.Add(new MailboxAddress(_config["EmailSettings:FromName"], _config["EmailSettings:FromEmail"]));
-
-            // AQUÍ SE CORRIGE: Le pasamos el nombre real de la persona, no "Administrador"
             email.To.Add(new MailboxAddress(nombreDestinatario, destinatario));
-
             email.Subject = $"Informe Diario de Caja - {sede} - {fecha:dd/MM/yyyy}";
 
             var builder = new BodyBuilder();
-
-            // Correo sin logo, solo texto y el nombre de la persona
             builder.HtmlBody = $@"
                 <div style='font-family: Arial, sans-serif; padding: 20px;'>
                     <h2 style='color: #2E4F3E;'>Informe Diario de Caja</h2>
@@ -119,7 +115,7 @@ namespace Software_SARA.Services
             email.Body = builder.ToMessageBody();
 
             using var smtp = new SmtpClient();
-            smtp.Timeout = 15000;
+            smtp.Timeout = 60000;
             await smtp.ConnectAsync(_config["EmailSettings:Host"], int.Parse(_config["EmailSettings:Port"]), SecureSocketOptions.StartTls);
             await smtp.AuthenticateAsync(_config["EmailSettings:User"], _config["EmailSettings:Password"]);
             await smtp.SendAsync(email);

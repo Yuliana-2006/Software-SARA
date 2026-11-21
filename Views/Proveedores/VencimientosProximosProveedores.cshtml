@@ -1,8 +1,10 @@
 ﻿@model IEnumerable<Software_SARA.Dtos.FacProveedorDto>
+@using System.Globalization
 
 @{
     ViewData["Title"] = "Vencimientos Próximos de Proveedores";
     var hoy = DateOnly.FromDateTime(DateTime.Now);
+    var culturaCo = new CultureInfo("es-CO");
 }
 
 <div class="facturas-container">
@@ -18,11 +20,11 @@
         {
             @foreach (var factura in Model)
             {
-                // Cálculo de los días restantes
                 int diasRestantes = factura.FechaVencimiento.DayNumber - hoy.DayNumber;
+                string valorEnteroFormateado = ((long)factura.ValorFactura).ToString("N0", culturaCo);
 
                 <div class="facturas-card">
-                    
+
                     <!-- Icono de Camión -->
                     <div class="facturas-icon">
                         <i class="bi bi-truck"></i>
@@ -39,7 +41,7 @@
                     </div>
 
                     <div class="factura-detalle-item">
-                        Valor: $@factura.ValorFactura.ToString("N2")
+                        Valor: $@valorEnteroFormateado
                     </div>
 
                     <div class="factura-detalle-fecha">
@@ -125,7 +127,7 @@
 
     .facturas-card {
         width: 280px;
-        height: 440px; /* Incrementado ligeramente para albergar el texto de los días */
+        height: 440px;
         flex: 0 0 280px;
         background-color: #5B805E;
         border: 7px solid #2E4F3E;
@@ -189,7 +191,6 @@
         margin-top: 8px;
     }
 
-    /* Estilos para las etiquetas de días restantes */
     .factura-dias-restantes {
         margin-top: 12px;
         text-align: center;

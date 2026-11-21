@@ -11,7 +11,7 @@ namespace Software_SARA.Dtos
         public string TipoDoc { get; set; } = "CC";
 
         [Required(ErrorMessage = "El número de documento es obligatorio")]
-        [RegularExpression(@"^[0-9]{8,10}$", ErrorMessage = "El documento debe tener entre 8 y 10 números.")]
+        [RegularExpression(@"^[0-9]{5,10}$", ErrorMessage = "El documento debe tener entre 5 y 10 números.")]
         public string NumDoc { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Los nombres son obligatorios")]
@@ -21,7 +21,8 @@ namespace Software_SARA.Dtos
         public string ApelliUsuario { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "El correo es obligatorio")]
-        [EmailAddress(ErrorMessage = "El correo no tiene un formato válido")]
+        [RegularExpression(@"^[^@\s]+@(gmail\.com|outlook\.com|ucundinamarca\.edu\.co)$",
+            ErrorMessage = "El correo debe ser una cuenta válida de @gmail.com, @outlook.com o @ucundinamarca.edu.co")]
         public string Correo { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "El teléfono es obligatorio")]

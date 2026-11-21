@@ -54,6 +54,7 @@ namespace Software_SARA.Controllers
                     return View(modelo);
                 }
 
+                // Guardar datos en la sesión
                 HttpContext.Session.SetString("UsuarioId", usuario.IdUsuario.ToString());
                 HttpContext.Session.SetString("UsuarioNombre", usuario.NomUsuario + " " + usuario.ApelliUsuario);
                 HttpContext.Session.SetString("UsuarioDoc", usuario.NumDoc.ToString());
@@ -65,12 +66,17 @@ namespace Software_SARA.Controllers
 
                 HttpContext.Session.SetString("UsuarioRol", nombreRol);
 
-                var sede = _context.Sedes.FirstOrDefault(s => s.IdSede == usuario.IdSede);
-                HttpContext.Session.SetString("SedeNombre", sede?.NomSede ?? "Sede Principal");
+                var sede = usuario.IdSede.HasValue
+                    ? _context.Sedes.FirstOrDefault(s => s.IdSede == usuario.IdSede.Value)
+                    : null;
 
-                if (nombreRol == "Administrador") return RedirectToAction("Index", "Dueno");
-                else if (nombreRol == "Gerente") return RedirectToAction("Index", "Personal");
-                else return RedirectToAction("Index", "Home");
+                HttpContext.Session.SetString("SedeNombre", sede?.NomSede ?? "Sin Sede");
+                HttpContext.Session.SetString("SedeId", usuario.IdSede?.ToString() ?? "");
+
+                // ========================================================
+                // REDIRECCIÓN GENERAL: Todos van al Inicio (Bienvenida)
+                // ========================================================
+                return RedirectToAction("Index", "Home");
             }
             catch (System.Exception ex)
             {
@@ -85,11 +91,10 @@ namespace Software_SARA.Controllers
             return RedirectToAction("Login");
         }
 
-        // ACCIÓN DE ACCESO DENEGADO (Asegúrate de que esté DENTRO de la clase)
         [HttpGet]
         public IActionResult AccesoDenegado()
         {
             return View();
         }
-    } 
-} 
+    }
+}

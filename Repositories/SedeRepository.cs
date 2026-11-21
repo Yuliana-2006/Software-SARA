@@ -3,8 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using Software_SARA.Dtos;
 using Software_SARA.Repositories.Models;
 using Software_SARA.Utilities;
-using System.Data;
-using System.Security.Cryptography.Pkcs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Software_SARA.Repositories
 {
@@ -17,109 +19,155 @@ namespace Software_SARA.Repositories
             _context = context;
         }
 
+        public async Task<bool> TieneInformacionAsociadaAsync(int idSede)
+        {
+            var idsUsuariosSede = await _context.Usuarios
+                .Where(u => u.IdSede == idSede)
+                .Select(u => u.IdUsuario)
+                .ToListAsync();
+
+            if (idsUsuariosSede.Count == 0)
+                return false;
+
+            bool tieneFacturas = await _context.Facturas
+                .AnyAsync(f => idsUsuariosSede.Contains(f.IdUsuario));
+
+            bool tieneRecordatorios = await _context.Recordatorios
+                .AnyAsync(r => idsUsuariosSede.Contains(r.IdUsuario));
+
+            bool tieneCajas = await _context.DiaCajas
+                .AnyAsync(c => idsUsuariosSede.Contains(c.IdUsuario) ||
+                              (c.IdUsuarioCierre.HasValue && idsUsuariosSede.Contains(c.IdUsuarioCierre.Value)));
+
+            return tieneFacturas || tieneRecordatorios || tieneCajas;
+        }
+
         public async Task<List<Sede>> ObtenerTodasLasSedes()
         {
             return await _context.Sedes
                 .AsNoTracking()
-                
                 .ToListAsync();
         }
 
-        public async Task<Boolean> CreateSede(SedeDto sedeDto)
+        public async Task<bool> CreateSede(SedeDto sedeDto)
         {
-            //Consulta SQL para insertar una nueva sede en la base de datos
             bool result = false;
-            DBSaraUtility connectionUtility = new DBSaraUtility();
-            connectionUtility.Connect();
+            string sql = @"INSERT INTO SARABD.dbo.Sede
+                           (nom_sede, dir_sede, tel_sede, estado_sede, ciu_sede, dep_sede, barrio_sede)
+                           VALUES (@NomSede, @DirSede, @TelSede, @EstadoSede, @CiuSede, @DepSede, @BarrioSede);";
 
-            // Usamos el nombre del procedimiento almacenado
-            using (SqlCommand command = new SqlCommand("SARABD.dbo.InsertarSede", connectionUtility.CONN()))
+            DBSaraUtility connection = new DBSaraUtility();
+            connection.Connect();
+            try
             {
-                // Indicamos que es un procedimiento almacenado
-                command.CommandType = CommandType.StoredProcedure;
+                using (SqlCommand command = new SqlCommand(sql, connection.CONN()))
+                {
+                    command.Parameters.AddWithValue("@NomSede", sedeDto.NomSede ?? string.Empty);
+                    command.Parameters.AddWithValue("@DirSede", sedeDto.DirSede ?? string.Empty);
+                    command.Parameters.AddWithValue("@TelSede", sedeDto.TelSede ?? string.Empty);
+                    command.Parameters.AddWithValue("@EstadoSede", sedeDto.EstadoSede ? 1 : 0);
+                    command.Parameters.AddWithValue("@CiuSede", sedeDto.CiuSede ?? string.Empty);
+                    command.Parameters.AddWithValue("@DepSede", sedeDto.DepSede ?? string.Empty);
+                    command.Parameters.AddWithValue("@BarrioSede", sedeDto.BarrioSede ?? string.Empty);
 
-                // Añadimos los parámetros de forma segura (Previene Inyección SQL)
-                command.Parameters.AddWithValue("@nom_sede", (object)sedeDto.NomSede ?? DBNull.Value);
-                command.Parameters.AddWithValue("@dir_sede", (object)sedeDto.DirSede ?? DBNull.Value);
-                command.Parameters.AddWithValue("@tel_sede", (object)sedeDto.TelSede ?? DBNull.Value);
-                command.Parameters.AddWithValue("@estado_sede", sedeDto.EstadoSede);
-                command.Parameters.AddWithValue("@ciu_sede", (object)sedeDto.CiuSede ?? DBNull.Value);
-                command.Parameters.AddWithValue("@dep_sede", (object)sedeDto.DepSede ?? DBNull.Value);
-                command.Parameters.AddWithValue("@barrio_sede", (object)sedeDto.BarrioSede ?? DBNull.Value);
-
-                // Ejecución asíncrona segura
-                int filasAfectadas = await command.ExecuteNonQueryAsync();
-                result = filasAfectadas > 0;
+                    int comando = await command.ExecuteNonQueryAsync();
+                    result = comando != 0;
+                }
             }
-
-            connectionUtility.Disconnect();
+            finally
+            {
+                connection.Disconnect();
+            }
             return result;
         }
 
-        public async Task<Boolean> EditarSede(SedeDto sedeDto)
+        public async Task<bool> EditarSede(SedeDto sedeDto)
         {
-            //Consulta SQL para editar una sede en la base de datos
             bool result = false;
-            string SQL = "UPDATE SARABD.dbo.Sede SET nom_sede = '" + sedeDto.NomSede + "', dir_sede = '" + sedeDto.DirSede + "', tel_sede = '" + sedeDto.TelSede + "', estado_sede = '" + sedeDto.EstadoSede + "', ciu_sede = '" + sedeDto.CiuSede + "', dep_sede = '" + sedeDto.DepSede + "', barrio_sede = '" + sedeDto.BarrioSede + "' WHERE id_sede = " + sedeDto.IdSede + ";";
-            DBSaraUtility Connection = new DBSaraUtility();
-            Connection.Connect();
-            using (SqlCommand command = new SqlCommand(SQL, Connection.CONN()))
+            string sql = @"UPDATE SARABD.dbo.Sede
+                           SET nom_sede = @NomSede,
+                               dir_sede = @DirSede,
+                               tel_sede = @TelSede,
+                               estado_sede = @EstadoSede,
+                               ciu_sede = @CiuSede,
+                               dep_sede = @DepSede,
+                               barrio_sede = @BarrioSede
+                           WHERE id_sede = @IdSede;";
+
+            DBSaraUtility connection = new DBSaraUtility();
+            connection.Connect();
+            try
             {
-                int comando = command.ExecuteNonQuery();
-                if (comando != 0)
+                using (SqlCommand command = new SqlCommand(sql, connection.CONN()))
                 {
-                    result = true;
-                }
-                else
-                {
-                    result = false;
+                    command.Parameters.AddWithValue("@NomSede", sedeDto.NomSede ?? string.Empty);
+                    command.Parameters.AddWithValue("@DirSede", sedeDto.DirSede ?? string.Empty);
+                    command.Parameters.AddWithValue("@TelSede", sedeDto.TelSede ?? string.Empty);
+                    command.Parameters.AddWithValue("@EstadoSede", sedeDto.EstadoSede ? 1 : 0);
+                    command.Parameters.AddWithValue("@CiuSede", sedeDto.CiuSede ?? string.Empty);
+                    command.Parameters.AddWithValue("@DepSede", sedeDto.DepSede ?? string.Empty);
+                    command.Parameters.AddWithValue("@BarrioSede", sedeDto.BarrioSede ?? string.Empty);
+                    command.Parameters.AddWithValue("@IdSede", sedeDto.IdSede);
+
+                    int comando = await command.ExecuteNonQueryAsync();
+                    result = comando != 0;
                 }
             }
-            Connection.Disconnect();
+            finally
+            {
+                connection.Disconnect();
+            }
             return result;
         }
 
-        public async Task<Boolean> EliminarSede(int idSede)
+        public async Task<bool> EliminarSede(int idSede)
         {
-            //Consulta SQL para eliminar una sede en la base de datos
-            bool result = false;
-            string SQL = "UPDATE SARABD.dbo.sede SET estado_sede = 0 WHERE id_sede = " + idSede + ";";
-            DBSaraUtility Connection = new DBSaraUtility();
-            Connection.Connect();
-            using (SqlCommand command = new SqlCommand(SQL, Connection.CONN()))
+            if (await TieneInformacionAsociadaAsync(idSede))
             {
-                int comando = command.ExecuteNonQuery();
-                if (comando != 0)
+                return false;
+            }
+
+            bool result = false;
+            string sql = "UPDATE SARABD.dbo.sede SET estado_sede = 0 WHERE id_sede = @IdSede;";
+
+            DBSaraUtility connection = new DBSaraUtility();
+            connection.Connect();
+            try
+            {
+                using (SqlCommand command = new SqlCommand(sql, connection.CONN()))
                 {
-                    result = true;
-                }
-                else
-                {
-                    result = false;
+                    command.Parameters.AddWithValue("@IdSede", idSede);
+                    int comando = await command.ExecuteNonQueryAsync();
+                    result = comando != 0;
                 }
             }
-            Connection.Disconnect();
+            finally
+            {
+                connection.Disconnect();
+            }
             return result;
         }
 
         public async Task<bool> ReactivarSede(int idSede)
         {
             bool result = false;
-            string SQL = "UPDATE SARABD.dbo.sede SET estado_sede = 1 WHERE id_sede = " + idSede + ";";
+            string sql = "UPDATE SARABD.dbo.sede SET estado_sede = 1 WHERE id_sede = @IdSede;";
 
-            DBSaraUtility Connection = new DBSaraUtility();
-            Connection.Connect();
-
-            using (SqlCommand command = new SqlCommand(SQL, Connection.CONN()))
+            DBSaraUtility connection = new DBSaraUtility();
+            connection.Connect();
+            try
             {
-                int comando = command.ExecuteNonQuery();
-                if (comando != 0)
+                using (SqlCommand command = new SqlCommand(sql, connection.CONN()))
                 {
-                    result = true;
+                    command.Parameters.AddWithValue("@IdSede", idSede);
+                    int comando = await command.ExecuteNonQueryAsync();
+                    result = comando != 0;
                 }
             }
-
-            Connection.Disconnect();
+            finally
+            {
+                connection.Disconnect();
+            }
             return result;
         }
     }
