@@ -135,9 +135,7 @@ namespace Software_SARA.Repositories
         public virtual async Task<bool> CreateFacturaProveedor(FacProveedorDto facProveedorDto)
         {
             bool result = false;
-            string SQL = @"INSERT INTO SARABD.dbo.factura
-                           (id_usuario, tip_factura, id_proveedor, id_servicio, valor_factura, fecha_reg_factura, fecha_vencimiento, estado_factura)
-                           VALUES (@IdUsuario, @TipFactura, @IdProveedor, @IdServicio, @ValorFactura, @FechaRegFactura, @FechaVencimiento, @EstadoFactura);";
+            string sql = "SARABD.dbo.InsertarFacturaProveedor";
 
             IDBSaraUtility connectionUtility = _dbFactory();
             connectionUtility.Connect();
@@ -301,10 +299,8 @@ namespace Software_SARA.Repositories
                                 IdFactura = reader["id_factura"] != DBNull.Value ? Convert.ToInt32(reader["id_factura"]) : 0,
                                 IdUsuario = reader["id_usuario"] != DBNull.Value ? Convert.ToInt32(reader["id_usuario"]) : 0,
                                 NomUsuario = reader["nom_usuario"] != DBNull.Value ? reader["nom_usuario"].ToString() : "N/D",
-                                TipFactura = reader["tip_factura"] != DBNull.Value && Convert.ToBoolean(reader["tip_factura"]),
                                 IdProveedor = reader["id_proveedor"] != DBNull.Value ? Convert.ToInt32(reader["id_proveedor"]) : (int?)null,
                                 NomProveedor = reader["nom_proveedor"] != DBNull.Value ? reader["nom_proveedor"].ToString() : "Sin Proveedor",
-                                IdServicio = reader["id_servicio"] != DBNull.Value ? Convert.ToInt32(reader["id_servicio"]) : (int?)null,
                                 ValorFactura = reader["valor_factura"] != DBNull.Value ? Convert.ToDecimal(reader["valor_factura"]) : 0m,
                                 FechaRegFactura = reader["fecha_reg_factura"] != DBNull.Value ? DateOnly.FromDateTime(Convert.ToDateTime(reader["fecha_reg_factura"])) : default,
                                 FechaVencimiento = reader["fecha_vencimiento"] != DBNull.Value ? DateOnly.FromDateTime(Convert.ToDateTime(reader["fecha_vencimiento"])) : default,
@@ -321,5 +317,6 @@ namespace Software_SARA.Repositories
             }
             return lista;
         }
+
     }
 }

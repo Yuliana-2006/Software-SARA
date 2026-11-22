@@ -1,4 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Software_SARA.Dtos;
 using Software_SARA.Repositories.Models;
@@ -134,9 +139,7 @@ namespace Software_SARA.Repositories
         public virtual async Task<bool> CreateFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
             bool result = false;
-            string SQL = @"INSERT INTO SARABD.dbo.factura
-                           (id_usuario, tip_factura, id_proveedor, id_servicio, valor_factura, fecha_reg_factura, fecha_vencimiento, estado_factura)
-                           VALUES (@IdUsuario, @TipFactura, @IdProveedor, @IdServicio, @ValorFactura, @FechaRegFactura, @FechaVencimiento, @EstadoFactura);";
+            string sql = "SARABD.dbo.InsertarFacturaServicio";
 
             IDBSaraUtility connectionUtility = _dbFactory();
             connectionUtility.Connect();
@@ -300,8 +303,6 @@ namespace Software_SARA.Repositories
                                 IdFactura = reader["id_factura"] != DBNull.Value ? Convert.ToInt32(reader["id_factura"]) : 0,
                                 IdUsuario = reader["id_usuario"] != DBNull.Value ? Convert.ToInt32(reader["id_usuario"]) : 0,
                                 NomUsuario = reader["nom_usuario"] != DBNull.Value ? reader["nom_usuario"].ToString() : "N/D",
-                                TipFactura = reader["tip_factura"] != DBNull.Value && Convert.ToBoolean(reader["tip_factura"]),
-                                IdProveedor = reader["id_proveedor"] != DBNull.Value ? Convert.ToInt32(reader["id_proveedor"]) : (int?)null,
                                 IdServicio = reader["id_servicio"] != DBNull.Value ? Convert.ToInt32(reader["id_servicio"]) : (int?)null,
                                 NomServicio = reader["nom_servicio"] != DBNull.Value ? reader["nom_servicio"].ToString() : "Sin servicio público",
                                 ValorFactura = reader["valor_factura"] != DBNull.Value ? Convert.ToDecimal(reader["valor_factura"]) : 0m,
