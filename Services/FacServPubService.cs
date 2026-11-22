@@ -17,7 +17,7 @@ namespace Software_SARA.Services
             _facServPubRepository = facServPubRepository;
         }
 
-        public async Task<FacServPublicDto> CreateFacturaServicioPublico(FacServPublicDto facServPublicDto)
+        public virtual async Task<FacServPublicDto> CreateFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
             facServPublicDto.EstadoFactura = true;
             facServPublicDto.FechaRegFactura = DateOnly.FromDateTime(DateTime.Now);
@@ -58,7 +58,7 @@ namespace Software_SARA.Services
             return facServPublicDto;
         }
 
-        public async Task<List<FacServPublicDto>> ObtenerTodasLasFacturasServiciosPublicos()
+        public virtual async Task<List<FacServPublicDto>> ObtenerTodasLasFacturasServiciosPublicos()
         {
             var facturas = await _facServPubRepository.ObtenerTodasLasFacturasServiciosPublicos();
 
@@ -76,7 +76,7 @@ namespace Software_SARA.Services
             }).ToList();
         }
 
-        public async Task<List<FacServPublicDto>> ObtenerVencimientosProximos()
+        public virtual async Task<List<FacServPublicDto>> ObtenerVencimientosProximos()
         {
             var fechaActual = DateOnly.FromDateTime(DateTime.Now);
             var fechaLimite = fechaActual.AddDays(10);
@@ -88,18 +88,18 @@ namespace Software_SARA.Services
                 .ToList();
         }
 
-        public async Task<List<SelectListItem>> ObtenerServiciosPublicos()
+        public virtual async Task<List<SelectListItem>> ObtenerServiciosPublicos()
         {
             return await _facServPubRepository.ObtenerListaServiciosPublicos();
         }
 
-        public async Task<FacServPublicDto?> ObtenerFacturaServicioPublicoPorId(int id)
+        public virtual async Task<FacServPublicDto?> ObtenerFacturaServicioPublicoPorId(int id)
         {
             var listaFacturas = await ObtenerTodasLasFacturasServiciosPublicos();
             return listaFacturas.FirstOrDefault(f => f.IdFactura == id);
         }
 
-        public async Task<FacServPublicDto> EditarFacturaServicioPublico(FacServPublicDto facServPublicDto)
+        public virtual async Task<FacServPublicDto> EditarFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
             if (facServPublicDto.IdServicio == null || facServPublicDto.IdServicio <= 0)
             {
@@ -136,7 +136,7 @@ namespace Software_SARA.Services
             return facServPublicDto;
         }
 
-        public async Task<FacServPublicDto> ConfirmarPagoFacturaServicioPublico(int idFactura)
+        public virtual async Task<FacServPublicDto> ConfirmarPagoFacturaServicioPublico(int idFactura)
         {
             var facServPublicDto = new FacServPublicDto { IdFactura = idFactura };
             var result = await _facServPubRepository.ConfirmarPagoFacturaServicioPublico(idFactura);
@@ -154,7 +154,7 @@ namespace Software_SARA.Services
             return facServPublicDto;
         }
 
-        public async Task<List<FacServPublicDto>> ObtenerHistorialFacturasServiciosPublicosAsync()
+        public virtual async Task<List<FacServPublicDto>> ObtenerHistorialFacturasServiciosPublicosAsync()
         {
             return await _facServPubRepository.ObtenerHistorialFacturasServiciosPublicosAsync();
         }

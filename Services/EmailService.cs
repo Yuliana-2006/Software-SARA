@@ -11,22 +11,23 @@ namespace Software_SARA.Services
     public class EmailService
     {
         private readonly IConfiguration _config;
+        private readonly Func<ISmtpClient> _smtpClientFactory;
 
-        public EmailService(IConfiguration config)
+        public EmailService(IConfiguration config, Func<ISmtpClient>? smtpClientFactory = null)
         {
             _config = config;
+            _smtpClientFactory = smtpClientFactory ?? (() => new SmtpClient());
         }
 
         // 1. ENVIAR CONTRASEÑA (CON LOGO Y NOTA SOLO PARA DUEÑO Y GERENTE)
-        public async Task EnviarPasswordAsync(string destinatario, string nombre, string password, string rol, string numDocumento)
+        public virtual async Task EnviarPasswordAsync(string destinatario, string nombre, string password, string rol, string numDocumento)
         {
             var email = new MimeMessage();
-            email.From.Add(new MailboxAddress(_config["EmailSettings:FromName"], _config["EmailSettings:FromEmail"]));
+            email.From.Add(new MailboxAddress(_config["EmailSettings:FromName"] ?? "SARA", _config["EmailSettings:FromEmail"] ?? "no-reply@sara.local"));
             email.To.Add(new MailboxAddress(nombre, destinatario));
             email.Subject = $"Bienvenido a SARA - Tu cuenta como {rol}";
 
             string rolNormalizado = rol.Trim().ToLower();
-
             string mensajeRol = rolNormalizado switch
             {
                 "dueño" => "Ahora eres el <strong>Dueño</strong> del sistema SARA. Tienes el control total para gestionar tus sedes y gerentes.",
@@ -45,7 +46,6 @@ namespace Software_SARA.Services
             var builder = new BodyBuilder();
             string imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "logo.png");
             string logoHtml;
-
             if (File.Exists(imagePath))
             {
                 var image = builder.LinkedResources.Add(imagePath);
@@ -84,20 +84,19 @@ namespace Software_SARA.Services
             </div>";
 
             email.Body = builder.ToMessageBody();
-
-            using var smtp = new SmtpClient();
+            using var smtp = _smtpClientFactory();
             smtp.Timeout = 60000;
-            await smtp.ConnectAsync(_config["EmailSettings:Host"], int.Parse(_config["EmailSettings:Port"]), SecureSocketOptions.StartTls);
+            await smtp.ConnectAsync(_config["EmailSettings:Host"], int.Parse(_config["EmailSettings:Port"] ?? "587"), SecureSocketOptions.StartTls);
             await smtp.AuthenticateAsync(_config["EmailSettings:User"], _config["EmailSettings:Password"]);
             await smtp.SendAsync(email);
             await smtp.DisconnectAsync(true);
         }
 
         // 2. ENVIAR INFORME (SIN LOGO, Y CON NOMBRE CORRECTO)
-        public async Task EnviarInformeCajaAsync(string destinatario, string nombreDestinatario, string sede, DateTime fecha, byte[] pdfBytes)
+        public virtual async Task EnviarInformeCajaAsync(string destinatario, string nombreDestinatario, string sede, DateTime fecha, byte[] pdfBytes)
         {
             var email = new MimeMessage();
-            email.From.Add(new MailboxAddress(_config["EmailSettings:FromName"], _config["EmailSettings:FromEmail"]));
+            email.From.Add(new MailboxAddress(_config["EmailSettings:FromName"] ?? "SARA", _config["EmailSettings:FromEmail"] ?? "no-reply@sara.local"));
             email.To.Add(new MailboxAddress(nombreDestinatario, destinatario));
             email.Subject = $"Informe Diario de Caja - {sede} - {fecha:dd/MM/yyyy}";
 
@@ -114,9 +113,9 @@ namespace Software_SARA.Services
             builder.Attachments.Add($"InformeCaja_{fecha:yyyyMMdd}.pdf", pdfBytes, new ContentType("application", "pdf"));
             email.Body = builder.ToMessageBody();
 
-            using var smtp = new SmtpClient();
+            using var smtp = _smtpClientFactory();
             smtp.Timeout = 60000;
-            await smtp.ConnectAsync(_config["EmailSettings:Host"], int.Parse(_config["EmailSettings:Port"]), SecureSocketOptions.StartTls);
+            await smtp.ConnectAsync(_config["EmailSettings:Host"], int.Parse(_config["EmailSettings:Port"] ?? "587"), SecureSocketOptions.StartTls);
             await smtp.AuthenticateAsync(_config["EmailSettings:User"], _config["EmailSettings:Password"]);
             await smtp.SendAsync(email);
             await smtp.DisconnectAsync(true);
