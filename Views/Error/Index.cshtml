@@ -1,0 +1,93 @@
+﻿@{
+    Layout = null;
+    ViewData["Title"] = "Error - Software SARA";
+    string codigo = ViewBag.CodigoError != null ? ViewBag.CodigoError.ToString() : "500";
+    string mensaje = ViewBag.Mensaje ?? "Ha ocurrido un error en el sistema.";
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <title>Error - SARA</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body {
+            background-color: #ECE9DF;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+        .error-card {
+            background-color: #3B6146;
+            border-radius: 30px;
+            padding: 50px 40px;
+            max-width: 550px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .error-icon {
+            font-size: 5rem;
+            color: #D9D7C7;
+            margin-bottom: 20px;
+        }
+        .error-title {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+        .error-code {
+            font-size: 4rem;
+            font-weight: 900;
+            color: #ffcccc;
+            margin-bottom: 20px;
+            line-height: 1;
+        }
+        .btn-volver {
+            background-color: #D9D7C7;
+            color: #2D4832;
+            border-radius: 50px;
+            font-weight: 800;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
+            transition: all 0.2s;
+        }
+        .btn-volver:hover {
+            background-color: #ffffff;
+            transform: scale(1.05);
+            color: #1A3020;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="error-card shadow-lg">
+        <div class="error-icon">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        
+        <div class="error-code">@codigo</div>
+        
+        <div class="error-title">¡Ups! Algo salió mal</div>
+        
+        <p class="fs-5 mb-4" style="color: #C8E0C8;">
+            @mensaje
+        </p>
+
+        <!-- CAMBIADO: Ahora apunta a Acceso/Login -->
+        <a asp-controller="Acceso" asp-action="Login" class="btn-volver">
+            <i class="bi bi-box-arrow-in-right me-2"></i> Volver al Login
+        </a>
+    </div>
+
+</body>
+</html>

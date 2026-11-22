@@ -1,0 +1,544 @@
+﻿@model IEnumerable<Software_SARA.Dtos.FacProveedorDto>
+@using System.Globalization
+
+@{
+    ViewData["Title"] = "Facturas Proveedores";
+    var culturaCo = new CultureInfo("es-CO");
+
+    var listaFacturas = Model?.ToList() ?? new List<Software_SARA.Dtos.FacProveedorDto>();
+    var hoy = DateOnly.FromDateTime(DateTime.Now);
+    var limiteProximos = hoy.AddDays(7);
+
+    int cantidadVencenHoy = listaFacturas.Count(f => f.EstadoFactura && f.FechaVencimiento == hoy);
+    int cantidadProximos = listaFacturas.Count(f => f.EstadoFactura && f.FechaVencimiento >= hoy && f.FechaVencimiento <= limiteProximos);
+    int numeroBadge = cantidadVencenHoy > 0 ? cantidadVencenHoy : cantidadProximos;
+}
+
+<div class="facturas-container">
+
+    <!-- Encabezado Principal de la Vista -->
+    <div class="facturas-header-banner">
+        <h2>Facturas Proveedores</h2>
+        <div class="d-flex gap-3 align-items-center">
+            <a asp-controller="Proveedores" asp-action="VencimientosProximosProveedores" class="btn-vencimientos">
+                <span>Vencimientos próximos</span>
+                @if (numeroBadge > 0)
+                {
+                    <span class="badge-vencimientos" title="@(cantidadVencenHoy > 0 ? "Vencen hoy" : "Próximos 7 días")">@numeroBadge</span>
+                }
+            </a>
+            <a asp-controller="GestorFacturas" asp-action="SelectFactura" class="btn btn-outline-dark rounded-pill fw-bold px-4 shadow-sm" style="border-color: #2D4832; color: #2D4832; background-color: white; height: fit-content;">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+
+    <!-- Contenedor de las Tarjetas -->
+    <div class="facturas-cards-wrapper">
+
+        @foreach (var factura in listaFacturas)
+        {
+            string valorEnteroFormateado = ((long)Math.Round(factura.ValorFactura)).ToString("N0", culturaCo);
+            string valorModal = $"${valorEnteroFormateado}";
+
+            <div class="facturas-card">
+
+                <div class="facturas-icon">
+                    <i class="bi bi-truck"></i>
+                </div>
+
+                <div class="facturas-name">
+                    <h2>Factura @factura.NomProveedor</h2>
+                </div>
+
+                <div style="color: #ECE9DF; font-size: 14px; font-weight: 600; text-align: center; margin-top: 4px;">
+                    Valor: $@valorEnteroFormateado
+                </div>
+
+                <div class="facturas-buttons">
+                    <button type="button" class="facturas-button"
+                            onclick="mostrarFactura(
+                                '@factura.IdFactura',
+                                '@factura.NomProveedor',
+                                '@valorModal',
+                                '@factura.FechaVencimiento.ToString("dd/MM/yyyy")',
+                                '@(factura.EstadoFactura ? "Activa" : "Inactiva")'
+                            )">
+                        Consultar
+                    </button>
+
+                    <a asp-controller="Proveedores"
+                       asp-action="EditarFacturaProveedor"
+                       asp-route-id="@factura.IdFactura"
+                       class="facturas-button">
+                        Editar
+                    </a>
+
+                    <a asp-controller="Proveedores"
+                       asp-action="ConfirmarPagoFacturaProveedor"
+                       asp-route-id="@factura.IdFactura"
+                       class="facturas-button">
+                        Confirmar Pago
+                    </a>
+                </div>
+
+            </div>
+        }
+
+        <!-- Tarjeta 2: Registrar Factura (Enlace para agregar) -->
+        <a asp-controller="Proveedores" asp-action="CrearFacturaProveedor" class="facturas-link">
+            <div class="facturas-card agregar-card">
+
+                <div class="facturas-plus">
+                    <i class="bi bi-plus-lg"></i>
+                </div>
+
+                <div class="facturas-title">
+                    Registrar<br />
+                    Factura
+                </div>
+
+            </div>
+        </a>
+
+    </div>
+
+</div>
+
+@if (TempData["MensajeExito"] != null)
+{
+    <div class="mensaje-exito">
+        @TempData["MensajeExito"]
+    </div>
+}
+
+<!-- =========================================
+    MODAL DE CONSULTA DE FACTURA
+    ========================================= -->
+<div id="modalFactura" class="modal-facturaproveedor">
+    <div class="consulta-card">
+
+        <!-- ENCABEZADO -->
+        <div class="consulta-header">
+            <h2>Detalles de la Factura</h2>
+            <button type="button" class="btn-cerrar-x" onclick="cerrarFactura()">&times;</button>
+        </div>
+
+        <!-- INFORMACIÓN -->
+        <div class="informacion-facturaproveedor">
+
+            <div class="dato-facturaproveedor">
+                <span>Factura Número</span>
+                <strong id="datoIdFactura"></strong>
+            </div>
+
+            <div class="dato-facturaproveedor">
+                <span>Proveedor</span>
+                <strong id="datoProveedor"></strong>
+            </div>
+
+            <div class="dato-facturaproveedor">
+                <span>Valor de la Factura</span>
+                <strong id="datoValor"></strong>
+            </div>
+
+            <div class="dato-facturaproveedor">
+                <span>Fecha de Vencimiento</span>
+                <strong id="datoVencimiento"></strong>
+            </div>
+
+            <div class="dato-facturaproveedor">
+                <span>Estado</span>
+                <strong id="datoEstado"></strong>
+            </div>
+
+        </div>
+
+        <button type="button" class="btn-cerrar-consulta" onclick="cerrarFactura()">
+            Cerrar
+        </button>
+
+    </div>
+</div>
+
+<style>
+    .facturas-container {
+        width: 100%;
+        min-height: calc(100vh - 120px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 10px;
+        box-sizing: border-box;
+    }
+
+    .facturas-header-banner {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 40px;
+        box-sizing: border-box;
+        margin-bottom: 20px;
+    }
+
+    .facturas-header-banner h2 {
+        margin: 0;
+        color: #2E4F3E;
+        font-size: 36px;
+        font-weight: 800;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .btn-vencimientos {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background-color: #385141;
+        color: #ECE9DF;
+        padding: 10px 22px;
+        border-radius: 25px;
+        font-size: 16px;
+        font-weight: 700;
+        text-decoration: none;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        transition: background-color 0.2s ease;
+    }
+
+    .btn-vencimientos:hover {
+        background-color: #2E4F3E;
+        color: white;
+        text-decoration: none;
+    }
+
+    .badge-vencimientos {
+        background-color: #E74C3C;
+        color: #FFFFFF;
+        font-size: 13px;
+        font-weight: 800;
+        min-width: 22px;
+        height: 22px;
+        padding: 0 6px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+
+    .facturas-cards-wrapper {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 55px;
+        flex-wrap: wrap;
+        padding-top: 10px;
+        box-sizing: border-box;
+    }
+
+    .facturas-card {
+        width: 280px;
+        height: 410px;
+        flex: 0 0 280px;
+        background-color: #5B805E;
+        border: 7px solid #2E4F3E;
+        border-radius: 35px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow: hidden;
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.18);
+    }
+
+    .facturas-icon {
+        width: 95px;
+        height: 95px;
+        min-width: 95px;
+        min-height: 95px;
+        margin-top: 20px;
+        background-color: #ECE9DF;
+        border: 6px solid #2E4F3E;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+
+    .facturas-icon i {
+        font-size: 44px;
+        color: #2E4F3E;
+        line-height: 1;
+    }
+
+    .facturas-name {
+        width: 90%;
+        margin-top: 8px;
+        color: #DAD7CD;
+        font-size: 26px;
+        line-height: 1.1;
+        font-weight: 800;
+        text-align: center;
+    }
+
+    .facturas-name h2 {
+        margin: 0;
+        font-size: 26px;
+        color: #ECE9DF;
+    }
+
+    .facturas-buttons {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .facturas-button {
+        width: 150px;
+        height: 38px;
+        padding: 0;
+        border-radius: 25px;
+        border: 6px solid #2E4F3E;
+        background-color: #ECE9DF;
+        color: #355B43;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 16px;
+        font-weight: 800;
+        line-height: 1;
+        cursor: pointer;
+        box-sizing: border-box;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .facturas-button:hover {
+        background-color: #DCD9CF;
+        color: #355B43;
+        text-decoration: none;
+    }
+
+    .facturas-link {
+        display: block;
+        width: 280px;
+        height: 410px;
+        flex: 0 0 280px;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .facturas-link:hover {
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .agregar-card:hover {
+        transform: translateY(-2px);
+        transition: transform 0.2s ease;
+    }
+
+    .facturas-plus {
+        width: 105px;
+        height: 105px;
+        min-width: 105px;
+        min-height: 105px;
+        margin-top: 65px;
+        background-color: #ECE9DF;
+        border: 6px solid #2E4F3E;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        color: #2E4F3E;
+        font-size: 58px;
+    }
+
+    .facturas-title {
+        width: 100%;
+        margin-top: 35px;
+        color: #F5F5F5;
+        font-size: 32px;
+        line-height: 1.05;
+        font-weight: 800;
+        text-align: center;
+    }
+
+    .mensaje-exito {
+        position: fixed;
+        right: 25px;
+        bottom: 25px;
+        background-color: #2E4F3E;
+        color: white;
+        padding: 18px 30px;
+        border-radius: 18px;
+        font-size: 20px;
+        font-weight: 800;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25);
+        z-index: 9999;
+        animation: mostrarMensaje 4s ease forwards;
+    }
+
+    @@keyframes mostrarMensaje {
+        0% {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        10% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        85% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        100% {
+            opacity: 0;
+            transform: translateY(20px);
+            visibility: hidden;
+        }
+    }
+
+    @@media (max-width: 750px) {
+        .facturas-cards-wrapper {
+            gap: 25px;
+        }
+
+        .facturas-header-banner {
+            flex-direction: column;
+            gap: 15px;
+            align-items: flex-start;
+            padding: 0 20px;
+        }
+    }
+
+    .modal-facturaproveedor {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: none;
+        justify-content: center;
+        align-items: flex-start;
+        overflow-y: auto;
+        padding: 30px 20px;
+        box-sizing: border-box;
+        z-index: 1000;
+    }
+
+    .consulta-card {
+        width: 100%;
+        max-width: 600px;
+        background-color: #2E543D;
+        border-radius: 25px;
+        padding: 25px 35px 35px 35px;
+        box-sizing: border-box;
+        position: relative;
+        margin-top: 0;
+        max-height: none;
+    }
+
+    .consulta-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+    }
+
+    .consulta-header h2 {
+        margin: 0;
+        color: white;
+        font-size: 28px;
+        font-weight: 800;
+    }
+
+    .btn-cerrar-x {
+        width: 38px;
+        height: 38px;
+        border: none;
+        background: transparent;
+        color: #DCD9CF;
+        font-size: 34px;
+        line-height: 1;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-cerrar-x:hover {
+        color: white;
+        transform: scale(1.1);
+    }
+
+    .dato-facturaproveedor {
+        background-color: #5E875E;
+        border-radius: 15px;
+        padding: 10px 16px;
+        margin-bottom: 10px;
+        color: white;
+        box-sizing: border-box;
+    }
+
+    .dato-facturaproveedor span {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 3px;
+    }
+
+    .dato-facturaproveedor strong {
+        display: block;
+        font-size: 17px;
+        font-weight: 800;
+        color: white;
+        word-break: break-word;
+    }
+
+    .btn-cerrar-consulta {
+        display: block;
+        width: 130px;
+        height: 42px;
+        margin: 18px auto 0 auto;
+        border: none;
+        border-radius: 25px;
+        background-color: #ECE9DF;
+        color: #2E4F3E;
+        font-size: 16px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .btn-cerrar-consulta:hover {
+        background-color: #ffffff;
+        transform: scale(1.03);
+    }
+</style>
+
+<script>
+    function mostrarFactura(id, proveedor, valor, vencimiento, estado) {
+        document.getElementById("datoIdFactura").innerText = id;
+        document.getElementById("datoProveedor").innerText = proveedor;
+        document.getElementById("datoValor").innerText = valor;
+        document.getElementById("datoVencimiento").innerText = vencimiento;
+        document.getElementById("datoEstado").innerText = estado;
+
+        document.getElementById("modalFactura").style.display = "flex";
+    }
+
+    function cerrarFactura() {
+        document.getElementById("modalFactura").style.display = "none";
+    }
+</script>

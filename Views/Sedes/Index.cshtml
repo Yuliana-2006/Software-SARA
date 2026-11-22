@@ -1,0 +1,52 @@
+﻿@model Software_SARA.Repositories.Models.Sede
+@{
+    ViewData["Title"] = "Registrar Sede";
+}
+
+<div class="container py-4">
+    <div class="card shadow mx-auto" style="max-width: 700px; background-color: #3B6146; color: white; border-radius: 30px;">
+        <div class="card-body p-4">
+            <h3 class="text-center fw-bold mb-4 text-white">REGISTRAR NUEVA SEDE</h3>
+            
+            <form asp-action="Crear" method="post">
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label class="fw-bold">Nombre de la Sede</label>
+                        <input asp-for="NomSede" class="form-control rounded-pill" required />
+                    </div>
+                    <div class="col-6">
+                        <label class="fw-bold">Teléfono</label>
+                        <input asp-for="TelSede" class="form-control rounded-pill" required />
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label class="fw-bold">Departamento</label>
+                        <input asp-for="DepSede" class="form-control rounded-pill" required />
+                    </div>
+                    <div class="col-6">
+                        <label class="fw-bold">Ciudad</label>
+                        <input asp-for="CiuSede" class="form-control rounded-pill" required />
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-6">
+                        <label class="fw-bold">Barrio</label>
+                        <input asp-for="BarrioSede" class="form-control rounded-pill" required />
+                    </div>
+                    <div class="col-6">
+                        <label class="fw-bold">Dirección</label>
+                        <input asp-for="DirSede" class="form-control rounded-pill" required />
+                    </div>
+                </div>
+
+                <input type="hidden" asp-for="EstadoSede" value="true" />
+
+                <button type="submit" class="btn btn-light w-100 rounded-pill fw-bold mb-2">GUARDAR</button>
+                <a asp-action="Index" class="btn btn-outline-light w-100 rounded-pill">CANCELAR</a>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,123 @@
+﻿@model IEnumerable<Software_SARA.Dtos.RecordatorioPedidoDto>
+
+@{
+    ViewData["Title"] = "Recordatorios de Pedido";
+}
+<div class="facturas-container">
+
+    <div class="facturas-header-banner">
+        <h2>RECORDATORIO DE PEDIDOS</h2>
+        <!-- Botón actualizado con el enlace a Entregas Próximas y el contador de notificaciones -->
+        <a asp-controller="Recordatorios" asp-action="EntregasProximas" class="btn-vencimientos" style="position: relative;">
+            Entregas Próximas
+            @if (ViewBag.CantidadNotificaciones != null && ViewBag.CantidadNotificaciones > 0)
+            {
+                <span style="position: absolute; top: -8px; right: -8px; background-color: #A93226; color: white; border-radius: 50%; padding: 2px 8px; font-size: 12px; font-weight: bold; border: 2px solid #ECE9DF;">
+                    @ViewBag.CantidadNotificaciones
+                </span>
+            }
+        </a>
+    </div>
+
+    <div class="facturas-cards-wrapper">
+
+        @if (Model != null)
+        {
+            @foreach (var rec in Model)
+            {
+                <div class="facturas-card">
+                    <div class="facturas-icon">
+                        <i class="bi bi-file-earmark-text"></i>
+                    </div>
+
+                    <div class="facturas-name" style="text-align: center; padding: 0 10px;">
+                        <h2 style="font-size: 16px; margin-top: 10px;">@rec.Proveedor</h2>
+                        <div style="font-size: 14px; font-weight: 700; color: #ECE9DF; margin-top: 6px;">ID: @rec.IdRecordatorio</div>
+                        <div style="font-size: 13px; font-weight: 600; color: #ECE9DF; margin-top: 4px;">Entrega: @rec.FechaEntrega.ToString("dd/MM/yyyy")</div>
+                        <div style="font-size: 13px; font-weight: 600; color: #ECE9DF; margin-top: 4px;">Estado: @rec.Estado</div>
+                    </div>
+
+                    <div class="facturas-buttons" style="margin-top: 15px;">
+                        <a asp-controller="Recordatorios" asp-action="Consultar" asp-route-id="@rec.IdRecordatorio" class="facturas-button">Consultar</a>
+                        <a asp-controller="Recordatorios" asp-action="Editar" asp-route-id="@rec.IdRecordatorio" class="facturas-button">Editar</a>
+                        <a asp-controller="Recordatorios" asp-action="Confirmar" asp-route-id="@rec.IdRecordatorio" class="facturas-button">Confirmar</a>
+                    </div>
+                </div>
+            }
+        }
+
+        <!-- Tarjeta Única para Agregar Recordatorio Pedido -->
+        <a asp-controller="Recordatorios" asp-action="Crear" class="facturas-link">
+            <div class="facturas-card agregar-card">
+                <div class="facturas-plus">
+                    <i class="bi bi-plus-lg"></i>
+                </div>
+                <div class="facturas-title" style="font-size: 24px; text-align: center; margin-top: 25px;">
+                    Agregar<br />Recordatorio<br />Pedido
+                </div>
+            </div>
+        </a>
+
+    </div>
+</div>
+
+@if (TempData["MensajeExito"] != null)
+{
+    <div class="mensaje-exito">@TempData["MensajeExito"]</div>
+}
+@if (TempData["MensajeError"] != null)
+{
+    <div class="mensaje-error">@TempData["MensajeError"]</div>
+}
+
+<script>
+    // Script para ocultar automáticamente los mensajes flotantes de éxito o error después de 3.5 segundos
+    window.addEventListener("DOMContentLoaded", function () {
+        const mensajeExito = document.querySelector(".mensaje-exito");
+        const mensajeError = document.querySelector(".mensaje-error");
+
+        function desvanecerMensaje(elemento) {
+            if (elemento) {
+                setTimeout(function () {
+                    elemento.style.transition = "opacity 0.5s ease";
+                    elemento.style.opacity = "0";
+                    setTimeout(function () {
+                        elemento.style.display = "none";
+                    }, 500);
+                }, 3500);
+            }
+        }
+
+        desvanecerMensaje(mensajeExito);
+        desvanecerMensaje(mensajeError);
+    });
+</script>
+
+<style>
+    .facturas-container { width: 100%; min-height: calc(100vh - 120px); display: flex; flex-direction: column; align-items: center; padding-top: 10px; box-sizing: border-box; }
+    .facturas-header-banner { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0 40px; box-sizing: border-box; margin-bottom: 20px; }
+    .facturas-header-banner h2 { margin: 0; color: #2E4F3E; font-size: 36px; font-weight: 800; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .btn-vencimientos { background-color: #385141; color: #ECE9DF; padding: 10px 22px; border-radius: 25px; font-size: 16px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+    .facturas-cards-wrapper { width: 100%; display: flex; justify-content: center; align-items: flex-start; gap: 40px; flex-wrap: wrap; padding-top: 10px; }
+    .facturas-card { width: 280px; height: 430px; background-color: #5B805E; border: 7px solid #2E4F3E; border-radius: 35px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 5px 10px rgba(0,0,0,0.18); overflow: hidden; box-sizing: border-box; }
+    .facturas-icon { width: 80px; height: 80px; margin-top: 20px; background-color: #ECE9DF; border: 5px solid #2E4F3E; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #2E4F3E; font-size: 35px; }
+    .facturas-name h2 { margin: 0; font-size: 18px; color: #ECE9DF; text-align: center; font-weight: 800; }
+    .facturas-buttons { display: flex; flex-direction: column; gap: 6px; width: 100%; align-items: center; }
+    .facturas-button { width: 140px; height: 32px; border-radius: 20px; border: 5px solid #2E4F3E; background-color: #ECE9DF; color: #355B43; font-size: 14px; font-weight: 800; text-decoration: none; display: flex; align-items: center; justify-content: center; }
+    
+    /* Enlace de la tarjeta de agregar corregido con tamaño completo */
+    .facturas-link { 
+        display: block;
+        width: 280px;
+        height: 430px;
+        flex: 0 0 280px;
+        text-decoration: none; 
+        color: inherit; 
+    }
+
+    .agregar-card:hover { transform: translateY(-2px); transition: 0.2s; }
+    .facturas-plus { width: 90px; height: 90px; margin-top: 40px; background-color: #ECE9DF; border: 5px solid #2E4F3E; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #2E4F3E; font-size: 45px; }
+    .facturas-title { color: #F5F5F5; font-weight: 800; }
+    .mensaje-exito { position: fixed; right: 25px; bottom: 25px; background-color: #2E4F3E; color: white; padding: 15px 25px; border-radius: 15px; font-weight: 800; z-index: 9999; }
+    .mensaje-error { position: fixed; right: 25px; bottom: 25px; background-color: #A93226; color: white; padding: 15px 25px; border-radius: 15px; font-weight: 800; z-index: 9999; }
+</style>

@@ -1,0 +1,62 @@
+﻿@model Software_SARA.Dtos.SustentoDiarioDTO
+@{
+    ViewData["Title"] = "Sustento Calculado";
+    var cultura = new System.Globalization.CultureInfo("es-CO");
+}
+
+<div class="container py-4">
+    <h3 class="fw-bold mb-4" style="color: #2D4832;">Sustento Mínimo para el @Model.FechaCalculo.ToString("dd/MM/yyyy")</h3>
+
+    <div class="card shadow mx-auto" style="max-width: 900px; border: 3px solid #2D4832; border-radius: 15px; overflow: hidden;">
+        <div class="card-body p-0">
+            <table class="table table-bordered mb-0 text-center" style="background-color: #D9D7C7;">
+                <thead style="background-color: #3B6146; color: white;">
+                    <tr>
+                        <th class="py-3">Id Factura</th>
+                        <th class="py-3">Tipo</th>
+                        <th class="py-3">Proveedor / Servicio</th>
+                        <!-- ELIMINADO: Columna Concepto -->
+                        <th class="py-3">Fecha Vencimiento</th>
+                        <th class="py-3">Valor</th>
+                    </tr>
+                </thead>
+                <tbody style="border-color: #2D4832;">
+                    @if (Model.Facturas != null && Model.Facturas.Any())
+                    {
+                        @foreach (var factura in Model.Facturas)
+                        {
+                            <tr style="border-color: #2D4832;">
+                                <td class="py-3 fw-bold">@factura.IdFactura</td>
+                                <td class="py-3">@factura.Tipo</td>
+                                <td class="py-3">@factura.NombreTercero</td>
+                                <!-- ELIMINADO: Dato Concepto -->
+                                <td class="py-3">@factura.FechaVencimiento.ToString("dd/MM/yyyy")</td>
+                                <td class="py-3 text-end pe-4">$ @factura.Valor.ToString("N0", cultura)</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="py-5 text-center text-muted fs-5">
+                                No hay facturas pendientes de pago para la fecha seleccionada.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot style="background-color: #D9D7C7; border-top: 3px solid #2D4832;">
+                    <tr>
+                        <td colspan="4" class="text-end fw-bold fs-5 py-3">Total:</td>
+                        <td class="text-end fw-bold fs-5 py-3 pe-4" style="color: #2D4832;">
+                            $ @Model.TotalSustento.ToString("N0", cultura)
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a asp-action="SeleccionarFecha" class="btn btn-outline-dark rounded-pill px-5 fw-bold" style="border: 2px solid #2D4832;">Volver</a>
+    </div>
+</div>

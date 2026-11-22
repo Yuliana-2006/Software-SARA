@@ -1,36 +1,158 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using Software_SARA.Dtos;
+using Software_SARA.Repositories.Models;
 using Software_SARA.Services;
+using Software_SARA.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Software_SARA.Controllers
 {
-    // ViewModel necesario para que las vistas y el controlador compartan los datos del Gerente
-    public class GerenteViewModel
-    {
-        public int Id { get; set; }
-        public string? Nombres { get; set; }
-        public string? Apellidos { get; set; }
-        public string? TipoDocumento { get; set; }
-        public string? NumeroDocumento { get; set; }
-        public string? Correo { get; set; }
-        public string? Telefono { get; set; }
-        public string? Direccion { get; set; }
-        public string? Sede { get; set; }
-        public DateTime? FechaNacimiento { get; set; }
-    }
-
+    [AuthorizeRole("Dueño")]
     public class GerentesController : Controller
     {
         private readonly GerenteService _gerenteService;
+        private readonly EmailService _emailService;
+        private readonly SarabdContext _context;
 
-        public GerentesController(GerenteService gerenteService)
+        public GerentesController(GerenteService gerenteService, EmailService emailService, SarabdContext context)
         {
             _gerenteService = gerenteService;
+            _emailService = emailService;
+            _context = context;
         }
 
-        // GET: /Gerentes
+        private void CargarSedes(int? sedeSeleccionada = null)
+        {
+            var sedesActivas = _context.Sedes
+                .AsNoTracking()
+                .Where(s => s.EstadoSede == true)
+                .OrderBy(s => s.NomSede)
+                .ToList();
+
+            ViewBag.ListaSedes = new SelectList(
+                sedesActivas,
+                "IdSede",
+                "NomSede",
+                sedeSeleccionada
+            );
+        }
+
+        private bool EsMayorDeEdad(DateTime? fechaNacimiento)
+        {
+            if (!fechaNacimiento.HasValue)
+                return false;
+
+            var hoy = DateTime.Today;
+            var nacimiento = fechaNacimiento.Value.Date;
+
+            if (nacimiento > hoy)
+                return false;
+
+            int edad = hoy.Year - nacimiento.Year;
+            if (nacimiento > hoy.AddYears(-edad))
+                edad--;
+
+            return edad >= 18;
+        }
+
+        private void ValidarDatosGerente(GerenteDto gerente, int? idIgnorar = null)
+        {
+            if (!gerente.IdSede.HasValue || gerente.IdSede.Value <= 0)
+            {
+                ModelState.AddModelError("IdSede", "La sede es obligatoria.");
+            }
+
+            if (string.IsNullOrWhiteSpace(gerente.NumeroDocumento))
+            {
+                ModelState.AddModelError("NumeroDocumento", "El número de documento es obligatorio.");
+            }
+            else if (!Regex.IsMatch(gerente.NumeroDocumento, @"^\d+$"))
+            {
+                ModelState.AddModelError("NumeroDocumento", "El número de documento solo debe contener números (sin letras ni caracteres).");
+            }
+            else if (!Regex.IsMatch(gerente.NumeroDocumento, @"^\d{5,10}$"))
+            {
+                ModelState.AddModelError("NumeroDocumento", "El número de documento debe tener entre 5 y 10 dígitos.");
+            }
+
+            if (string.IsNullOrWhiteSpace(gerente.Telefono))
+            {
+                ModelState.AddModelError("Telefono", "El teléfono es obligatorio.");
+            }
+            else if (!Regex.IsMatch(gerente.Telefono, @"^\d+$"))
+            {
+                ModelState.AddModelError("Telefono", "El teléfono solo debe contener números (sin letras ni caracteres).");
+            }
+            else if (!Regex.IsMatch(gerente.Telefono, @"^\d{10}$"))
+            {
+                ModelState.AddModelError("Telefono", "El teléfono debe tener exactamente 10 números.");
+            }
+
+            if (string.IsNullOrWhiteSpace(gerente.Correo) ||
+                !Regex.IsMatch(gerente.Correo, @"^[a-zA-Z0-9._%+-]+@(gmail\.com|outlook\.com|ucundinamarca\.edu\.co)$"))
+            {
+                ModelState.AddModelError("Correo", "El correo debe ser valido");
+            }
+
+            if (!gerente.FechaNacimiento.HasValue)
+            {
+                ModelState.AddModelError("FechaNacimiento", "La fecha de nacimiento es obligatoria.");
+            }
+            else if (!EsMayorDeEdad(gerente.FechaNacimiento))
+            {
+                ModelState.AddModelError("FechaNacimiento", "El gerente debe ser mayor de 18 años.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(gerente.NumeroDocumento) && int.TryParse(gerente.NumeroDocumento, out int numDocParsed))
+            {
+                bool existeDoc = idIgnorar.HasValue
+                    ? _context.Usuarios.Any(u => u.NumDoc == numDocParsed && u.IdUsuario != idIgnorar.Value)
+                    : _context.Usuarios.Any(u => u.NumDoc == numDocParsed);
+
+                if (existeDoc)
+                {
+                    ModelState.AddModelError("NumeroDocumento", idIgnorar.HasValue
+                        ? "El documento ya pertenece a otro usuario."
+                        : $"El documento {gerente.NumeroDocumento} ya existe en SARA.");
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(gerente.Correo))
+            {
+                bool existeCorreo = idIgnorar.HasValue
+                    ? _context.Usuarios.Any(u => u.Correo == gerente.Correo && u.IdUsuario != idIgnorar.Value)
+                    : _context.Usuarios.Any(u => u.Correo == gerente.Correo);
+
+                if (existeCorreo)
+                {
+                    ModelState.AddModelError("Correo", idIgnorar.HasValue
+                        ? "El correo ya pertenece a otro usuario."
+                        : $"El correo {gerente.Correo} ya está registrado.");
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(gerente.Telefono))
+            {
+                bool existeTel = idIgnorar.HasValue
+                    ? _context.Usuarios.Any(u => u.Telefono == gerente.Telefono && u.IdUsuario != idIgnorar.Value)
+                    : _context.Usuarios.Any(u => u.Telefono == gerente.Telefono);
+
+                if (existeTel)
+                {
+                    ModelState.AddModelError("Telefono", idIgnorar.HasValue
+                        ? "El teléfono ya pertenece a otro usuario."
+                        : "El teléfono ya está registrado.");
+                }
+            }
+        }
+
         public async Task<IActionResult> Index()
         {
             try
@@ -41,46 +163,56 @@ namespace Software_SARA.Controllers
             catch (Exception ex)
             {
                 TempData["MensajeError"] = "Error al conectar con la base de datos: " + ex.Message;
-                return View(new List<GerenteViewModel>());
+                return View(new List<GerenteDto>());
             }
         }
 
-        // GET: /Gerentes/Crear
         [HttpGet]
         public IActionResult Crear()
         {
-            var model = new GerenteViewModel
+            CargarSedes();
+
+            var model = new GerenteDto
             {
-                Sede = "Sede Principal",
-                TipoDocumento = "1"
+                TipoDocumento = "CC"
             };
             return View(model);
         }
 
-        // POST: /Gerentes/Crear
         [HttpPost]
-        public async Task<IActionResult> Crear(GerenteViewModel gerente)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Crear(GerenteDto gerente)
         {
+            ValidarDatosGerente(gerente);
+
+            if (!ModelState.IsValid)
+            {
+                CargarSedes(gerente.IdSede);
+                return View(gerente);
+            }
+
             try
             {
                 string? error = await _gerenteService.ValidarYCrearGerenteAsync(gerente);
+
                 if (error != null)
                 {
-                    TempData["MensajeError"] = error;
-                    return RedirectToAction("Index");
+                    ModelState.AddModelError("", error);
+                    CargarSedes(gerente.IdSede);
+                    return View(gerente);
                 }
 
-                TempData["MensajeExito"] = "¡Gerente registrado exitosamente!";
+                TempData["MensajeExito"] = "¡Gerente registrado exitosamente y credenciales enviadas!";
+                return RedirectToAction("Index");
             }
             catch (Exception ex)
             {
-                TempData["MensajeError"] = "Ocurrió un error al intentar guardar el gerente: " + ex.Message;
+                ModelState.AddModelError("", "Ocurrió un error al intentar guardar: " + ex.Message);
+                CargarSedes(gerente.IdSede);
+                return View(gerente);
             }
-
-            return RedirectToAction("Index");
         }
 
-        // GET: /Gerentes/Editar/5
         [HttpGet]
         public async Task<IActionResult> Editar(int id)
         {
@@ -91,6 +223,8 @@ namespace Software_SARA.Controllers
                 {
                     return RedirectToAction("Index");
                 }
+
+                CargarSedes(gerente.IdSede);
                 return View(gerente);
             }
             catch (Exception ex)
@@ -100,30 +234,39 @@ namespace Software_SARA.Controllers
             }
         }
 
-        // POST: /Gerentes/Editar/5
         [HttpPost]
-        public async Task<IActionResult> Editar(GerenteViewModel gerente)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Editar(GerenteDto gerente)
         {
+            ValidarDatosGerente(gerente, gerente.Id);
+
+            if (!ModelState.IsValid)
+            {
+                CargarSedes(gerente.IdSede);
+                return View(gerente);
+            }
+
             try
             {
                 string? error = await _gerenteService.ValidarYActualizarGerenteAsync(gerente);
                 if (error != null)
                 {
-                    TempData["MensajeError"] = error;
-                    return RedirectToAction("Index");
+                    ModelState.AddModelError("", error);
+                    CargarSedes(gerente.IdSede);
+                    return View(gerente);
                 }
 
                 TempData["MensajeExito"] = "¡Gerente actualizado exitosamente!";
+                return RedirectToAction("Index");
             }
             catch (Exception ex)
             {
-                TempData["MensajeError"] = "Ocurrió un error al actualizar los datos: " + ex.Message;
+                ModelState.AddModelError("", "Ocurrió un error al actualizar los datos: " + ex.Message);
+                CargarSedes(gerente.IdSede);
+                return View(gerente);
             }
-
-            return RedirectToAction("Index");
         }
 
-        // GET: /Gerentes/Eliminar/5
         [HttpGet]
         public async Task<IActionResult> Eliminar(int id)
         {
@@ -143,13 +286,27 @@ namespace Software_SARA.Controllers
             }
         }
 
-        // POST: /Gerentes/Eliminar
         [HttpPost, ActionName("Eliminar")]
-        public async Task<IActionResult> EliminarConfirmado(int id)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EliminarConfirmado(int id, int? Id)
         {
+            int idGerente = id > 0 ? id : (Id ?? 0);
+
+            if (idGerente <= 0)
+            {
+                TempData["MensajeError"] = "El identificador del gerente no es válido.";
+                return RedirectToAction("Index");
+            }
+
             try
             {
-                await _gerenteService.EliminarGerenteAsync(id);
+                string? error = await _gerenteService.EliminarGerenteAsync(idGerente);
+                if (error != null)
+                {
+                    TempData["MensajeError"] = error;
+                    return RedirectToAction("Index");
+                }
+
                 TempData["MensajeExito"] = "¡Gerente eliminado exitosamente!";
             }
             catch (Exception ex)

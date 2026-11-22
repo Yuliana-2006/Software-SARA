@@ -1,0 +1,254 @@
+﻿@model IEnumerable<Software_SARA.Dtos.FacProveedorDto>
+@using System.Globalization
+
+@{
+    ViewData["Title"] = "Vencimientos Próximos de Proveedores";
+    var hoy = DateOnly.FromDateTime(DateTime.Now);
+    var culturaCo = new CultureInfo("es-CO");
+}
+
+<div class="facturas-container">
+
+    <!-- Encabezado Principal -->
+    <div class="facturas-header-banner">
+        <h2>Vencimientos Próximos de Proveedores</h2>
+    </div>
+
+    <!-- Contenedor de Tarjetas -->
+    <div class="facturas-cards-wrapper">
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var factura in Model)
+            {
+                int diasRestantes = factura.FechaVencimiento.DayNumber - hoy.DayNumber;
+                string valorEnteroFormateado = ((long)factura.ValorFactura).ToString("N0", culturaCo);
+
+                <div class="facturas-card">
+
+                    <!-- Icono de Camión -->
+                    <div class="facturas-icon">
+                        <i class="bi bi-truck"></i>
+                    </div>
+
+                    <!-- Nombre del Proveedor -->
+                    <div class="facturas-name">
+                        <h2>@factura.NomProveedor</h2>
+                    </div>
+
+                    <!-- Detalles Internos -->
+                    <div class="factura-detalle-item">
+                        Factura #@factura.IdFactura
+                    </div>
+
+                    <div class="factura-detalle-item">
+                        Valor: $@valorEnteroFormateado
+                    </div>
+
+                    <div class="factura-detalle-fecha">
+                        @factura.FechaVencimiento.ToString("dd/MM/yyyy")
+                    </div>
+
+                    <!-- Indicador dinámico de días restantes -->
+                    <div class="factura-dias-restantes">
+                        @if (diasRestantes == 0)
+                        {
+                            <span class="badge-vence-hoy">¡Vence hoy!</span>
+                        }
+                        else if (diasRestantes == 1)
+                        {
+                            <span class="badge-vence-pronto">Vence mañana</span>
+                        }
+                        else if (diasRestantes > 1)
+                        {
+                            <span class="badge-vence-pronto">Faltan @diasRestantes días</span>
+                        }
+                        else
+                        {
+                            <span class="badge-vencido">Vencido hace @Math.Abs(diasRestantes) días</span>
+                        }
+                    </div>
+
+                </div>
+            }
+        }
+        else
+        {
+            <div class="no-hay-registros">
+                No hay vencimientos próximos de proveedores para esta semana.
+            </div>
+        }
+    </div>
+
+    <!-- Botón Volver -->
+    <div style="margin-top: 30px; text-align: center;">
+        <a asp-controller="Proveedores" asp-action="FacturasProveedores" class="btn-volver-servicio">
+            Volver
+        </a>
+    </div>
+
+</div>
+
+<style>
+    .facturas-container {
+        width: 100%;
+        min-height: calc(100vh - 120px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 10px;
+        box-sizing: border-box;
+    }
+
+    .facturas-header-banner {
+        width: 100%;
+        padding: 0 40px;
+        box-sizing: border-box;
+        margin-bottom: 20px;
+    }
+
+    .facturas-header-banner h2 {
+        margin: 0;
+        color: #2E4F3E;
+        font-size: 36px;
+        font-weight: 800;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .facturas-cards-wrapper {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 55px;
+        flex-wrap: wrap;
+        padding-top: 10px;
+        box-sizing: border-box;
+    }
+
+    .facturas-card {
+        width: 280px;
+        height: 440px;
+        flex: 0 0 280px;
+        background-color: #5B805E;
+        border: 7px solid #2E4F3E;
+        border-radius: 35px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow: hidden;
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.18);
+    }
+
+    .facturas-icon {
+        width: 85px;
+        height: 85px;
+        min-width: 85px;
+        min-height: 85px;
+        margin-top: 20px;
+        background-color: #ECE9DF;
+        border: 6px solid #2E4F3E;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+
+    .facturas-icon i {
+        font-size: 38px;
+        color: #2E4F3E;
+        line-height: 1;
+    }
+
+    .facturas-name {
+        width: 90%;
+        margin-top: 10px;
+        text-align: center;
+    }
+
+    .facturas-name h2 {
+        margin: 0;
+        font-size: 22px;
+        color: #ECE9DF;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .factura-detalle-item {
+        color: #ECE9DF;
+        font-size: 15px;
+        font-weight: 700;
+        text-align: center;
+        margin-top: 8px;
+    }
+
+    .factura-detalle-fecha {
+        color: #ECE9DF;
+        font-size: 15px;
+        font-weight: 800;
+        text-align: center;
+        margin-top: 8px;
+    }
+
+    .factura-dias-restantes {
+        margin-top: 12px;
+        text-align: center;
+    }
+
+    .badge-vence-hoy {
+        background-color: #c0392b;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .badge-vence-pronto {
+        background-color: #d35400;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .badge-vencido {
+        background-color: #7f8c8d;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .no-hay-registros {
+        color: #2E4F3E;
+        font-size: 18px;
+        font-weight: bold;
+        margin-top: 40px;
+        text-align: center;
+        width: 100%;
+    }
+
+    .btn-volver-servicio {
+        background-color: #5B805E;
+        color: #ECE9DF;
+        padding: 10px 35px;
+        border-radius: 25px;
+        border: 5px solid #2E4F3E;
+        font-size: 16px;
+        font-weight: 800;
+        text-decoration: none;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        display: inline-block;
+        transition: background-color 0.2s ease;
+    }
+
+    .btn-volver-servicio:hover {
+        background-color: #4A6E4D;
+        color: white;
+        text-decoration: none;
+    }
+</style>

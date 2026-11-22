@@ -1,0 +1,91 @@
+﻿@model Software_SARA.Dtos.AperturaCajaDTO
+@{
+    ViewData["Title"] = "Registrar Apertura";
+}
+
+<style>
+    .sara-form-container { background-color: #3B6146; border-radius: 30px; padding: 30px 40px; max-width: 700px; margin: 0 auto; color: #FFFFFF; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2); }
+    .sara-input-pill { background-color: #558257; color: white; border: 1.5px solid #2D4832; border-radius: 20px; padding: 8px 15px; }
+    .sara-input-pill:focus { background-color: #558257; color: white; box-shadow: none; border-color: #D9D7C7; }
+    .sara-input-pill::placeholder { color: #D9D7C7; opacity: 0.7; }
+    .sara-btn-submit { background-color: transparent; color: #D9D7C7; border: 2px solid #D9D7C7; border-radius: 50px; font-weight: bold; padding: 8px 30px; transition: all 0.2s; }
+    .sara-btn-submit:hover { background-color: #D9D7C7; color: #3B6146; }
+    .error-rojo { color: #ffb3b3; font-weight: bold; font-size: 0.85rem; display: none; margin-top: 5px; }
+</style>
+
+<div class="container py-4">
+    <div class="sara-form-container">
+        <h2 class="fw-bold mb-4 text-white">Registrar Apertura de Caja</h2>
+
+        <div asp-validation-summary="All" class="alert alert-danger fw-bold" style="color: #721c24; background-color: #f8d7da;"></div>
+
+        <form asp-action="Apertura" method="post" id="formApertura">
+            <div class="row mb-4">
+                <div class="col-md-6 mb-3">
+                    <label class="fw-bold small">Sede</label>
+                    <input value="@ViewBag.NombreSede" class="form-control sara-input-pill" readonly />
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label class="fw-bold small">Responsable</label>
+                    <input value="@ViewBag.NombreResponsable" class="form-control sara-input-pill" readonly />
+                    <input type="hidden" asp-for="IdResponsable" value="@ViewBag.UsuarioActualId" />
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="fw-bold small">Fecha de registro</label>
+                    <input type="text" value="@DateTime.Now.ToString("dd/MM/yyyy HH:mm")" class="form-control sara-input-pill" readonly />
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="fw-bold small">Monto inicial</label>
+                    <input asp-for="MontoInicial" type="text" id="montoInicial" class="form-control sara-input-pill" placeholder="Ej: 20.000 o 20000" />
+                    <small class="text-white-50" style="font-size: 0.75rem;">* Mínimo $10,000. Puedes usar punto o coma para miles.</small>
+                    
+                    <span id="errorMontoInicial" class="error-rojo"></span>
+                    <span asp-validation-for="MontoInicial" class="text-danger small fw-bold d-block mt-1"></span>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-center gap-3 mt-4">
+                <button type="submit" class="sara-btn-submit">Registrar</button>
+                <a asp-action="Index" class="sara-btn-submit text-decoration-none">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            let inputMonto = document.getElementById('montoInicial');
+            if (inputMonto.value === '0' || inputMonto.value === '0.00') inputMonto.value = '';
+            inputMonto.addEventListener('input', function() {
+                document.getElementById('errorMontoInicial').style.display = 'none';
+            });
+        });
+
+        document.getElementById('formApertura').addEventListener('submit', function (e) {
+            let inputMonto = document.getElementById('montoInicial');
+            let errorSpan = document.getElementById('errorMontoInicial');
+            
+            // 1. Quitamos TODOS los puntos y comas para que quede un número limpio (20.000 -> 20000)
+            let valorLimpio = inputMonto.value.replace(/[.,]/g, '').trim();
+            
+            // 2. Convertimos a número
+            let numero = parseInt(valorLimpio, 10);
+            
+            // 3. Validamos
+            if (isNaN(numero) || numero < 10000) {
+                e.preventDefault(); 
+                errorSpan.innerText = "El monto debe ser mayor o igual a $10,000.";
+                errorSpan.style.display = 'block';
+            } else {
+                errorSpan.style.display = 'none';
+                // Enviamos el valor limpio a la base de datos
+                inputMonto.value = numero; 
+            }
+        });
+    </script>
+}

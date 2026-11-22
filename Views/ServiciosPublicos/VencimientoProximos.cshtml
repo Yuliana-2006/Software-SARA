@@ -1,0 +1,268 @@
+﻿@model IEnumerable<Software_SARA.Dtos.FacServPublicDto>
+@using System.Globalization
+
+@{
+    ViewData["Title"] = "Vencimientos Próximos de Servicios";
+    var hoy = DateOnly.FromDateTime(DateTime.Now);
+    var culturaCo = new CultureInfo("es-CO");
+}
+
+<div class="facturas-container">
+
+    <!-- Encabezado Principal de la Vista -->
+    <div class="facturas-header-banner">
+        <h2>Vencimientos Próximos de Servicios</h2>
+    </div>
+
+    <!-- Contenedor de las Tarjetas -->
+    <div class="facturas-cards-wrapper">
+
+        @if (Model == null || !Model.Any())
+        {
+            <div class="alerta-vacia-card">
+                <div class="facturas-icon" style="margin: 0 auto 15px auto;">
+                    <i class="bi bi-info-circle"></i>
+                </div>
+                <h3>Sin vencimientos</h3>
+                <p>No hay facturas de servicios públicos con vencimiento próximo en esta semana.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var factura in Model)
+            {
+                string nombreServicio = "SERVICIO";
+                string iconoClase = "bi-file-earmark-text";
+                int idServ = factura.IdServicio ?? 0;
+
+                switch (idServ)
+                {
+                    case 1:
+                    case 10:
+                        nombreServicio = "LUZ";
+                        iconoClase = "bi-lightning-fill";
+                        break;
+                    case 2:
+                    case 9:
+                        nombreServicio = "AGUA";
+                        iconoClase = "bi-droplet-fill";
+                        break;
+                    case 3:
+                    case 11:
+                        nombreServicio = "INTERNET";
+                        iconoClase = "bi-wifi";
+                        break;
+                    case 4:
+                    case 12:
+                        nombreServicio = "ARRIENDO";
+                        iconoClase = "bi-house-fill";
+                        break;
+                    default:
+                        nombreServicio = $"SERVICIO #{idServ}";
+                        iconoClase = "bi-file-earmark-text";
+                        break;
+                }
+
+                int diasRestantes = factura.FechaVencimiento.DayNumber - hoy.DayNumber;
+                string fechaFormateada = factura.FechaVencimiento.ToString("dd/MM/yyyy");
+                string valorEnteroFormateado = ((long)factura.ValorFactura).ToString("N0", culturaCo);
+
+                <div class="facturas-card">
+
+                    <div class="facturas-icon">
+                        <i class="bi @iconoClase"></i>
+                    </div>
+
+                    <div class="facturas-content-info">
+                        <div class="tipo-servicio-text">@nombreServicio</div>
+                        <div class="id-factura-text">Factura #@factura.IdFactura</div>
+                        <div class="valor-factura-text">Valor: $@valorEnteroFormateado</div>
+                        <div class="fecha-vencimiento-text">@fechaFormateada</div>
+
+                        <!-- Indicador dinámico de días restantes -->
+                        <div style="margin-top: 4px;">
+                            @if (diasRestantes == 0)
+                            {
+                                <span style="background-color: #c0392b; color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 800;">¡Vence hoy!</span>
+                            }
+                            else if (diasRestantes == 1)
+                            {
+                                <span style="background-color: #d35400; color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 700;">Vence mañana</span>
+                            }
+                            else if (diasRestantes > 1)
+                            {
+                                <span style="background-color: #d35400; color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 700;">Faltan @diasRestantes días</span>
+                            }
+                            else
+                            {
+                                <span style="background-color: #7f8c8d; color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 700;">Vencido hace @Math.Abs(diasRestantes) días</span>
+                            }
+                        </div>
+                    </div>
+
+                </div>
+            }
+        }
+
+    </div>
+
+    <!-- Botón Volver ubicado en la parte inferior central -->
+    <div class="footer-volver-container">
+        <a asp-controller="ServiciosPublicos" asp-action="FacturasServiciosPublicos" class="btn-volver-inferior">
+            Volver
+        </a>
+    </div>
+
+</div>
+
+<style>
+    .facturas-container {
+        width: 100%;
+        min-height: calc(100vh - 120px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 10px;
+        box-sizing: border-box;
+    }
+
+    .facturas-header-banner {
+        width: 100%;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        padding: 0 40px;
+        box-sizing: border-box;
+        margin-bottom: 25px;
+    }
+
+    .facturas-header-banner h2 {
+        margin: 0;
+        color: #2E4F3E;
+        font-size: 34px;
+        font-weight: 800;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .facturas-cards-wrapper {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 55px;
+        flex-wrap: wrap;
+        padding-top: 10px;
+        box-sizing: border-box;
+    }
+
+    .facturas-card {
+        width: 290px;
+        height: 460px;
+        flex: 0 0 290px;
+        background-color: #5B805E;
+        border: 7px solid #2E4F3E;
+        border-radius: 35px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow: hidden;
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.18);
+    }
+
+    .facturas-icon {
+        width: 95px;
+        height: 95px;
+        min-width: 95px;
+        min-height: 95px;
+        margin-top: 20px;
+        background-color: #ECE9DF;
+        border: 6px solid #2E4F3E;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+
+    .facturas-icon i {
+        font-size: 40px;
+        color: #2E4F3E;
+        line-height: 1;
+    }
+
+    .facturas-content-info {
+        width: 90%;
+        text-align: center;
+        margin-top: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .tipo-servicio-text {
+        color: #ECE9DF;
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+    }
+
+    .id-factura-text {
+        color: #ECE9DF;
+        font-size: 16px;
+        font-weight: 800;
+    }
+
+    .valor-factura-text {
+        color: #ECE9DF;
+        font-size: 15px;
+        font-weight: 800;
+    }
+
+    .fecha-vencimiento-text {
+        color: #ECE9DF;
+        font-size: 15px;
+        font-weight: 800;
+    }
+
+    .footer-volver-container {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        margin-top: 40px;
+        margin-bottom: 30px;
+    }
+
+    .btn-volver-inferior {
+        background-color: #5B805E;
+        color: #ECE9DF;
+        padding: 10px 45px;
+        border-radius: 25px;
+        border: 6px solid #2E4F3E;
+        font-size: 17px;
+        font-weight: 800;
+        text-decoration: none;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        transition: background-color 0.2s ease, transform 0.2s ease;
+        display: inline-block;
+        text-align: center;
+    }
+
+    .btn-volver-inferior:hover {
+        background-color: #4A6E4D;
+        color: white;
+        text-decoration: none;
+        transform: scale(1.03);
+    }
+
+    .alerta-vacia-card {
+        background-color: #5B805E;
+        border: 7px solid #2E4F3E;
+        border-radius: 35px;
+        width: 350px;
+        padding: 40px 20px;
+        text-align: center;
+        color: #ECE9DF;
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.18);
+    }
+</style>

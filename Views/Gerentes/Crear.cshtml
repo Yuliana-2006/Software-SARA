@@ -1,4 +1,4 @@
-﻿@model Software_SARA.Controllers.GerenteViewModel
+﻿@model Software_SARA.Dtos.GerenteDto
 
 @{
     ViewData["Title"] = "Registrar Gerente - SARA";
@@ -67,12 +67,6 @@
         box-shadow: 0 0 0 3px rgba(230, 228, 220, 0.5);
     }
 
-    .input-readonly {
-        background-color: #ffffff;
-        color: #25402D;
-        font-weight: 700;
-    }
-
     .select-doc {
         border-radius: 20px 0 0 20px;
         width: 35%;
@@ -123,27 +117,64 @@
         background-color: #ffffff;
         color: #25402D;
     }
+
+    .error-resumen {
+        background-color: #ffe6e6;
+        color: #b30000;
+        border: 1px solid #ffcccc;
+        border-radius: 15px;
+        padding: 10px 15px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        margin-bottom: 16px;
+        text-align: center;
+    }
+
+    .text-danger,
+    .field-validation-error {
+        color: #ffcccc !important;
+        font-size: 0.88rem !important;
+        font-weight: 800 !important;
+        margin-top: 6px !important;
+        display: block !important;
+        padding-left: 10px;
+    }
+
+    .field-validation-valid {
+        display: none !important;
+    }
 </style>
 
 <div class="form-wrapper">
     <div class="card-registrar">
 
         <div class="title-registrar">Registrar Gerente</div>
-        <div class="subtitle-registrar">Sede asignada: <strong>@Model?.Sede</strong></div>
+        <div class="subtitle-registrar">Gestión de SARA</div>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="error-resumen">
+                Revisa los datos ingresados.
+            </div>
+        }
 
         <form asp-controller="Gerentes" asp-action="Crear" method="post">
+            @Html.AntiForgeryToken()
 
-            <!-- Sede de Registro -->
+            <!-- Sede Asignada -->
             <div class="mb-3">
-                <label class="form-label-custom">Sede de Registro</label>
-                <input asp-for="Sede" class="input-pill-sara input-readonly" readonly />
+                <label class="form-label-custom">Sede Asignada</label>
+                <select asp-for="IdSede" class="input-pill-sara" asp-items="ViewBag.ListaSedes">
+                    <option value="">-- Seleccione una Sede --</option>
+                </select>
+                <span asp-validation-for="IdSede" class="text-danger"></span>
             </div>
 
             <!-- Documento: Tipo y Número -->
             <div class="mb-3">
                 <div class="d-flex justify-content-between">
                     <label class="form-label-custom" style="width: 35%;">Tipo Doc.</label>
-                    <label class="form-label-custom" style="width: 63%;">Número de Documento</label>
+                    <label class="form-label-custom" style="width: 63%;">Número de Documento (5 a 10 dígitos)</label>
                 </div>
                 <div class="d-flex">
                     <select asp-for="TipoDocumento" class="input-pill-sara select-doc">
@@ -151,44 +182,65 @@
                         <option value="CE">CE</option>
                         <option value="PAS">PAS</option>
                     </select>
-                    <input asp-for="NumeroDocumento" class="input-pill-sara input-doc" placeholder="Número de Documento" required />
+                    <input asp-for="NumeroDocumento"
+                           id="inputDocumentoGerente"
+                           type="text"
+                           inputmode="numeric"
+                           maxlength="10"
+                           autocomplete="off"
+                           class="input-pill-sara input-doc"
+                           placeholder="Número de Documento" />
                 </div>
+                <span asp-validation-for="NumeroDocumento" class="text-danger"></span>
             </div>
 
             <!-- Nombres y Apellidos -->
             <div class="row g-2 mb-3">
                 <div class="col-6">
                     <label class="form-label-custom">Nombres</label>
-                    <input asp-for="Nombres" class="input-pill-sara" placeholder="Nombres" required />
+                    <input asp-for="Nombres" class="input-pill-sara" placeholder="Nombres" />
+                    <span asp-validation-for="Nombres" class="text-danger"></span>
                 </div>
                 <div class="col-6">
                     <label class="form-label-custom">Apellidos</label>
-                    <input asp-for="Apellidos" class="input-pill-sara" placeholder="Apellidos" required />
+                    <input asp-for="Apellidos" class="input-pill-sara" placeholder="Apellidos" />
+                    <span asp-validation-for="Apellidos" class="text-danger"></span>
                 </div>
             </div>
 
             <!-- Teléfono y Correo -->
             <div class="row g-2 mb-3">
                 <div class="col-6">
-                    <label class="form-label-custom">Teléfono</label>
-                    <input asp-for="Telefono" class="input-pill-sara" placeholder="Teléfono" required />
+                    <label class="form-label-custom">Teléfono (10 números)</label>
+                    <input asp-for="Telefono"
+                           id="inputTelefonoGerente"
+                           type="text"
+                           inputmode="numeric"
+                           maxlength="10"
+                           autocomplete="off"
+                           class="input-pill-sara"
+                           placeholder="Teléfono" />
+                    <span asp-validation-for="Telefono" class="text-danger"></span>
                 </div>
                 <div class="col-6">
                     <label class="form-label-custom">Correo Electrónico</label>
-                    <input asp-for="Correo" type="email" class="input-pill-sara" placeholder="Correo" required />
+                    <input asp-for="Correo" type="email" class="input-pill-sara" placeholder="Correo" />
+                    <span asp-validation-for="Correo" class="text-danger"></span>
                 </div>
             </div>
 
             <!-- Dirección de Vivienda -->
             <div class="mb-3">
                 <label class="form-label-custom">Dirección de Vivienda</label>
-                <input asp-for="Direccion" class="input-pill-sara" placeholder="Dirección" required />
+                <input asp-for="Direccion" class="input-pill-sara" placeholder="Dirección" />
+                <span asp-validation-for="Direccion" class="text-danger"></span>
             </div>
 
             <!-- Fecha de Nacimiento -->
             <div class="mb-4">
                 <label class="form-label-custom">Fecha de Nacimiento</label>
-                <input asp-for="FechaNacimiento" type="date" class="input-pill-sara" required />
+                <input asp-for="FechaNacimiento" type="date" class="input-pill-sara" />
+                <span asp-validation-for="FechaNacimiento" class="text-danger"></span>
             </div>
 
             <!-- Botones -->
@@ -201,3 +253,32 @@
 
     </div>
 </div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        (function () {
+            function restringirSoloNumeros(input, maxLen) {
+                if (!input) return;
+
+                input.addEventListener('beforeinput', function (e) {
+                    if (e.data && /[^0-9]/.test(e.data)) {
+                        e.preventDefault();
+                    }
+                });
+
+                input.addEventListener('input', function () {
+                    const limpio = this.value.replace(/[^0-9]/g, '').slice(0, maxLen);
+                    if (this.value !== limpio) {
+                        this.value = limpio;
+                    }
+                });
+            }
+
+            restringirSoloNumeros(document.getElementById('inputDocumentoGerente'), 10);
+            restringirSoloNumeros(document.getElementById('inputTelefonoGerente'), 10);
+        })();
+    </script>
+}

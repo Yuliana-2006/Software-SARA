@@ -1,0 +1,50 @@
+﻿@{
+    ViewData["Title"] = "Caja";
+    var rol = Context.Session.GetString("UsuarioRol");
+}
+
+<style>
+    .sara-card-caja {
+        background-color: #558257; border: 4px solid #2D4832;
+        border-radius: 25px; width: 220px; height: 280px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        text-decoration: none; transition: transform 0.2s; cursor: pointer;
+    }
+    .sara-card-caja:hover { transform: scale(1.05); }
+    .sara-card-disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+    .sara-circle-icon {
+        width: 80px; height: 80px; border-radius: 50%;
+        background-color: #D9D7C7; border: 3px solid #2D4832;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 3rem; color: #2D4832; font-weight: bold; margin-bottom: 20px;
+    }
+</style>
+
+<div class="container py-4">
+    <h3 class="fw-bold mb-4" style="color: #2D4832;">CAJA</h3>
+
+    @if (TempData["MensajeExito"] != null) { <div class="alert alert-success fw-bold shadow-sm">@TempData["MensajeExito"]</div> }
+    @if (TempData["MensajeError"] != null) { <div class="alert alert-danger fw-bold shadow-sm">@TempData["MensajeError"]</div> }
+
+    <div class="d-flex flex-wrap justify-content-center gap-4 mt-5">
+        
+        <!-- Tarjeta Registrar Apertura -->
+        <a asp-action="Apertura" class="sara-card-caja shadow">
+            <div class="sara-circle-icon">+</div>
+            <h4 class="fw-bold text-white text-center">Registrar<br>Apertura</h4>
+        </a>
+
+        <!-- Tarjeta Registrar Cierre -->
+        <a asp-action="Cierre" class="sara-card-caja shadow @(rol != "Tesorero" ? "sara-card-disabled" : "")" title="@(rol != "Tesorero" ? "Solo el Tesorero puede realizar cierres" : "")">
+            <div class="sara-circle-icon" style="@(rol != "Tesorero" ? "font-size: 2rem;" : "")">@(rol == "Tesorero" ? "-" : "🔒")</div>
+            <h4 class="fw-bold text-white text-center">Registrar<br>Cierre</h4>
+        </a>
+
+        <!-- Tarjeta Historial -->
+        <a asp-action="Historial" class="sara-card-caja shadow">
+            <div class="sara-circle-icon" style="font-size: 2.5rem;"><i class="bi bi-clock-history"></i></div>
+            <h4 class="fw-bold text-white text-center">Historial<br>de Cajas</h4>
+        </a>
+
+    </div>
+</div>

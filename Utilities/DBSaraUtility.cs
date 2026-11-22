@@ -1,24 +1,23 @@
-﻿using Microsoft.Data.SqlClient;
+using Microsoft.Data.SqlClient;
+using System;
+using System.Data.Common;
 
 namespace Software_SARA.Utilities
 {
-    public class DBSaraUtility
+    public interface IDBSaraUtility
     {
-        static string SERVER = "LAPTOP-OG1EFTPF";
+        void Connect();
+        void Disconnect();
+        DbConnection GetDbConnection();
+    }
 
+    public class DBSaraUtility : IDBSaraUtility
+    {
+        static string SERVER = "DESKTOP-YULIANA";
         static string DB_NAME = "SARABD";
-
-        static string DB_USER = "SARA_app";
-
-        static string DB_PASSWORD = "123";
-
-        static string Conn = "Server=" + SERVER + ";Database=" + DB_NAME + ";User Id=" + DB_USER + ";Password=" + DB_PASSWORD + ";MultipleActiveResultSets=true;TrustServerCertificate=true;";
-
-        //mi conxion:
-
+        static string Conn = "Server=" + SERVER + ";Database=" + DB_NAME + ";Trusted_Connection=True;TrustServerCertificate=True;";
         SqlConnection Con = new SqlConnection(Conn);
 
-        //procedimiento para abrir la conexion a la base de datos
         public void Connect()
         {
             try
@@ -32,7 +31,6 @@ namespace Software_SARA.Utilities
             }
         }
 
-        //procedimiento para cerrar la conexion a la base de datos
         public void Disconnect()
         {
             try
@@ -46,11 +44,14 @@ namespace Software_SARA.Utilities
             }
         }
 
-        //Funcion que retorna la conexion a la base de datos
         public SqlConnection CONN()
         {
             return Con;
+        }
 
+        public DbConnection GetDbConnection()
+        {
+            return Con;
         }
     }
 }
