@@ -1,10 +1,10 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Software_SARA.Dtos;
 using Software_SARA.Repositories.Models;
 using Software_SARA.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -13,10 +13,20 @@ namespace Software_SARA.Repositories
     public class SedeRepository
     {
         private readonly SarabdContext _context;
+        private readonly Func<IDBSaraUtility> _dbFactory;
 
-        public SedeRepository(SarabdContext context)
+        public SedeRepository(SarabdContext context, Func<IDBSaraUtility>? dbFactory = null)
         {
             _context = context;
+            _dbFactory = dbFactory ?? (() => new DBSaraUtility());
+        }
+
+        private static void AddParam(DbCommand command, string name, object value)
+        {
+            var param = command.CreateParameter();
+            param.ParameterName = name;
+            param.Value = value;
+            command.Parameters.Add(param);
         }
 
         public virtual async Task<bool> TieneInformacionAsociadaAsync(int idSede)
@@ -25,20 +35,16 @@ namespace Software_SARA.Repositories
                 .Where(u => u.IdSede == idSede)
                 .Select(u => u.IdUsuario)
                 .ToListAsync();
-
             if (idsUsuariosSede.Count == 0)
                 return false;
 
             bool tieneFacturas = await _context.Facturas
                 .AnyAsync(f => idsUsuariosSede.Contains(f.IdUsuario));
-
             bool tieneRecordatorios = await _context.Recordatorios
                 .AnyAsync(r => idsUsuariosSede.Contains(r.IdUsuario));
-
             bool tieneCajas = await _context.DiaCajas
                 .AnyAsync(c => idsUsuariosSede.Contains(c.IdUsuario) ||
                               (c.IdUsuarioCierre.HasValue && idsUsuariosSede.Contains(c.IdUsuarioCierre.Value)));
-
             return tieneFacturas || tieneRecordatorios || tieneCajas;
         }
 
@@ -55,21 +61,20 @@ namespace Software_SARA.Repositories
             string sql = @"INSERT INTO SARABD.dbo.Sede
                            (nom_sede, dir_sede, tel_sede, estado_sede, ciu_sede, dep_sede, barrio_sede)
                            VALUES (@NomSede, @DirSede, @TelSede, @EstadoSede, @CiuSede, @DepSede, @BarrioSede);";
-
-            DBSaraUtility connection = new DBSaraUtility();
+            IDBSaraUtility connection = _dbFactory();
             connection.Connect();
             try
             {
-                using (SqlCommand command = new SqlCommand(sql, connection.CONN()))
+                using (DbCommand command = connection.GetDbConnection().CreateCommand())
                 {
-                    command.Parameters.AddWithValue("@NomSede", sedeDto.NomSede ?? string.Empty);
-                    command.Parameters.AddWithValue("@DirSede", sedeDto.DirSede ?? string.Empty);
-                    command.Parameters.AddWithValue("@TelSede", sedeDto.TelSede ?? string.Empty);
-                    command.Parameters.AddWithValue("@EstadoSede", sedeDto.EstadoSede ? 1 : 0);
-                    command.Parameters.AddWithValue("@CiuSede", sedeDto.CiuSede ?? string.Empty);
-                    command.Parameters.AddWithValue("@DepSede", sedeDto.DepSede ?? string.Empty);
-                    command.Parameters.AddWithValue("@BarrioSede", sedeDto.BarrioSede ?? string.Empty);
-
+                    command.CommandText = sql;
+                    AddParam(command, "@NomSede", sedeDto.NomSede ?? string.Empty);
+                    AddParam(command, "@DirSede", sedeDto.DirSede ?? string.Empty);
+                    AddParam(command, "@TelSede", sedeDto.TelSede ?? string.Empty);
+                    AddParam(command, "@EstadoSede", sedeDto.EstadoSede ? 1 : 0);
+                    AddParam(command, "@CiuSede", sedeDto.CiuSede ?? string.Empty);
+                    AddParam(command, "@DepSede", sedeDto.DepSede ?? string.Empty);
+                    AddParam(command, "@BarrioSede", sedeDto.BarrioSede ?? string.Empty);
                     int comando = await command.ExecuteNonQueryAsync();
                     result = comando != 0;
                 }
@@ -93,22 +98,21 @@ namespace Software_SARA.Repositories
                                dep_sede = @DepSede,
                                barrio_sede = @BarrioSede
                            WHERE id_sede = @IdSede;";
-
-            DBSaraUtility connection = new DBSaraUtility();
+            IDBSaraUtility connection = _dbFactory();
             connection.Connect();
             try
             {
-                using (SqlCommand command = new SqlCommand(sql, connection.CONN()))
+                using (DbCommand command = connection.GetDbConnection().CreateCommand())
                 {
-                    command.Parameters.AddWithValue("@NomSede", sedeDto.NomSede ?? string.Empty);
-                    command.Parameters.AddWithValue("@DirSede", sedeDto.DirSede ?? string.Empty);
-                    command.Parameters.AddWithValue("@TelSede", sedeDto.TelSede ?? string.Empty);
-                    command.Parameters.AddWithValue("@EstadoSede", sedeDto.EstadoSede ? 1 : 0);
-                    command.Parameters.AddWithValue("@CiuSede", sedeDto.CiuSede ?? string.Empty);
-                    command.Parameters.AddWithValue("@DepSede", sedeDto.DepSede ?? string.Empty);
-                    command.Parameters.AddWithValue("@BarrioSede", sedeDto.BarrioSede ?? string.Empty);
-                    command.Parameters.AddWithValue("@IdSede", sedeDto.IdSede);
-
+                    command.CommandText = sql;
+                    AddParam(command, "@NomSede", sedeDto.NomSede ?? string.Empty);
+                    AddParam(command, "@DirSede", sedeDto.DirSede ?? string.Empty);
+                    AddParam(command, "@TelSede", sedeDto.TelSede ?? string.Empty);
+                    AddParam(command, "@EstadoSede", sedeDto.EstadoSede ? 1 : 0);
+                    AddParam(command, "@CiuSede", sedeDto.CiuSede ?? string.Empty);
+                    AddParam(command, "@DepSede", sedeDto.DepSede ?? string.Empty);
+                    AddParam(command, "@BarrioSede", sedeDto.BarrioSede ?? string.Empty);
+                    AddParam(command, "@IdSede", sedeDto.IdSede);
                     int comando = await command.ExecuteNonQueryAsync();
                     result = comando != 0;
                 }
@@ -126,17 +130,16 @@ namespace Software_SARA.Repositories
             {
                 return false;
             }
-
             bool result = false;
             string sql = "UPDATE SARABD.dbo.sede SET estado_sede = 0 WHERE id_sede = @IdSede;";
-
-            DBSaraUtility connection = new DBSaraUtility();
+            IDBSaraUtility connection = _dbFactory();
             connection.Connect();
             try
             {
-                using (SqlCommand command = new SqlCommand(sql, connection.CONN()))
+                using (DbCommand command = connection.GetDbConnection().CreateCommand())
                 {
-                    command.Parameters.AddWithValue("@IdSede", idSede);
+                    command.CommandText = sql;
+                    AddParam(command, "@IdSede", idSede);
                     int comando = await command.ExecuteNonQueryAsync();
                     result = comando != 0;
                 }
@@ -152,14 +155,14 @@ namespace Software_SARA.Repositories
         {
             bool result = false;
             string sql = "UPDATE SARABD.dbo.sede SET estado_sede = 1 WHERE id_sede = @IdSede;";
-
-            DBSaraUtility connection = new DBSaraUtility();
+            IDBSaraUtility connection = _dbFactory();
             connection.Connect();
             try
             {
-                using (SqlCommand command = new SqlCommand(sql, connection.CONN()))
+                using (DbCommand command = connection.GetDbConnection().CreateCommand())
                 {
-                    command.Parameters.AddWithValue("@IdSede", idSede);
+                    command.CommandText = sql;
+                    AddParam(command, "@IdSede", idSede);
                     int comando = await command.ExecuteNonQueryAsync();
                     result = comando != 0;
                 }
