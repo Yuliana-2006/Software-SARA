@@ -91,7 +91,7 @@ namespace Software_SARA.Repositories
             return proveedores.TryGetValue(idProveedorStr, out var nombre) ? nombre : "Desconocido";
         }
 
-        public async Task<List<RecordatorioPedidoDto>> ObtenerTodosLosRecordatorios()
+        public virtual async Task<List<RecordatorioPedidoDto>> ObtenerTodosLosRecordatorios()
         {
             var lista = new List<RecordatorioPedidoDto>();
             var idsUsuariosSede = ObtenerIdsUsuariosSedeActual();
@@ -133,12 +133,12 @@ namespace Software_SARA.Repositories
             return lista;
         }
 
-        public async Task<bool> ExisteIdRecordatorio(string idRecordatorio)
+        public virtual async Task<bool> ExisteIdRecordatorio(string idRecordatorio)
         {
             return await Task.FromResult(false);
         }
 
-        public async Task<bool> CrearRecordatorio(RecordatorioPedidoDto dto, int idUsuarioLogueado)
+        public virtual async Task<bool> CrearRecordatorio(RecordatorioPedidoDto dto, int idUsuarioLogueado)
         {
             if (!TryParseIdProveedor(dto.Proveedor, out int idProveedor))
             {
@@ -164,7 +164,7 @@ namespace Software_SARA.Repositories
             return filasAfectadas > 0;
         }
 
-        public async Task<RecordatorioPedidoDto?> ObtenerPorId(int idRecordatorio)
+        public virtual async Task<RecordatorioPedidoDto?> ObtenerPorId(int idRecordatorio)
         {
             var idsUsuariosSede = ObtenerIdsUsuariosSedeActual();
             if (idsUsuariosSede.Count == 0) return null;
@@ -206,7 +206,7 @@ namespace Software_SARA.Repositories
             return null;
         }
 
-        public async Task<bool> ActualizarRecordatorio(RecordatorioPedidoDto dto)
+        public virtual async Task<bool> ActualizarRecordatorio(RecordatorioPedidoDto dto)
         {
             if (!TryParseIdProveedor(dto.Proveedor, out int idProveedor))
             {
@@ -235,7 +235,7 @@ namespace Software_SARA.Repositories
             return filasAfectadas > 0;
         }
 
-        public async Task<bool> ActualizarEstadoRecordatorio(int idRecordatorio, int nuevoEstado)
+        public virtual async Task<bool> ActualizarEstadoRecordatorio(int idRecordatorio, int nuevoEstado)
         {
             using var conexion = new SqlConnection(_connectionString);
             await conexion.OpenAsync();

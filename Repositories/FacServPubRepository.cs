@@ -66,7 +66,7 @@ namespace Software_SARA.Repositories
                 .ToList();
         }
 
-        public async Task<List<Factura>> ObtenerTodasLasFacturasServiciosPublicos()
+        public virtual async Task<List<Factura>> ObtenerTodasLasFacturasServiciosPublicos()
         {
             var listaFacturas = new List<Factura>();
             var idsUsuariosSede = ObtenerIdsUsuariosSedeActual();
@@ -123,7 +123,7 @@ namespace Software_SARA.Repositories
             return listaFacturas;
         }
 
-        public async Task<bool> CreateFacturaServicioPublico(FacServPublicDto facServPublicDto)
+        public virtual async Task<bool> CreateFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
             // Consulta SQL para insertar una nueva factura de servicio público en la base de datos
             bool result = false;
@@ -159,7 +159,7 @@ namespace Software_SARA.Repositories
             return result;
         }
 
-        public async Task<List<SelectListItem>> ObtenerListaServiciosPublicos()
+        public virtual async Task<List<SelectListItem>> ObtenerListaServiciosPublicos()
         {
             var listaServiciosPublicos = new List<SelectListItem>();
             string sql = "SELECT id_servicio, nom_servicio FROM SARABD.dbo.servicio ORDER BY nom_servicio ASC;";
@@ -190,7 +190,7 @@ namespace Software_SARA.Repositories
             return listaServiciosPublicos;
         }
 
-        public async Task<bool> EditarFacturaServicioPublico(FacServPublicDto facServPublicDto)
+        public virtual async Task<bool> EditarFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
             bool result = false;
             string SQL = @"UPDATE SARABD.dbo.factura
@@ -231,7 +231,7 @@ namespace Software_SARA.Repositories
             return result;
         }
 
-        public async Task<bool> ConfirmarPagoFacturaServicioPublico(int idFactura)
+        public virtual async Task<bool> ConfirmarPagoFacturaServicioPublico(int idFactura)
         {
             bool result = false;
             string fechaActual = DateTime.Now.ToString("yyyy-MM-dd");
@@ -259,7 +259,7 @@ namespace Software_SARA.Repositories
             return result;
         }
 
-        public async Task<List<FacServPublicDto>> ObtenerHistorialFacturasServiciosPublicosAsync()
+        public virtual async Task<List<FacServPublicDto>> ObtenerHistorialFacturasServiciosPublicosAsync()
         {
             var lista = new List<FacServPublicDto>();
             var idsUsuariosSede = ObtenerIdsUsuariosSedeActual();

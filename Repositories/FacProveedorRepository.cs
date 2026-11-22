@@ -159,7 +159,7 @@ namespace Software_SARA.Repositories
             return result;
         }
 
-        public async Task<List<SelectListItem>> ObtenerListaProveedores()
+        public virtual async Task<List<SelectListItem>> ObtenerListaProveedores()
         {
             var listaProveedores = new List<SelectListItem>();
             string sql = "SELECT id_proveedor, nom_proveedor FROM SARABD.dbo.proveedor ORDER BY nom_proveedor ASC;";
@@ -231,7 +231,7 @@ namespace Software_SARA.Repositories
             return result;
         }
 
-        public async Task<bool> ConfirmarPagoFacturaProveedor(int idFactura)
+        public virtual async Task<bool> ConfirmarPagoFacturaProveedor(int idFactura)
         {
             bool result = false;
             string fechaActual = DateTime.Now.ToString("yyyy-MM-dd");
@@ -259,7 +259,7 @@ namespace Software_SARA.Repositories
             return result;
         }
 
-        public async Task<List<FacProveedorDto>> ObtenerHistorialFacturasProveedoresAsync()
+        public virtual async Task<List<FacProveedorDto>> ObtenerHistorialFacturasProveedoresAsync()
         {
             var lista = new List<FacProveedorDto>();
             var idsUsuariosSede = ObtenerIdsUsuariosSedeActual();

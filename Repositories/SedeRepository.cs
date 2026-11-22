@@ -19,7 +19,7 @@ namespace Software_SARA.Repositories
             _context = context;
         }
 
-        public async Task<bool> TieneInformacionAsociadaAsync(int idSede)
+        public virtual async Task<bool> TieneInformacionAsociadaAsync(int idSede)
         {
             var idsUsuariosSede = await _context.Usuarios
                 .Where(u => u.IdSede == idSede)
@@ -42,14 +42,14 @@ namespace Software_SARA.Repositories
             return tieneFacturas || tieneRecordatorios || tieneCajas;
         }
 
-        public async Task<List<Sede>> ObtenerTodasLasSedes()
+        public virtual async Task<List<Sede>> ObtenerTodasLasSedes()
         {
             return await _context.Sedes
                 .AsNoTracking()
                 .ToListAsync();
         }
 
-        public async Task<bool> CreateSede(SedeDto sedeDto)
+        public virtual async Task<bool> CreateSede(SedeDto sedeDto)
         {
             bool result = false;
             string sql = @"INSERT INTO SARABD.dbo.Sede
@@ -81,7 +81,7 @@ namespace Software_SARA.Repositories
             return result;
         }
 
-        public async Task<bool> EditarSede(SedeDto sedeDto)
+        public virtual async Task<bool> EditarSede(SedeDto sedeDto)
         {
             bool result = false;
             string sql = @"UPDATE SARABD.dbo.Sede
@@ -120,7 +120,7 @@ namespace Software_SARA.Repositories
             return result;
         }
 
-        public async Task<bool> EliminarSede(int idSede)
+        public virtual async Task<bool> EliminarSede(int idSede)
         {
             if (await TieneInformacionAsociadaAsync(idSede))
             {
@@ -148,7 +148,7 @@ namespace Software_SARA.Repositories
             return result;
         }
 
-        public async Task<bool> ReactivarSede(int idSede)
+        public virtual async Task<bool> ReactivarSede(int idSede)
         {
             bool result = false;
             string sql = "UPDATE SARABD.dbo.sede SET estado_sede = 1 WHERE id_sede = @IdSede;";
