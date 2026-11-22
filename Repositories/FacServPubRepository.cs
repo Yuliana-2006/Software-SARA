@@ -147,7 +147,7 @@ namespace Software_SARA.Repositories
             {
                 using (DbCommand command = connectionUtility.GetDbConnection().CreateCommand())
                 {
-                    command.CommandText = SQL;
+                    command.CommandText = sql;
                     AddParam(command, "@IdUsuario", facServPublicDto.IdUsuario);
                     AddParam(command, "@TipFactura", facServPublicDto.TipFactura ? 1 : 0);
                     AddParam(command, "@IdProveedor", facServPublicDto.IdProveedor.HasValue ? facServPublicDto.IdProveedor.Value : DBNull.Value);
