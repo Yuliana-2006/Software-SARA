@@ -1,4 +1,9 @@
-﻿using System.Data;
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
@@ -12,22 +17,32 @@ namespace Software_SARA.Repositories
         private readonly string _connectionString;
         private readonly SarabdContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly Func<string, DbConnection> _connectionFactory;
 
         public RecordatorioPedidoRepository(
             IConfiguration configuration,
             SarabdContext context,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            Func<string, DbConnection>? connectionFactory = null)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection") ?? "";
             _context = context;
             _httpContextAccessor = httpContextAccessor;
+            _connectionFactory = connectionFactory ?? (cs => new SqlConnection(cs));
+        }
+
+        private static void AddParam(DbCommand command, string name, object value)
+        {
+            var param = command.CreateParameter();
+            param.ParameterName = name;
+            param.Value = value;
+            command.Parameters.Add(param);
         }
 
         public static bool TryParseIdProveedor(string? valor, out int idProveedor)
         {
             idProveedor = 0;
             if (string.IsNullOrWhiteSpace(valor)) return false;
-
             string parteNumerica = valor.Split('-', StringSplitOptions.TrimEntries)[0];
             return int.TryParse(parteNumerica, out idProveedor) && idProveedor > 0;
         }
@@ -36,7 +51,6 @@ namespace Software_SARA.Repositories
         {
             var httpContext = _httpContextAccessor.HttpContext;
             if (httpContext == null) return new List<int>();
-
             int? sedeId = null;
             var sedeIdStr = httpContext.Session.GetString("SedeId");
             if (int.TryParse(sedeIdStr, out int parsedSedeId) && parsedSedeId > 0)
@@ -52,7 +66,6 @@ namespace Software_SARA.Repositories
                         .Where(u => u.IdUsuario == usuarioId)
                         .Select(u => new { u.IdRol, u.IdSede })
                         .FirstOrDefault();
-
                     if (usuario != null)
                     {
                         if (!usuario.IdSede.HasValue && (usuario.IdRol == 1 || usuario.IdRol == 5))
@@ -62,14 +75,11 @@ namespace Software_SARA.Repositories
                                 .Select(u => u.IdUsuario)
                                 .ToList();
                         }
-
                         sedeId = usuario.IdSede;
                     }
                 }
             }
-
             if (!sedeId.HasValue || sedeId.Value <= 0) return new List<int>();
-
             return _context.Usuarios
                 .Where(u => u.IdSede == sedeId.Value)
                 .Select(u => u.IdUsuario)
@@ -87,28 +97,27 @@ namespace Software_SARA.Repositories
                 { "17", "Altipal" }, { "18", "Colanta" }, { "19", "Super Ricas" }, { "20", "Margarita" },
                 { "21", "Yupi" }, { "22", "Big Cola" }, { "23", "Tecnoquímica" }, { "24", "Corbeta" }
             };
-
             return proveedores.TryGetValue(idProveedorStr, out var nombre) ? nombre : "Desconocido";
         }
 
-        public async Task<List<RecordatorioPedidoDto>> ObtenerTodosLosRecordatorios()
+        public virtual async Task<List<RecordatorioPedidoDto>> ObtenerTodosLosRecordatorios()
         {
             var lista = new List<RecordatorioPedidoDto>();
             var idsUsuariosSede = ObtenerIdsUsuariosSedeActual();
             if (idsUsuariosSede.Count == 0) return lista;
 
-            var parametros = idsUsuariosSede.Select((id, idx) => new SqlParameter($"@u{idx}", id)).ToArray();
-            string inClause = string.Join(", ", parametros.Select(p => p.ParameterName));
-
-            using var conexion = new SqlConnection(_connectionString);
+            string inClause = string.Join(", ", idsUsuariosSede.Select((_, idx) => $"@u{idx}"));
+            using var conexion = _connectionFactory(_connectionString);
             await conexion.OpenAsync();
-
             string query = $@"SELECT id_recordatorio, id_usuario, id_proveedor, fecha_reg_recordatorio, fecha_entrega, estado_recordatorio
                              FROM dbo.recordatorio
                              WHERE estado_recordatorio = 0 AND id_usuario IN ({inClause})";
-
-            using var comando = new SqlCommand(query, conexion);
-            comando.Parameters.AddRange(parametros);
+            using var comando = conexion.CreateCommand();
+            comando.CommandText = query;
+            for (int idx = 0; idx < idsUsuariosSede.Count; idx++)
+            {
+                AddParam(comando, $"@u{idx}", idsUsuariosSede[idx]);
+            }
 
             using var lector = await comando.ExecuteReaderAsync();
             while (await lector.ReadAsync())
@@ -118,7 +127,6 @@ namespace Software_SARA.Repositories
                 string idDb = lector["id_recordatorio"]?.ToString() ?? "1";
                 string idProv = lector["id_proveedor"]?.ToString() ?? "";
                 string nombreProv = ObtenerNombreProveedor(idProv);
-
                 lista.Add(new RecordatorioPedidoDto
                 {
                     IdRecordatorio = idDb.PadLeft(3, '0'),
@@ -129,59 +137,54 @@ namespace Software_SARA.Repositories
                     Estado = estadoTexto
                 });
             }
-
             return lista;
         }
 
-        public async Task<bool> ExisteIdRecordatorio(string idRecordatorio)
+        public virtual async Task<bool> ExisteIdRecordatorio(string idRecordatorio)
         {
             return await Task.FromResult(false);
         }
 
-        public async Task<bool> CrearRecordatorio(RecordatorioPedidoDto dto, int idUsuarioLogueado)
+        public virtual async Task<bool> CrearRecordatorio(RecordatorioPedidoDto dto, int idUsuarioLogueado)
         {
             if (!TryParseIdProveedor(dto.Proveedor, out int idProveedor))
             {
                 return false;
             }
-
-            using var conexion = new SqlConnection(_connectionString);
+            using var conexion = _connectionFactory(_connectionString);
             await conexion.OpenAsync();
-
             const string query = @"INSERT INTO dbo.recordatorio (id_usuario, id_proveedor, fecha_reg_recordatorio, fecha_entrega, estado_recordatorio) 
                                    VALUES (@IdUsuario, @IdProveedor, @FechaReg, @FechaEntrega, @Estado)";
-
-            using var comando = new SqlCommand(query, conexion);
+            using var comando = conexion.CreateCommand();
+            comando.CommandText = query;
             int.TryParse(dto.Estado, out int estadoValor);
-
-            comando.Parameters.AddWithValue("@IdUsuario", idUsuarioLogueado);
-            comando.Parameters.AddWithValue("@IdProveedor", idProveedor);
-            comando.Parameters.AddWithValue("@FechaReg", DateTime.Now);
-            comando.Parameters.AddWithValue("@FechaEntrega", dto.FechaEntrega.ToDateTime(TimeOnly.MinValue));
-            comando.Parameters.AddWithValue("@Estado", estadoValor);
-
+            AddParam(comando, "@IdUsuario", idUsuarioLogueado);
+            AddParam(comando, "@IdProveedor", idProveedor);
+            AddParam(comando, "@FechaReg", DateTime.Now);
+            AddParam(comando, "@FechaEntrega", dto.FechaEntrega.ToDateTime(TimeOnly.MinValue));
+            AddParam(comando, "@Estado", estadoValor);
             int filasAfectadas = await comando.ExecuteNonQueryAsync();
             return filasAfectadas > 0;
         }
 
-        public async Task<RecordatorioPedidoDto?> ObtenerPorId(int idRecordatorio)
+        public virtual async Task<RecordatorioPedidoDto?> ObtenerPorId(int idRecordatorio)
         {
             var idsUsuariosSede = ObtenerIdsUsuariosSedeActual();
             if (idsUsuariosSede.Count == 0) return null;
 
-            var parametros = idsUsuariosSede.Select((id, idx) => new SqlParameter($"@u{idx}", id)).ToArray();
-            string inClause = string.Join(", ", parametros.Select(p => p.ParameterName));
-
-            using var conexion = new SqlConnection(_connectionString);
+            string inClause = string.Join(", ", idsUsuariosSede.Select((_, idx) => $"@u{idx}"));
+            using var conexion = _connectionFactory(_connectionString);
             await conexion.OpenAsync();
-
             string query = $@"SELECT id_recordatorio, id_usuario, id_proveedor, fecha_reg_recordatorio, fecha_entrega, estado_recordatorio
                              FROM dbo.recordatorio
                              WHERE id_recordatorio = @Id AND id_usuario IN ({inClause})";
-
-            using var comando = new SqlCommand(query, conexion);
-            comando.Parameters.AddWithValue("@Id", idRecordatorio);
-            comando.Parameters.AddRange(parametros);
+            using var comando = conexion.CreateCommand();
+            comando.CommandText = query;
+            AddParam(comando, "@Id", idRecordatorio);
+            for (int idx = 0; idx < idsUsuariosSede.Count; idx++)
+            {
+                AddParam(comando, $"@u{idx}", idsUsuariosSede[idx]);
+            }
 
             using var lector = await comando.ExecuteReaderAsync();
             if (await lector.ReadAsync())
@@ -191,7 +194,6 @@ namespace Software_SARA.Repositories
                 string idDb = lector["id_recordatorio"]?.ToString() ?? "1";
                 string idProv = lector["id_proveedor"]?.ToString() ?? "";
                 string nombreProv = ObtenerNombreProveedor(idProv);
-
                 return new RecordatorioPedidoDto
                 {
                     IdRecordatorio = idDb.PadLeft(3, '0'),
@@ -202,49 +204,43 @@ namespace Software_SARA.Repositories
                     Estado = estadoTexto
                 };
             }
-
             return null;
         }
 
-        public async Task<bool> ActualizarRecordatorio(RecordatorioPedidoDto dto)
+        public virtual async Task<bool> ActualizarRecordatorio(RecordatorioPedidoDto dto)
         {
             if (!TryParseIdProveedor(dto.Proveedor, out int idProveedor))
             {
                 return false;
             }
-
-            using var conexion = new SqlConnection(_connectionString);
+            using var conexion = _connectionFactory(_connectionString);
             await conexion.OpenAsync();
             int idRecordatorioNum = Convert.ToInt32(dto.IdRecordatorio);
-
             const string query = @"UPDATE dbo.recordatorio 
                                    SET id_proveedor = @IdProveedor, 
                                        fecha_entrega = @FechaEntrega, 
                                        estado_recordatorio = @Estado 
                                    WHERE id_recordatorio = @IdRecordatorio";
-
-            using var comando = new SqlCommand(query, conexion);
+            using var comando = conexion.CreateCommand();
+            comando.CommandText = query;
             int.TryParse(dto.Estado, out int estadoValor);
-
-            comando.Parameters.AddWithValue("@IdProveedor", idProveedor);
-            comando.Parameters.AddWithValue("@FechaEntrega", dto.FechaEntrega.ToDateTime(TimeOnly.MinValue));
-            comando.Parameters.AddWithValue("@Estado", estadoValor);
-            comando.Parameters.AddWithValue("@IdRecordatorio", idRecordatorioNum);
-
+            AddParam(comando, "@IdProveedor", idProveedor);
+            AddParam(comando, "@FechaEntrega", dto.FechaEntrega.ToDateTime(TimeOnly.MinValue));
+            AddParam(comando, "@Estado", estadoValor);
+            AddParam(comando, "@IdRecordatorio", idRecordatorioNum);
             int filasAfectadas = await comando.ExecuteNonQueryAsync();
             return filasAfectadas > 0;
         }
 
-        public async Task<bool> ActualizarEstadoRecordatorio(int idRecordatorio, int nuevoEstado)
+        public virtual async Task<bool> ActualizarEstadoRecordatorio(int idRecordatorio, int nuevoEstado)
         {
-            using var conexion = new SqlConnection(_connectionString);
+            using var conexion = _connectionFactory(_connectionString);
             await conexion.OpenAsync();
             const string query = "UPDATE dbo.recordatorio SET estado_recordatorio = @Estado WHERE id_recordatorio = @Id";
-
-            using var comando = new SqlCommand(query, conexion);
-            comando.Parameters.AddWithValue("@Estado", nuevoEstado);
-            comando.Parameters.AddWithValue("@Id", idRecordatorio);
-
+            using var comando = conexion.CreateCommand();
+            comando.CommandText = query;
+            AddParam(comando, "@Estado", nuevoEstado);
+            AddParam(comando, "@Id", idRecordatorio);
             int filas = await comando.ExecuteNonQueryAsync();
             return filas > 0;
         }

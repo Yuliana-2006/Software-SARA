@@ -5,10 +5,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.Data.SqlClient;
 using Software_SARA.Dtos;
 using Software_SARA.Repositories.Models;
 using Software_SARA.Utilities;
+using System;
+using System.Collections.Generic;
+using System.Data.Common;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Software_SARA.Repositories
 {
@@ -16,18 +20,30 @@ namespace Software_SARA.Repositories
     {
         private readonly SarabdContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly Func<IDBSaraUtility> _dbFactory;
 
-        public FacServPubRepository(SarabdContext context, IHttpContextAccessor httpContextAccessor)
+        public FacServPubRepository(
+            SarabdContext context,
+            IHttpContextAccessor httpContextAccessor,
+            Func<IDBSaraUtility>? dbFactory = null)
         {
             _context = context;
             _httpContextAccessor = httpContextAccessor;
+            _dbFactory = dbFactory ?? (() => new DBSaraUtility());
+        }
+
+        private static void AddParam(DbCommand command, string name, object value)
+        {
+            var param = command.CreateParameter();
+            param.ParameterName = name;
+            param.Value = value;
+            command.Parameters.Add(param);
         }
 
         private List<int> ObtenerIdsUsuariosSedeActual()
         {
             var httpContext = _httpContextAccessor.HttpContext;
             if (httpContext == null) return new List<int>();
-
             int? sedeId = null;
             var sedeIdStr = httpContext.Session.GetString("SedeId");
             if (int.TryParse(sedeIdStr, out int parsedSedeId) && parsedSedeId > 0)
@@ -43,7 +59,6 @@ namespace Software_SARA.Repositories
                         .Where(u => u.IdUsuario == usuarioId)
                         .Select(u => new { u.IdRol, u.IdSede })
                         .FirstOrDefault();
-
                     if (usuario != null)
                     {
                         if (!usuario.IdSede.HasValue && (usuario.IdRol == 1 || usuario.IdRol == 5))
@@ -53,21 +68,18 @@ namespace Software_SARA.Repositories
                                 .Select(u => u.IdUsuario)
                                 .ToList();
                         }
-
                         sedeId = usuario.IdSede;
                     }
                 }
             }
-
             if (!sedeId.HasValue || sedeId.Value <= 0) return new List<int>();
-
             return _context.Usuarios
                 .Where(u => u.IdSede == sedeId.Value)
                 .Select(u => u.IdUsuario)
                 .ToList();
         }
 
-        public async Task<List<Factura>> ObtenerTodasLasFacturasServiciosPublicos()
+        public virtual async Task<List<Factura>> ObtenerTodasLasFacturasServiciosPublicos()
         {
             var listaFacturas = new List<Factura>();
             var idsUsuariosSede = ObtenerIdsUsuariosSedeActual();
@@ -85,14 +97,17 @@ namespace Software_SARA.Repositories
 
             DBSaraUtility connectionUtility = new DBSaraUtility();
             connectionUtility.Connect();
-
             try
             {
-                using (SqlCommand command = new SqlCommand(sql, connectionUtility.CONN()))
+                using (DbCommand command = connectionUtility.GetDbConnection().CreateCommand())
                 {
-                    command.Parameters.AddRange(parametros);
+                    command.CommandText = sql;
+                    for (int idx = 0; idx < idsUsuariosSede.Count; idx++)
+                    {
+                        AddParam(command, $"@u{idx}", idsUsuariosSede[idx]);
+                    }
 
-                    using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    using (DbDataReader reader = await command.ExecuteReaderAsync())
                     {
                         while (await reader.ReadAsync())
                         {
@@ -118,37 +133,29 @@ namespace Software_SARA.Repositories
             {
                 connectionUtility.Disconnect();
             }
-
             return listaFacturas;
         }
 
-        public async Task<bool> CreateFacturaServicioPublico(FacServPublicDto facServPublicDto)
+        public virtual async Task<bool> CreateFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
             bool result = false;
             string sql = "dbo.InsertarFacturaServicio";
 
-            DBSaraUtility connectionUtility = new DBSaraUtility();
+            IDBSaraUtility connectionUtility = _dbFactory();
             connectionUtility.Connect();
-
             try
             {
-                using (SqlCommand command = new SqlCommand(sql, connectionUtility.CONN()))
+                using (DbCommand command = connectionUtility.GetDbConnection().CreateCommand())
                 {
-                    command.CommandType = CommandType.StoredProcedure;
-
-                    command.Parameters.Add("@id_usuario", SqlDbType.Int).Value = facServPublicDto.IdUsuario;
-                    command.Parameters.Add("@tip_factura", SqlDbType.Bit).Value = facServPublicDto.TipFactura;
-                    command.Parameters.Add("@id_proveedor", SqlDbType.Int).Value =
-                        facServPublicDto.IdProveedor.HasValue ? facServPublicDto.IdProveedor.Value : DBNull.Value;
-                    command.Parameters.Add("@id_servicio", SqlDbType.Int).Value =
-                        facServPublicDto.IdServicio.HasValue ? facServPublicDto.IdServicio.Value : DBNull.Value;
-                    command.Parameters.Add("@valor_factura", SqlDbType.Decimal).Value = facServPublicDto.ValorFactura;
-                    command.Parameters.Add("@fecha_reg_factura", SqlDbType.Date).Value =
-                        facServPublicDto.FechaRegFactura.ToDateTime(TimeOnly.MinValue);
-                    command.Parameters.Add("@fecha_vencimiento", SqlDbType.Date).Value =
-                        facServPublicDto.FechaVencimiento.ToDateTime(TimeOnly.MinValue);
-                    command.Parameters.Add("@estado_factura", SqlDbType.Bit).Value = facServPublicDto.EstadoFactura;
-
+                    command.CommandText = sql;
+                    AddParam(command, "@IdUsuario", facServPublicDto.IdUsuario);
+                    AddParam(command, "@TipFactura", facServPublicDto.TipFactura ? 1 : 0);
+                    AddParam(command, "@IdProveedor", facServPublicDto.IdProveedor.HasValue ? facServPublicDto.IdProveedor.Value : DBNull.Value);
+                    AddParam(command, "@IdServicio", facServPublicDto.IdServicio.HasValue ? facServPublicDto.IdServicio.Value : DBNull.Value);
+                    AddParam(command, "@ValorFactura", facServPublicDto.ValorFactura);
+                    AddParam(command, "@FechaRegFactura", facServPublicDto.FechaRegFactura.ToString("yyyy-MM-dd"));
+                    AddParam(command, "@FechaVencimiento", facServPublicDto.FechaVencimiento.ToString("yyyy-MM-dd"));
+                    AddParam(command, "@EstadoFactura", facServPublicDto.EstadoFactura ? 1 : 0);
                     int comando = await command.ExecuteNonQueryAsync();
                     result = comando != 0;
                 }
@@ -157,30 +164,31 @@ namespace Software_SARA.Repositories
             {
                 connectionUtility.Disconnect();
             }
-
             return result;
         }
 
-        public async Task<List<SelectListItem>> ObtenerListaServiciosPublicos()
+        public virtual async Task<List<SelectListItem>> ObtenerListaServiciosPublicos()
         {
             var listaServiciosPublicos = new List<SelectListItem>();
             string sql = "SELECT id_servicio, nom_servicio FROM dbo.servicio ORDER BY nom_servicio ASC;";
 
-            DBSaraUtility connectionUtility = new DBSaraUtility();
+            IDBSaraUtility connectionUtility = _dbFactory();
             connectionUtility.Connect();
-
             try
             {
-                using (SqlCommand command = new SqlCommand(sql, connectionUtility.CONN()))
-                using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                using (DbCommand command = connectionUtility.GetDbConnection().CreateCommand())
                 {
-                    while (await reader.ReadAsync())
+                    command.CommandText = sql;
+                    using (DbDataReader reader = await command.ExecuteReaderAsync())
                     {
-                        listaServiciosPublicos.Add(new SelectListItem
+                        while (await reader.ReadAsync())
                         {
-                            Value = reader["id_servicio"].ToString(),
-                            Text = reader["nom_servicio"].ToString()
-                        });
+                            listaServiciosPublicos.Add(new SelectListItem
+                            {
+                                Value = reader["id_servicio"].ToString(),
+                                Text = reader["nom_servicio"].ToString()
+                            });
+                        }
                     }
                 }
             }
@@ -188,11 +196,10 @@ namespace Software_SARA.Repositories
             {
                 connectionUtility.Disconnect();
             }
-
             return listaServiciosPublicos;
         }
 
-        public async Task<bool> EditarFacturaServicioPublico(FacServPublicDto facServPublicDto)
+        public virtual async Task<bool> EditarFacturaServicioPublico(FacServPublicDto facServPublicDto)
         {
             bool result = false;
             string SQL = @"UPDATE dbo.factura
@@ -205,22 +212,21 @@ namespace Software_SARA.Repositories
                                estado_factura = @EstadoFactura
                            WHERE id_factura = @IdFactura;";
 
-            DBSaraUtility connectionUtility = new DBSaraUtility();
+            IDBSaraUtility connectionUtility = _dbFactory();
             connectionUtility.Connect();
-
             try
             {
-                using (SqlCommand command = new SqlCommand(SQL, connectionUtility.CONN()))
+                using (DbCommand command = connectionUtility.GetDbConnection().CreateCommand())
                 {
-                    command.Parameters.AddWithValue("@IdUsuario", facServPublicDto.IdUsuario);
-                    command.Parameters.AddWithValue("@IdProveedor", facServPublicDto.IdProveedor.HasValue ? facServPublicDto.IdProveedor.Value : DBNull.Value);
-                    command.Parameters.AddWithValue("@IdServicio", facServPublicDto.IdServicio.HasValue ? facServPublicDto.IdServicio.Value : DBNull.Value);
-                    command.Parameters.AddWithValue("@ValorFactura", facServPublicDto.ValorFactura);
-                    command.Parameters.AddWithValue("@FechaRegFactura", facServPublicDto.FechaRegFactura.ToString("yyyy-MM-dd"));
-                    command.Parameters.AddWithValue("@FechaVencimiento", facServPublicDto.FechaVencimiento.ToString("yyyy-MM-dd"));
-                    command.Parameters.AddWithValue("@EstadoFactura", facServPublicDto.EstadoFactura ? 1 : 0);
-                    command.Parameters.AddWithValue("@IdFactura", facServPublicDto.IdFactura);
-
+                    command.CommandText = SQL;
+                    AddParam(command, "@IdUsuario", facServPublicDto.IdUsuario);
+                    AddParam(command, "@IdProveedor", facServPublicDto.IdProveedor.HasValue ? facServPublicDto.IdProveedor.Value : DBNull.Value);
+                    AddParam(command, "@IdServicio", facServPublicDto.IdServicio.HasValue ? facServPublicDto.IdServicio.Value : DBNull.Value);
+                    AddParam(command, "@ValorFactura", facServPublicDto.ValorFactura);
+                    AddParam(command, "@FechaRegFactura", facServPublicDto.FechaRegFactura.ToString("yyyy-MM-dd"));
+                    AddParam(command, "@FechaVencimiento", facServPublicDto.FechaVencimiento.ToString("yyyy-MM-dd"));
+                    AddParam(command, "@EstadoFactura", facServPublicDto.EstadoFactura ? 1 : 0);
+                    AddParam(command, "@IdFactura", facServPublicDto.IdFactura);
                     int comando = await command.ExecuteNonQueryAsync();
                     result = comando != 0;
                 }
@@ -229,26 +235,24 @@ namespace Software_SARA.Repositories
             {
                 connectionUtility.Disconnect();
             }
-
             return result;
         }
 
-        public async Task<bool> ConfirmarPagoFacturaServicioPublico(int idFactura)
+        public virtual async Task<bool> ConfirmarPagoFacturaServicioPublico(int idFactura)
         {
             bool result = false;
             string fechaActual = DateTime.Now.ToString("yyyy-MM-dd");
             string SQL = "UPDATE dbo.factura SET estado_factura = 0, fecha_pago = @FechaPago WHERE id_factura = @IdFactura;";
 
-            DBSaraUtility connectionUtility = new DBSaraUtility();
+            IDBSaraUtility connectionUtility = _dbFactory();
             connectionUtility.Connect();
-
             try
             {
-                using (SqlCommand command = new SqlCommand(SQL, connectionUtility.CONN()))
+                using (DbCommand command = connectionUtility.GetDbConnection().CreateCommand())
                 {
-                    command.Parameters.AddWithValue("@FechaPago", fechaActual);
-                    command.Parameters.AddWithValue("@IdFactura", idFactura);
-
+                    command.CommandText = SQL;
+                    AddParam(command, "@FechaPago", fechaActual);
+                    AddParam(command, "@IdFactura", idFactura);
                     int comando = await command.ExecuteNonQueryAsync();
                     result = comando != 0;
                 }
@@ -257,11 +261,10 @@ namespace Software_SARA.Repositories
             {
                 connectionUtility.Disconnect();
             }
-
             return result;
         }
 
-        public async Task<List<FacServPublicDto>> ObtenerHistorialFacturasServiciosPublicosAsync()
+        public virtual async Task<List<FacServPublicDto>> ObtenerHistorialFacturasServiciosPublicosAsync()
         {
             var lista = new List<FacServPublicDto>();
             var idsUsuariosSede = ObtenerIdsUsuariosSedeActual();
@@ -280,14 +283,17 @@ namespace Software_SARA.Repositories
 
             DBSaraUtility connectionUtility = new DBSaraUtility();
             connectionUtility.Connect();
-
             try
             {
-                using (SqlCommand command = new SqlCommand(sql, connectionUtility.CONN()))
+                using (DbCommand command = connectionUtility.GetDbConnection().CreateCommand())
                 {
-                    command.Parameters.AddRange(parametros);
+                    command.CommandText = sql;
+                    for (int idx = 0; idx < idsUsuariosSede.Count; idx++)
+                    {
+                        AddParam(command, $"@u{idx}", idsUsuariosSede[idx]);
+                    }
 
-                    using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    using (DbDataReader reader = await command.ExecuteReaderAsync())
                     {
                         while (await reader.ReadAsync())
                         {
@@ -312,7 +318,6 @@ namespace Software_SARA.Repositories
             {
                 connectionUtility.Disconnect();
             }
-
             return lista;
         }
     }

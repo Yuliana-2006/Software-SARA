@@ -4,7 +4,7 @@ using Microsoft.Data.SqlClient;
 
 namespace Software_SARA.Utilities
 {
-    public class DBSaraUtility
+    public interface IDBSaraUtility
     {
         // --- DATOS DE MONSTERASP ---
         static string SERVER = "db81718.databaseasp.net";
@@ -52,6 +52,11 @@ namespace Software_SARA.Utilities
 
         // Función que retorna la conexión a la base de datos
         public SqlConnection CONN()
+        {
+            return Con;
+        }
+
+        public DbConnection GetDbConnection()
         {
             return Con;
         }
