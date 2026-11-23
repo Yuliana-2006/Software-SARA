@@ -1,20 +1,28 @@
 using System;
-using Microsoft.AspNetCore.Hosting.Server;
+using System.Data.Common;
 using Microsoft.Data.SqlClient;
 
 namespace Software_SARA.Utilities
 {
     public interface IDBSaraUtility
     {
+        void Connect();
+        void Disconnect();
+        SqlConnection CONN();
+        DbConnection GetDbConnection();
+    }
+
+    public class DBSaraUtility : IDBSaraUtility
+    {
         // --- DATOS DE MONSTERASP ---
         static string SERVER = "db81718.databaseasp.net";
-        static string DB_NAME = "db81718"; 
-        
+        static string DB_NAME = "db81718";
+
         // El usuario en MonsterASP suele ser el mismo ID del servidor: db81718
-        static string USER = "db81718"; 
-        
+        static string USER = "db81718";
+
         // Pon aquí la contraseña real que te dio MonsterASP
-        static string PASSWORD = "3229634208"; 
+        static string PASSWORD = "3229634208";
 
         // Cadena de conexión corregida (usando comillas y variables)
         static string Conn = $"Server={SERVER};Database={DB_NAME};User Id={USER};Password={PASSWORD};Encrypt=False;MultipleActiveResultSets=True;";
