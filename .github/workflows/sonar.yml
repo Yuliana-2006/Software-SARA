@@ -29,7 +29,10 @@ jobs:
           key: ${{ runner.os }}-sonar-${{ hashFiles('**/*.csproj', '**/*.slnx') }}
 
       - name: Install SonarScanner for .NET
-        run: dotnet tool install --global dotnet-sonarscanner
+        run: |
+          cd /tmp
+          dotnet tool install --global dotnet-sonarscanner
+          cd "$GITHUB_WORKSPACE"
 
       - name: Begin SonarQube analysis
         env:
