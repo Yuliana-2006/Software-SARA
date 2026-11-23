@@ -290,8 +290,8 @@ namespace Software_SARA.Controllers
                 }
             }
 
-            var pendientes = todasFacturas.Where(f => !f.EstadoFactura).ToList();
-            var pagadas = todasFacturas.Where(f => f.EstadoFactura).ToList();
+            var pendientes = todasFacturas.Where(f => f.EstadoFactura).ToList();
+            var pagadas = todasFacturas.Where(f => !f.EstadoFactura).ToList();
 
             if (!esDueno && movimientos.Count == 0 && todasFacturas.Count == 0)
                 return null;
