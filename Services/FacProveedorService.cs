@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
 using Software_SARA.Dtos;
 using Software_SARA.Repositories;
-using Microsoft.AspNetCore.Http;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Software_SARA.Services
 {
@@ -16,26 +19,20 @@ namespace Software_SARA.Services
 
         public async Task<FacProveedorDto> CreateFacturaProveedor(FacProveedorDto facProveedorDto)
         {
-            facProveedorDto.EstadoFactura = true; // Set EstadoFactura to true (1) when creating a new FacturaProveedor
+            facProveedorDto.EstadoFactura = true;
+            facProveedorDto.FechaRegFactura = DateOnly.FromDateTime(DateTime.Now);
 
             if (facProveedorDto.IdProveedor == null || facProveedorDto.IdProveedor <= 0)
             {
                 facProveedorDto.Reponse = 0;
-                facProveedorDto.Message = "Debe seleccionar un proveedoro.";
+                facProveedorDto.Message = "Debe seleccionar un proveedor.";
                 return facProveedorDto;
             }
 
-            if (facProveedorDto.ValorFactura <= 0)
+            if (facProveedorDto.ValorFactura <= 10000m)
             {
                 facProveedorDto.Reponse = 0;
-                facProveedorDto.Message = "Ingrese un valor mayor o igual a $10,000 para la factura.";
-                return facProveedorDto;
-            }
-
-            if (facProveedorDto.FechaRegFactura < DateOnly.FromDateTime(DateTime.Now))
-            {
-                facProveedorDto.Reponse = 0;
-                facProveedorDto.Message = "La fecha de registro no puede ser una fecha anterior a la actual.";
+                facProveedorDto.Message = "Ingrese un valor mayor a $10,000 para la factura.";
                 return facProveedorDto;
             }
 
@@ -80,7 +77,6 @@ namespace Software_SARA.Services
             }).ToList();
         }
 
-        // Método que invoca la consulta SQL plana desde el repositorio
         public async Task<List<SelectListItem>> ObtenerProveedores()
         {
             return await _facProveedorRepository.ObtenerListaProveedores();
@@ -88,41 +84,45 @@ namespace Software_SARA.Services
 
         public async Task<FacProveedorDto?> ObtenerFacturaProveedorPorId(int id)
         {
-            // Obtiene la lista completa usando la función 
             var listaFacturas = await ObtenerTodasLasFacturasProveedores();
-
-            // Retorna la factura de proveedor que coincida con el ID (permite nulos de forma segura)
             return listaFacturas.FirstOrDefault(f => f.IdFactura == id);
         }
 
         public async Task<FacProveedorDto> EditarFacturaProveedor(FacProveedorDto facProveedorDto)
         {
-
-            if (facProveedorDto.EstadoFactura == false)
+            var facturaActual = await ObtenerFacturaProveedorPorId(facProveedorDto.IdFactura);
+            if (facturaActual == null)
             {
+                facProveedorDto.Reponse = 0;
+                facProveedorDto.Message = "La factura de proveedor no existe.";
+                return facProveedorDto;
+            }
+
+            if (facturaActual.EstadoFactura == false)
+            {
+                facProveedorDto.EstadoFactura = false;
                 facProveedorDto.Reponse = 0;
                 facProveedorDto.Message = "No se puede editar la factura porque su pago ya fue confirmado.";
                 return facProveedorDto;
             }
 
+            facProveedorDto.EstadoFactura = facturaActual.EstadoFactura;
+            if (facProveedorDto.FechaRegFactura == default)
+            {
+                facProveedorDto.FechaRegFactura = facturaActual.FechaRegFactura;
+            }
+
             if (facProveedorDto.IdProveedor == null || facProveedorDto.IdProveedor <= 0)
             {
                 facProveedorDto.Reponse = 0;
-                facProveedorDto.Message = "Debe seleccionar un proveedoro.";
+                facProveedorDto.Message = "Debe seleccionar un proveedor.";
                 return facProveedorDto;
             }
 
-            if (facProveedorDto.ValorFactura <= 0)
+            if (facProveedorDto.ValorFactura <= 10000m)
             {
                 facProveedorDto.Reponse = 0;
-                facProveedorDto.Message = "Ingrese un valor mayor o igual a $10,000 para la factura.";
-                return facProveedorDto;
-            }
-
-            if (facProveedorDto.FechaRegFactura < DateOnly.FromDateTime(DateTime.Now))
-            {
-                facProveedorDto.Reponse = 0;
-                facProveedorDto.Message = "La fecha de registro no puede ser una fecha anterior a la actual.";
+                facProveedorDto.Message = "Ingrese un valor mayor a $10,000 para la factura.";
                 return facProveedorDto;
             }
 
@@ -152,10 +152,11 @@ namespace Software_SARA.Services
         {
             var facProveedorDto = new FacProveedorDto { IdFactura = idFactura };
 
-            if (facProveedorDto.EstadoFactura == false)
+            var facturaExistente = await ObtenerFacturaProveedorPorId(idFactura);
+            if (facturaExistente != null && facturaExistente.EstadoFactura == false)
             {
                 facProveedorDto.Reponse = 0;
-                facProveedorDto.Message = "No se puede editar la factura porque su pago ya fue confirmado.";
+                facProveedorDto.Message = "El pago de esta factura ya fue confirmado anteriormente.";
                 return facProveedorDto;
             }
 
@@ -174,21 +175,20 @@ namespace Software_SARA.Services
             return facProveedorDto;
         }
 
-        public async Task<List<HistorialFacturaDto>> ObtenerHistorialFacturasProveedoresAsync()
+        public async Task<List<FacProveedorDto>> ObtenerHistorialFacturasProveedoresAsync()
         {
             return await _facProveedorRepository.ObtenerHistorialFacturasProveedoresAsync();
         }
 
-        // NUEVO MÉTODO: Obtener vencimientos próximos de proveedores ajustado a 1 semana (7 días)
         public async Task<List<FacProveedorDto>> ObtenerVencimientosProximosProveedores()
         {
             var todasLasFacturas = await ObtenerTodasLasFacturasProveedores();
 
             var hoy = DateOnly.FromDateTime(DateTime.Now);
-            var limite = hoy.AddDays(7); // Rango de una semana
+            var limite = hoy.AddDays(7);
 
             return todasLasFacturas
-                .Where(f => f.IdProveedor != null && f.IdProveedor > 0 && f.FechaVencimiento >= hoy && f.FechaVencimiento <= limite)
+                .Where(f => f.EstadoFactura && f.IdProveedor != null && f.IdProveedor > 0 && f.FechaVencimiento >= hoy && f.FechaVencimiento <= limite)
                 .ToList();
         }
     }

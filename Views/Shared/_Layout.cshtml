@@ -3,8 +3,6 @@
     var rol = Context.Session.GetString("UsuarioRol") ?? "Usuario";
     var nombre = Context.Session.GetString("UsuarioNombre") ?? "Usuario Demo";
     var doc = Context.Session.GetString("UsuarioDoc") ?? "0000";
-
-    // Inicial para el avatar circular            
     var inicial = !string.IsNullOrEmpty(rol) ? rol.Substring(0, 1).ToUpper() : "U";
 }
 <!DOCTYPE html>
@@ -14,156 +12,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Software SARA</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <!-- Iconos de Bootstrap -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <style>
-        body {
-            background-color: #ECE9DF;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow-x: hidden;
-        }
-
-        /* Sidebar lateral estilo SARA */
-        .sidebar {
-            width: 260px;
-            background-color: #2E4F3E;
-            min-height: 100vh;
-            transition: all 0.3s ease-in-out;
-            white-space: nowrap;
-        }
-
-        .sidebar.collapsed {
-            width: 70px;
-        }
-
-        .sidebar.collapsed .sidebar-text {
-            display: none;
-        }
-
-        .sidebar.collapsed .sidebar-header {
-            justify-content: center !important;
-            padding-left: 0 !important;
-            padding-right: 0 !important;
-        }
-
-        .sidebar.collapsed .sidebar-menu a {
-            justify-content: center;
-            padding: 12px 0;
-        }
-
-        .sidebar-header {
-            background-color: #254030;
-            padding: 15px;
-            color: #ffffff;
-            font-weight: bold;
-            font-size: 18px;
-        }
-
-        .sidebar-menu a {
-            color: #ffffff;
-            text-decoration: none;
-            padding: 12px 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-weight: 600;
-            font-size: 15px;
-            transition: background 0.2s;
-        }
-
-        .sidebar-menu a:hover {
-            background-color: #3C6348;
-        }
-
-        /* Avatar de perfil superior */
-        .avatar-circle-sm {
-            width: 40px;
-            height: 40px;
-            background-color: #3C6348;
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 18px;
-        }
+        body { background-color: #ECE9DF; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow-x: hidden; }
+        .sidebar { width: 260px; background-color: #2E4F3E; min-height: 100vh; transition: all 0.3s ease-in-out; white-space: nowrap; }
+        .sidebar.collapsed { width: 70px; }
+        .sidebar.collapsed .sidebar-text { display: none; }
+        .sidebar.collapsed .sidebar-header { justify-content: center !important; padding-left: 0 !important; padding-right: 0 !important; }
+        .sidebar.collapsed .sidebar-menu a { justify-content: center; padding: 12px 0; }
+        .sidebar-header { background-color: #254030; padding: 15px; color: #ffffff; font-weight: bold; font-size: 18px; }
+        .sidebar-menu a { color: #ffffff; text-decoration: none; padding: 12px 20px; display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 15px; transition: background 0.2s; }
+        .sidebar-menu a:hover { background-color: #3C6348; }
+        .avatar-circle-sm { width: 40px; height: 40px; background-color: #3C6348; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; }
     </style>
 </head>
 <body>
-
     <div class="d-flex">
-
         <!-- MENÚ LATERAL IZQUIERDO -->
         <div class="sidebar d-flex flex-column justify-content-between shadow" id="sidebarMenu">
             <div>
-                <!-- Encabezado con Botón para Colapsar -->
                 <div class="sidebar-header d-flex align-items-center gap-2 border-0 bg-transparent px-3 py-3">
                     <i class="bi bi-list fs-3 text-white" id="toggleSidebarBtn" style="cursor: pointer;" title="Colapsar / Desplegar menú"></i>
                     <span class="fw-bold text-white fs-5 sidebar-text">Software SARA</span>
                 </div>
 
-                <!-- Lista de Acciones según el Rol -->
                 <div class="sidebar-menu mt-2">
-
-                    <!-- 1. INICIO (Visible para todos) -->
+                    <!-- TODOS TIENEN INICIO -->
                     <a asp-controller="Home" asp-action="Index" title="Inicio">
                         <i class="bi bi-house-door-fill"></i> <span class="sidebar-text">Inicio</span>
                     </a>
 
-                    <!-- 2. MENÚ EXCLUSIVO DEL ADMINISTRADOR -->
+                    <!-- ADMINISTRADOR -->
                     @if (rol == "Administrador")
                     {
-                        <a asp-controller="Dueno" asp-action="Index" title="Dueños">
-                            <i class="bi bi-people-fill"></i> <span class="sidebar-text">Dueños</span>
-                        </a>
+                        <a asp-controller="Dueno" asp-action="Index" title="Dueños"><i class="bi bi-people-fill"></i> <span class="sidebar-text">Gestión Dueños</span></a>
                     }
 
-                    <!-- 3. MENÚ EXCLUSIVO DEL DUEÑO -->
+                    <!-- DUEÑO -->
                     @if (rol == "Dueño")
                     {
+                        <!-- AQUÍ ESTÁ EL CAMBIO: Ahora va a RegistrarSede en lugar de Index -->
                         <a asp-controller="Sedes" asp-action="RegistrarSede" title="Sedes"><i class="bi bi-building"></i> <span class="sidebar-text">Sedes</span></a>
                         <a asp-controller="Gerentes" asp-action="Index" title="Gerentes"><i class="bi bi-person-badge-fill"></i> <span class="sidebar-text">Gerentes</span></a>
-                        <a asp-controller="Home" asp-action="Index" title="Informes"><i class="bi bi-bar-chart-line-fill"></i> <span class="sidebar-text">Informes</span></a>
+                        <a asp-controller="Informe" asp-action="Index" title="Informes"><i class="bi bi-bar-chart-line-fill"></i> <span class="sidebar-text">Informe Diario</span></a>
+                     
                     }
 
-                    <!-- 4. MENÚ EXCLUSIVO DEL GERENTE -->
+                    <!-- GERENTE -->
                     @if (rol == "Gerente")
                     {
                         <a asp-controller="Personal" asp-action="Index" title="Personal"><i class="bi bi-people-fill"></i> <span class="sidebar-text">Personal</span></a>
                         <a asp-controller="Caja" asp-action="Index" title="Caja"><i class="bi bi-cash-stack"></i> <span class="sidebar-text">Caja</span></a>
                         <a asp-controller="GestorFacturas" asp-action="SelectFactura" title="Facturas"><i class="bi bi-receipt"></i> <span class="sidebar-text">Facturas</span></a>
-     
                         <a asp-controller="Recordatorios" asp-action="Index" title="Recordatorios"><i class="bi bi-bell-fill"></i> <span class="sidebar-text">Recordatorios</span></a>
-                        <a asp-controller="Home" asp-action="Index" title="Informes"><i class="bi bi-bar-chart-line-fill"></i> <span class="sidebar-text">Informes</span></a>
+                        <a asp-controller="Informe" asp-action="Index" title="Informes"><i class="bi bi-bar-chart-line-fill"></i> <span class="sidebar-text">Informe Diario</span></a>
                     }
 
-                    <!-- 5. MENÚ EXCLUSIVO DEL TESORERO -->
+                    <!-- TESORERO -->
                     @if (rol == "Tesorero")
                     {
-                        <a asp-controller="GestorFacturas" asp-action="SelectFactura" title="Facturas"><i class="bi bi-receipt"></i> <span class="sidebar-text">Facturas</span></a>
                         <a asp-controller="Caja" asp-action="Index" title="Caja"><i class="bi bi-cash-stack"></i> <span class="sidebar-text">Caja</span></a>
-                        
+                        <a asp-controller="GestorFacturas" asp-action="SelectFactura" title="Facturas"><i class="bi bi-receipt"></i> <span class="sidebar-text">Facturas</span></a>
                         <a asp-controller="Recordatorios" asp-action="Index" title="Recordatorios"><i class="bi bi-bell-fill"></i> <span class="sidebar-text">Recordatorios</span></a>
-                        
-                        <a asp-controller="Home" asp-action="Index" title="Informes"><i class="bi bi-bar-chart-line-fill"></i> <span class="sidebar-text">Informes</span></a>
-                        
-                        <a asp-controller="Sustento" asp-action="Index" title="Calcular Sustento"><i class="bi bi-calculator-fill"></i> <span class="sidebar-text">Calcular Sustento de Caja</span></a>
+                        <a asp-controller="Sustento" asp-action="Index" title="Sustento"><i class="bi bi-calculator-fill"></i> <span class="sidebar-text">Sustento Caja</span></a>
+                        <a asp-controller="Informe" asp-action="Index" title="Informes"><i class="bi bi-bar-chart-line-fill"></i> <span class="sidebar-text">Informe Diario</span></a>
                     }
 
-                    <!-- 6. MENÚ EXCLUSIVO DEL EMPLEADO -->
+                    <!-- EMPLEADO (TRABAJADOR) -->
                     @if (rol == "Empleado")
                     {
-                        <!-- Recordatorios ubicado justo debajo de Inicio -->
                         <a asp-controller="Recordatorios" asp-action="Index" title="Recordatorios"><i class="bi bi-bell-fill"></i> <span class="sidebar-text">Recordatorios</span></a>
-                        <a asp-controller="Caja" asp-action="Index" title="Apertura Caja"><i class="bi bi-box-arrow-in-right"></i> <span class="sidebar-text">Apertura Caja</span></a>
-                        <a asp-controller="Home" asp-action="Index" title="Cierre Caja"><i class="bi bi-box-arrow-left"></i> <span class="sidebar-text">Cierre Caja</span></a>
                     }
                 </div>
             </div>
 
-            <!-- Botón Cerrar Sesión al final -->
             <div class="sidebar-menu mb-3">
                 <hr class="border-light opacity-25 mx-3" />
                 <a asp-controller="Acceso" asp-action="CerrarSesion" class="text-warning" title="Cerrar Sesión">
@@ -172,48 +95,34 @@
             </div>
         </div>
 
-        <!-- CONTENIDO PRINCIPAL Y BARRA SUPERIOR -->
+        <!-- CONTENIDO PRINCIPAL -->
         <div class="flex-grow-1 d-flex flex-column min-vh-100">
-
-            <!-- BARRA SUPERIOR REDUCIDA -->
             <div class="d-flex justify-content-end align-items-center px-3 py-1 bg-white shadow-sm" style="height: 48px; border-bottom: 2px solid #E2DFD2;">
                 <div class="text-end me-2">
                     <div class="fw-bold text-dark lh-1" style="font-size: 13px;">@nombre</div>
                     <div class="text-uppercase fw-bold text-muted lh-1 mt-1" style="font-size: 10px; letter-spacing: 0.5px;">@rol</div>
                 </div>
-                <div class="avatar-circle-sm">
-                    @inicial
-                </div>
+                <div class="avatar-circle-sm">@inicial</div>
             </div>
 
-            <!-- Área donde se renderizan las vistas -->
             <div class="p-4 flex-grow-1" style="background-color: #ECE9DF;">
                 @RenderBody()
             </div>
-
         </div>
-
     </div>
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- SCRIPT PARA COLAPSAR/DESPLEGAR EL MENÚ -->
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const toggleBtn = document.getElementById("toggleSidebarBtn");
             const sidebar = document.getElementById("sidebarMenu");
-
-            if (localStorage.getItem("sidebar-collapsed") === "true") {
-                sidebar.classList.add("collapsed");
-            }
-
+            if (localStorage.getItem("sidebar-collapsed") === "true") sidebar.classList.add("collapsed");
             toggleBtn.addEventListener("click", function () {
                 sidebar.classList.toggle("collapsed");
                 localStorage.setItem("sidebar-collapsed", sidebar.classList.contains("collapsed"));
             });
         });
     </script>
-
     @await RenderSectionAsync("Scripts", required: false)
 </body>
-</html>
+</html> 

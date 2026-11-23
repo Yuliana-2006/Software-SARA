@@ -1,86 +1,171 @@
 ﻿@model Software_SARA.Dtos.PersonalDTO
 @{
-    ViewData["Title"] = "Registrar " + ViewBag.NombreRol;
+    var rolActual = Model?.IdRol ?? (ViewBag.IdRol is int r ? r : 3);
+    var nombreRol = ViewBag.NombreRol?.ToString() ?? (rolActual == 4 ? "EMPLEADO" : "TESORERO");
+    var nombreSede = ViewBag.NombreSede?.ToString() ?? "Sede Principal";
+    ViewData["Title"] = "Registrar " + nombreRol;
+    var fechaMaxima = DateTime.Today.AddYears(-18).ToString("yyyy-MM-dd");
 }
 
 <style>
-    .sara-form-container { background-color: #3B6146; border-radius: 30px; padding: 30px 40px; max-width: 650px; margin: 0 auto; color: #FFFFFF; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2); }
-    .sara-input-pill { background-color: #FFFFFF; color: #333; border-radius: 20px; padding: 8px 15px; border: none; }
-    .sara-btn-submit { background-color: #FFFFFF; color: #1A3020; border-radius: 50px; font-weight: 800; padding: 10px 0; width: 100%; border: none; }
-    .sara-btn-cancel { background-color: transparent; color: #FFFFFF; border: 1.5px solid #FFFFFF; border-radius: 50px; font-weight: 800; padding: 8px 0; width: 100%; text-align: center; text-decoration: none; display: block; margin-top: 10px; }
+    .sara-form-container {
+        background-color: #3B6146;
+        border-radius: 30px;
+        padding: 30px 40px;
+        max-width: 650px;
+        margin: 0 auto;
+        color: #FFFFFF;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    .sara-input-pill {
+        background-color: #FFFFFF;
+        color: #333;
+        border-radius: 20px;
+        padding: 8px 15px;
+        border: none;
+    }
+
+    .sara-btn-submit {
+        background-color: #FFFFFF;
+        color: #1A3020;
+        border-radius: 50px;
+        font-weight: 800;
+        padding: 10px 0;
+        width: 100%;
+        border: none;
+    }
+
+    .sara-btn-cancel {
+        background-color: transparent;
+        color: #FFFFFF;
+        border: 1.5px solid #FFFFFF;
+        border-radius: 50px;
+        font-weight: 800;
+        padding: 8px 0;
+        width: 100%;
+        text-align: center;
+        text-decoration: none;
+        display: block;
+        margin-top: 10px;
+    }
+
+    .error-resumen {
+        background-color: #ffe6e6;
+        color: #b30000;
+        border: 1px solid #ffcccc;
+        border-radius: 15px;
+        padding: 10px 15px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        margin-bottom: 16px;
+        text-align: center;
+    }
+
+    .error-campo,
+    .field-validation-error {
+        color: #ffcccc !important;
+        font-size: 0.88rem !important;
+        font-weight: 800 !important;
+        margin-top: 6px !important;
+        display: block !important;
+    }
+
+    .field-validation-valid {
+        display: none !important;
+    }
 </style>
 
 <div class="container py-4">
     <div class="sara-form-container">
-        <h2 class="text-center fw-bold m-0">REGISTRAR @ViewBag.NombreRol</h2>
-        <p class="text-center fw-bold mb-4">Sede asignada: @ViewBag.NombreSede</p>
+        <h2 class="text-center fw-bold m-0">REGISTRAR @nombreRol</h2>
+        <p class="text-center fw-bold mb-4">Sede asignada: @nombreSede</p>
 
-        <div asp-validation-summary="All" class="alert alert-danger fw-bold" style="color: #721c24; background-color: #f8d7da;"></div>
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="error-resumen">
+                Revisa los datos ingresados.
+                <div asp-validation-summary="All" class="mt-1 small"></div>
+            </div>
+        }
 
         <form asp-action="Registrar" method="post">
-            <input type="hidden" asp-for="IdRol" />
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="IdRol" value="@rolActual" />
 
             <div class="mb-3">
                 <label class="fw-bold">Sede de Registro</label>
-                <input value="@ViewBag.NombreSede" class="form-control sara-input-pill" readonly />
+                <input value="@nombreSede" class="form-control sara-input-pill" readonly />
             </div>
 
             <div class="row g-2 mb-3">
                 <div class="col-4">
-                    <label class="fw-bold">Tipo Doc.</label>
-                    <select name="tipoDocString" class="form-select sara-input-pill">
+                    <label asp-for="TipoDoc" class="fw-bold">Tipo Doc.</label>
+                    <select asp-for="TipoDoc" class="form-select sara-input-pill">
                         <option value="CC">CC</option>
                         <option value="CE">CE</option>
                     </select>
                 </div>
                 <div class="col-8">
-                    <label class="fw-bold">Número de Documento</label>
-                    <input asp-for="NumDoc" type="text" id="inputDocumento" class="form-control sara-input-pill" maxlength="10" placeholder="Escriba el documento" />
-                    <span asp-validation-for="NumDoc" class="text-warning fw-bold small d-block mt-1"></span>
+                    <label asp-for="NumDoc" class="fw-bold">Núm.Documento</label>
+                    <input asp-for="NumDoc"
+                           type="text"
+                           id="inputDocumento"
+                           inputmode="numeric"
+                           autocomplete="off"
+                           class="form-control sara-input-pill"
+                           maxlength="10"
+                           placeholder="Escriba el documento" />
+                    <span asp-validation-for="NumDoc" class="error-campo"></span>
                 </div>
             </div>
 
             <div class="row g-2 mb-3">
                 <div class="col-6">
-                    <label class="fw-bold">Nombres</label>
+                    <label asp-for="NomUsuario" class="fw-bold">Nombres</label>
                     <input asp-for="NomUsuario" class="form-control sara-input-pill" />
-                    <span asp-validation-for="NomUsuario" class="text-warning fw-bold small d-block mt-1"></span>
+                    <span asp-validation-for="NomUsuario" class="error-campo"></span>
                 </div>
                 <div class="col-6">
-                    <label class="fw-bold">Apellidos</label>
+                    <label asp-for="ApelliUsuario" class="fw-bold">Apellidos</label>
                     <input asp-for="ApelliUsuario" class="form-control sara-input-pill" />
-                    <span asp-validation-for="ApelliUsuario" class="text-warning fw-bold small d-block mt-1"></span>
+                    <span asp-validation-for="ApelliUsuario" class="error-campo"></span>
                 </div>
             </div>
 
             <div class="row g-2 mb-3">
                 <div class="col-6">
-                    <label class="fw-bold">Teléfono</label>
-                    <input asp-for="Telefono" type="text" id="inputTelefono" class="form-control sara-input-pill" maxlength="10" />
-                    <span asp-validation-for="Telefono" class="text-warning fw-bold small d-block mt-1"></span>
+                    <label asp-for="Telefono" class="fw-bold">Teléfono </label>
+                    <input asp-for="Telefono"
+                           type="text"
+                           id="inputTelefono"
+                           inputmode="numeric"
+                           autocomplete="off"
+                           class="form-control sara-input-pill"
+                           maxlength="10" />
+                    <span asp-validation-for="Telefono" class="error-campo"></span>
                 </div>
                 <div class="col-6">
-                    <label class="fw-bold">Correo Electrónico</label>
+                    <label asp-for="Correo" class="fw-bold">Correo Electrónico</label>
                     <input asp-for="Correo" type="email" class="form-control sara-input-pill" />
-                    <span asp-validation-for="Correo" class="text-warning fw-bold small d-block mt-1"></span>
+                    <span asp-validation-for="Correo" class="error-campo"></span>
                 </div>
             </div>
 
             <div class="mb-3">
-                <label class="fw-bold">Dirección de Vivienda</label>
+                <label asp-for="DirUsuario" class="fw-bold">Dirección de Vivienda</label>
                 <input asp-for="DirUsuario" class="form-control sara-input-pill" />
-                <span asp-validation-for="DirUsuario" class="text-warning fw-bold small d-block mt-1"></span>
+                <span asp-validation-for="DirUsuario" class="error-campo"></span>
             </div>
 
             <div class="mb-4">
-                <label class="fw-bold">Fecha de Nacimiento</label>
-                <input asp-for="FechaNaci" type="date" class="form-control sara-input-pill" />
-                <span asp-validation-for="FechaNaci" class="text-warning fw-bold small d-block mt-1"></span>
+                <label asp-for="FechaNaci" class="fw-bold">Fecha de Nacimiento</label>
+                <input asp-for="FechaNaci" type="date" max="@fechaMaxima" class="form-control sara-input-pill" />
+                <span asp-validation-for="FechaNaci" class="error-campo"></span>
             </div>
 
             <button type="submit" class="sara-btn-submit">REGISTRAR</button>
-            <!-- AQUÍ ESTÁ LA CORRECCIÓN: asp-action="SeleccionarRol" -->
-            <a asp-action="SeleccionarRol" asp-route-idRol="@Model.IdRol" class="sara-btn-cancel">CANCELAR</a>
+            <a asp-action="SeleccionarRol" asp-route-idRol="@rolActual" class="sara-btn-cancel">CANCELAR</a>
         </form>
     </div>
 </div>
@@ -88,10 +173,26 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        function soloNumeros(input) {
-            input.addEventListener('input', function () { this.value = this.value.replace(/[^0-9]/g, ''); });
-        }
-        soloNumeros(document.getElementById('inputDocumento'));
-        soloNumeros(document.getElementById('inputTelefono'));
+        (function () {
+            function soloNumeros(input, maxLen) {
+                if (!input) return;
+
+                input.addEventListener('beforeinput', function (e) {
+                    if (e.data && /[^0-9]/.test(e.data)) {
+                        e.preventDefault();
+                    }
+                });
+
+                input.addEventListener('input', function () {
+                    const limpio = this.value.replace(/[^0-9]/g, '').slice(0, maxLen);
+                    if (this.value !== limpio) {
+                        this.value = limpio;
+                    }
+                });
+            }
+
+            soloNumeros(document.getElementById('inputDocumento'), 10);
+            soloNumeros(document.getElementById('inputTelefono'), 10);
+        })();
     </script>
 }

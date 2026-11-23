@@ -11,338 +11,285 @@
         <!-- TÍTULO -->
         <h1>REGISTRAR SEDE</h1>
 
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="error-resumen">
+                Revisa los datos ingresados.
+            </div>
+        }
+
         <form asp-controller="Sedes"
               asp-action="CrearSede"
               method="post">
 
             @Html.AntiForgeryToken()
 
-            @if (!ViewData.ModelState.IsValid || ViewData["Mensaje"] != null)
+            @if (ViewData["Mensaje"] != null)
             {
-                <div style="background-color: #a94442; color: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; width: 100%; box-sizing: border-box; box-shadow: 0 4px 8px rgba(0,0,0,0.15);">
-                     <div style="font-weight: 800; font-size: 16px; margin-bottom: 5px;">
-                             Revisa los datos ingresados.
-                     </div>
-
-                     <!-- Muestra el mensaje personalizado del servicio si existe -->
-                     @if (ViewData["Mensaje"] != null)
-                     {
-                         <div style="font-size: 14px; margin-top: 4px;">
-                              - @ViewData["Mensaje"]
-                         </div>
-                     }
-
-                     <!-- Muestra los errores de validación del modelo/formulario -->
-                         <div style="font-size: 14px; margin-top: 4px;">
-                             @Html.ValidationSummary(false, "", new { @style = "list-style-type: none; padding: 0; margin: 0;" })
-                         </div>
+                <div class="error-resumen">
+                    @ViewData["Mensaje"]
                 </div>
             }
 
-        <!-- FILA 1 -->
-        <div class="form-row">
+            <!-- FILA 1 -->
+            <div class="form-row">
 
-            <div class="form-group"> 
-                <label>Nombre</label>
-                <input asp-for="NomSede"
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input asp-for="NomSede"
+                           type="text"
+                           class="form-control"
+                           placeholder="Nombre" />
+                    <span asp-validation-for="NomSede" class="error-campo"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="DepSede" class="control-label">Departamento</label>
+                    <select asp-for="DepSede" asp-items="ViewBag.Departamentos" class="form-control">
+                        <option value="">-- Seleccione un departamento --</option>
+                    </select>
+                    <span asp-validation-for="DepSede" class="error-campo"></span>
+                </div>
+
+            </div>
+
+            <!-- FILA 2 -->
+            <div class="form-row">
+
+                <div class="form-group">
+                    <label>Ciudad/Municipio</label>
+                    <input asp-for="CiuSede"
+                           type="text"
+                           class="form-control"
+                           placeholder="Ciudad/Municipio" />
+                    <span asp-validation-for="CiuSede" class="error-campo"></span>
+                </div>
+
+                <div class="form-group">
+                    <label>Barrio</label>
+                    <input asp-for="BarrioSede"
+                           type="text"
+                           class="form-control"
+                           placeholder="Barrio" />
+                    <span asp-validation-for="BarrioSede" class="error-campo"></span>
+                </div>
+
+            </div>
+
+            <!-- DIRECCIÓN -->
+            <div class="form-group full-width">
+                <label>Dirección</label>
+                <input asp-for="DirSede"
                        type="text"
                        class="form-control"
-                       placeholder="Nombre" />
+                       placeholder="Dirección" />
+                <span asp-validation-for="DirSede" class="error-campo"></span>
             </div>
 
-            <div class="form-group">
-                <label asp-for="DepSede" class="control-label">Departamento</label>
-
-                  <select asp-for="DepSede" asp-items="ViewBag.Departamentos" class="form-control">
-                      <option value="">-- Seleccione un departamento --</option>
-                  </select>
-
-                  <span asp-validation-for="DepSede" class="text-danger"></span>
-            </div>
-
-        </div>
-
-
-        <!-- FILA 2 -->
-        <div class="form-row">
-
-            <div class="form-group">
-                <label>Ciudad/Municipio</label>
-                <input asp-for="CiuSede"
+            <!-- TELÉFONO -->
+            <div class="form-group full-width">
+                <label>Teléfono</label>
+                <input asp-for="TelSede"
+                       id="inputTelSede"
                        type="text"
+                       inputmode="numeric"
+                       maxlength="10"
+                       autocomplete="off"
                        class="form-control"
-                       placeholder="Ciudad/Municipio" />
+                       placeholder="Teléfono (10 números)" />
+                <span asp-validation-for="TelSede" class="error-campo"></span>
             </div>
 
-            <div class="form-group">
-                <label>Barrio</label>
-                <input asp-for="BarrioSede"
-                       type="text"
-                       class="form-control"
-                       placeholder="Barrio" />
+            <!-- BOTONES -->
+            <div class="buttons">
+
+                <button type="submit" class="btn-registrar">
+                    REGISTRAR
+                </button>
+
+                <a asp-controller="Sedes"
+                   asp-action="RegistrarSede"
+                   class="btn-cancelar">
+                    CANCELAR
+                </a>
+
             </div>
 
-        </div>
+        </form>
 
-
-        <!-- DIRECCIÓN -->
-        <div class="form-group full-width">
-
-            <label>Dirección</label>
-            <input asp-for="DirSede"
-                   type="text"
-                   class="form-control"
-                   placeholder="Dirección" />
-
-        </div>
-
-
-        <!-- TELÉFONO -->
-        <div class="form-group full-width">
-
-            <label>Teléfono</label>
-            <input asp-for="TelSede"
-                   type="tel"
-                   class="form-control"
-                   placeholder="Teléfono" />
-
-        </div>
-
-
-        <!-- BOTONES -->
-        <div class="buttons">
-
-            <button type="submit" class="btn-registrar">
-                REGISTRAR
-            </button>
-
-            <a asp-controller="Sedes"
-               asp-action="RegistrarSede"
-               class="btn-cancelar">
-                CANCELAR
-            </a>
-
-        </div>
-
-
-    </form>
+    </div>
 
 </div>
 
-</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const inputTel = document.getElementById('inputTelSede');
+            if (!inputTel) return;
 
+            inputTel.addEventListener('beforeinput', function (e) {
+                if (e.data && /[^0-9]/.test(e.data)) {
+                    e.preventDefault();
+                }
+            });
+
+            inputTel.addEventListener('input', function () {
+                const limpio = this.value.replace(/[^0-9]/g, '').slice(0, 10);
+                if (this.value !== limpio) {
+                    this.value = limpio;
+                }
+            });
+        })();
+    </script>
+}
 
 <style>
-
-    /* CONTENEDOR */
-
     .registro-container {
         width: 100%;
         min-height: calc(100vh - 120px);
-
         display: flex;
         justify-content: center;
         align-items: flex-start;
-
         padding-top: 5px;
     }
-
-
-    /* TARJETA VERDE */
 
     .registro-card {
         width: 100%;
         max-width: 610px;
-
         background-color: #3C694F;
-
         border: 2px solid #2E4F3E;
         border-radius: 30px;
-
         padding: 25px 28px 26px 28px;
-
         box-sizing: border-box;
-
         box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
     }
 
-
-    /* TÍTULO */
-
     .registro-card h1 {
         color: white;
-
         text-align: center;
-
         font-size: 27px;
         font-weight: 800;
-
         margin: 0 0 22px 0;
     }
 
+    .error-resumen {
+        color: #721c24;
+        background-color: #ffe6e6;
+        border: 1px solid #ffcccc;
+        padding: 10px 14px;
+        border-radius: 12px;
+        margin-bottom: 15px;
+        font-weight: 700;
+    }
 
-    /* FILAS DE DOS COLUMNAS */
+    .error-campo,
+    .field-validation-error {
+        display: block;
+        color: #ffcccc !important;
+        font-size: 13px;
+        font-weight: 700;
+        margin-top: 5px;
+    }
+
+    .field-validation-valid {
+        display: none;
+    }
 
     .form-row {
         display: grid;
-
         grid-template-columns: 1fr 1fr;
-
         gap: 10px;
-
         margin-bottom: 12px;
     }
-
-
-    /* GRUPOS */
 
     .form-group {
         margin-bottom: 12px;
     }
 
-
     .form-row .form-group {
         margin-bottom: 0;
     }
 
-
-    /* ETIQUETAS */
-
     .form-group label {
         display: block;
-
         color: white;
-
         font-size: 15px;
         font-weight: 700;
-
         margin-bottom: 7px;
     }
 
-
-    /* CAMPOS */
-
     .form-control {
         width: 100%;
-
         height: 44px;
-
         border-radius: 25px;
-
         border: 1px solid #D0D0D0;
-
         background-color: #F8F9FA;
-
         padding: 8px 14px;
-
         font-size: 16px;
-
         box-sizing: border-box;
-
         outline: none;
     }
 
-
     .form-control:focus {
         border-color: #2E4F3E;
-
         box-shadow: 0 0 0 2px rgba(46, 79, 62, 0.25);
     }
-
 
     .form-control::placeholder {
         color: #777;
     }
 
-
-    /* CAMPOS DE ANCHO COMPLETO */
-
     .full-width {
         width: 100%;
     }
 
-
-    /* BOTONES */
-
     .buttons {
         display: flex;
-
         flex-direction: column;
-
         align-items: center;
-
         gap: 9px;
-
-        margin-top: 3px;
+        margin-top: 10px;
     }
-
 
     .btn-registrar,
     .btn-cancelar {
         width: 85%;
-
         height: 47px;
-
         border-radius: 25px;
-
         font-size: 16px;
-
         font-weight: 800;
-
         text-align: center;
-
         display: flex;
-
         align-items: center;
-
         justify-content: center;
-
         box-sizing: border-box;
     }
 
-
-    /* REGISTRAR */
-
     .btn-registrar {
         border: none;
-
         background-color: #F8F9FA;
-
         color: #29342E;
-
         cursor: pointer;
     }
-
 
     .btn-registrar:hover {
         background-color: #E5E7E8;
     }
 
-
-    /* CANCELAR */
-
     .btn-cancelar {
         background-color: transparent;
-
         border: 1.5px solid white;
-
         color: white;
-
         text-decoration: none;
     }
 
-
     .btn-cancelar:hover {
         background-color: rgba(255, 255, 255, 0.1);
-
         color: white;
     }
 
-
-    /* RESPONSIVE */
-
     @@media (max-width: 600px) {
-
         .registro-card {
             padding: 22px 18px;
         }
@@ -356,7 +303,5 @@
         .btn-cancelar {
             width: 100%;
         }
-
     }
-
 </style>

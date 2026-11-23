@@ -1,25 +1,26 @@
 ﻿@model Software_SARA.Dtos.DuenoDTO
-@{ ViewData["Title"] = "Registrar Dueño"; }
+@{
+    ViewData["Title"] = "Registrar Dueño";
+}
 
 <div class="container py-4">
     <div class="card shadow mx-auto" style="max-width: 700px; background-color: #3B6146; color: white; border-radius: 30px;">
         <div class="card-body p-4">
             <h3 class="text-center fw-bold mb-4 text-white">REGISTRAR NUEVO DUEÑO</h3>
-            <div asp-validation-summary="All" class="alert alert-danger fw-bold" style="color: #721c24; background-color: #f8d7da;"></div>
-
+            <div asp-validation-summary="All" class="alert fw-bold" style="background-color: #ffe6e6 !important; color: #b30000 !important; border: 1px solid #ffcccc; border-radius: 8px;"></div>
             <form asp-action="Crear" method="post">
                 <div class="row mb-3">
                     <div class="col-4">
                         <label class="fw-bold">Tipo Doc.</label>
-                        <select name="tipoDocString" asp-for="TipoDoc" class="form-select rounded-pill">
+                        <select asp-for="TipoDoc" class="form-select rounded-pill">
                             <option value="CC">CC</option>
                             <option value="CE">CE</option>
                         </select>
                     </div>
                     <div class="col-8">
-                        <label class="fw-bold">Documento (8 a 10)</label>
+                        <label class="fw-bold">Documento (5 a 10)</label>
                         <input asp-for="NumDoc" type="text" id="inputDocumento" class="form-control rounded-pill" maxlength="10" />
-                        <span asp-validation-for="NumDoc" class="text-danger fw-bold d-block mt-1" style="font-size: 0.85rem;"></span>
+                        <span asp-validation-for="NumDoc" class="fw-bold d-block mt-1" style="color: #ffcccc; font-size: 0.85rem;"></span>
                     </div>
                 </div>
 
@@ -27,12 +28,12 @@
                     <div class="col-6">
                         <label class="fw-bold">Nombres</label>
                         <input asp-for="NomUsuario" class="form-control rounded-pill" />
-                        <span asp-validation-for="NomUsuario" class="text-danger fw-bold d-block mt-1" style="font-size: 0.85rem;"></span>
+                        <span asp-validation-for="NomUsuario" class="fw-bold d-block mt-1" style="color: #ffcccc; font-size: 0.85rem;"></span>
                     </div>
                     <div class="col-6">
                         <label class="fw-bold">Apellidos</label>
                         <input asp-for="ApelliUsuario" class="form-control rounded-pill" />
-                        <span asp-validation-for="ApelliUsuario" class="text-danger fw-bold d-block mt-1" style="font-size: 0.85rem;"></span>
+                        <span asp-validation-for="ApelliUsuario" class="fw-bold d-block mt-1" style="color: #ffcccc; font-size: 0.85rem;"></span>
                     </div>
                 </div>
 
@@ -40,12 +41,12 @@
                     <div class="col-6">
                         <label class="fw-bold">Teléfono (10 números)</label>
                         <input asp-for="Telefono" type="text" id="inputTelefono" class="form-control rounded-pill" maxlength="10" />
-                        <span asp-validation-for="Telefono" class="text-danger fw-bold d-block mt-1" style="font-size: 0.85rem;"></span>
+                        <span asp-validation-for="Telefono" class="fw-bold d-block mt-1" style="color: #ffcccc; font-size: 0.85rem;"></span>
                     </div>
                     <div class="col-6">
                         <label class="fw-bold">Correo Electrónico</label>
-                        <input asp-for="Correo" type="email" class="form-control rounded-pill" />
-                        <span asp-validation-for="Correo" class="text-danger fw-bold d-block mt-1" style="font-size: 0.85rem;"></span>
+                        <input asp-for="Correo" type="text" class="form-control rounded-pill" />
+                        <span asp-validation-for="Correo" class="fw-bold d-block mt-1" style="color: #ffcccc; font-size: 0.85rem;"></span>
                     </div>
                 </div>
 
@@ -53,12 +54,12 @@
                     <div class="col-6">
                         <label class="fw-bold">Dirección</label>
                         <input asp-for="DirUsuario" class="form-control rounded-pill" />
-                        <span asp-validation-for="DirUsuario" class="text-danger fw-bold d-block mt-1" style="font-size: 0.85rem;"></span>
+                        <span asp-validation-for="DirUsuario" class="fw-bold d-block mt-1" style="color: #ffcccc; font-size: 0.85rem;"></span>
                     </div>
                     <div class="col-6">
                         <label class="fw-bold">Fecha Nacimiento</label>
                         <input asp-for="FechaNaci" type="date" class="form-control rounded-pill" />
-                        <span asp-validation-for="FechaNaci" class="text-danger fw-bold d-block mt-1" style="font-size: 0.85rem;"></span>
+                        <span asp-validation-for="FechaNaci" class="fw-bold d-block mt-1" style="color: #ffcccc; font-size: 0.85rem;"></span>
                     </div>
                 </div>
 

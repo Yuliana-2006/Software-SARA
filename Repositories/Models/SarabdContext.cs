@@ -25,7 +25,12 @@ public partial class SarabdContext : DbContext
     public virtual DbSet<Usuario> Usuarios { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseSqlServer("Name=ConnectionStrings:DefaultConnection");
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            optionsBuilder.UseSqlServer("Name=ConnectionStrings:DefaultConnection");
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,17 +45,13 @@ public partial class SarabdContext : DbContext
             entity.Property(e => e.IdUsuario).HasColumnName("id_usuario");
             entity.Property(e => e.MontoFinal).HasColumnType("decimal(10, 2)").HasColumnName("monto_final");
             entity.Property(e => e.MontoInicial).HasColumnType("decimal(10, 2)").HasColumnName("monto_inicial");
-
-            // NUEVA PROPIEDAD PARA EL CIERRE
             entity.Property(e => e.IdUsuarioCierre).HasColumnName("id_usuario_cierre");
 
-            // Relación de Apertura
             entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.DiaCajas)
                 .HasForeignKey(d => d.IdUsuario)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_usuario_dia_caja");
 
-            // NUEVA RELACIÓN: Usuario de Cierre
             entity.HasOne(d => d.IdUsuarioCierreNavigation).WithMany()
                 .HasForeignKey(d => d.IdUsuarioCierre)
                 .HasConstraintName("FK_usuario_cierre_dia_caja");

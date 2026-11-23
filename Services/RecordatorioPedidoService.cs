@@ -69,6 +69,13 @@ namespace Software_SARA.Services
                 return dto;
             }
 
+            if (!RecordatorioPedidoRepository.TryParseIdProveedor(dto.Proveedor, out int idProveedor) || idProveedor <= 0)
+            {
+                dto.Response = 0;
+                dto.Message = "Seleccione un proveedor válido.";
+                return dto;
+            }
+
             bool existe = await _repository.ExisteIdRecordatorio(dto.IdRecordatorio);
             if (existe)
             {
@@ -79,12 +86,23 @@ namespace Software_SARA.Services
 
             try
             {
-                string idUsuarioStr = _httpContextAccessor.HttpContext?.Session.GetString("UsuarioId");
+                string? idUsuarioStr = _httpContextAccessor.HttpContext?.Session.GetString("UsuarioId");
 
-                int idUsuarioFinal = 1;
-                if (!string.IsNullOrEmpty(idUsuarioStr) && int.TryParse(idUsuarioStr, out int parsedId))
+                if (!string.IsNullOrEmpty(idUsuarioStr) && int.TryParse(idUsuarioStr, out int parsedId) && parsedId > 0)
                 {
-                    idUsuarioFinal = parsedId;
+                    dto.Estado = "0";
+
+                    bool creado = await _repository.CrearRecordatorio(dto, parsedId);
+                    if (creado)
+                    {
+                        dto.Response = 1;
+                        dto.Message = "Recordatorio de pedido agregado exitosamente.";
+                    }
+                    else
+                    {
+                        dto.Response = 0;
+                        dto.Message = "No fue posible agregar el recordatorio. Intente nuevamente.";
+                    }
                 }
                 else
                 {
@@ -92,32 +110,17 @@ namespace Software_SARA.Services
                     dto.Message = "Error: No se encontró una sesión activa. Inicie sesión nuevamente.";
                     return dto;
                 }
-
-                // Asignación automática del estado a '0' (Pendiente) al crear
-                dto.Estado = "0";
-
-                bool creado = await _repository.CrearRecordatorio(dto, idUsuarioFinal);
-                if (creado)
-                {
-                    dto.Response = 1;
-                    dto.Message = "Recordatorio de pedido agregado exitosamente.";
-                }
-                else
-                {
-                    dto.Response = 0;
-                    dto.Message = "No fue posible agregar el recordatorio. Intente nuevamente.";
-                }
             }
             catch (Exception ex)
             {
                 dto.Response = 0;
-                dto.Message = "Error técnico: " + ex.Message;
+                dto.Message = "Error técnico: " + (ex.InnerException?.Message ?? ex.Message);
             }
 
             return dto;
         }
 
-        public async Task<RecordatorioPedidoDto> ObtenerRecordatorioPorId(int id)
+        public async Task<RecordatorioPedidoDto?> ObtenerRecordatorioPorId(int id)
         {
             return await _repository.ObtenerPorId(id);
         }
@@ -128,6 +131,13 @@ namespace Software_SARA.Services
             {
                 dto.Response = 0;
                 dto.Message = "La fecha de entrega debe ser igual o posterior al día actual.";
+                return dto;
+            }
+
+            if (!RecordatorioPedidoRepository.TryParseIdProveedor(dto.Proveedor, out int idProveedor) || idProveedor <= 0)
+            {
+                dto.Response = 0;
+                dto.Message = "Seleccione un proveedor válido.";
                 return dto;
             }
 
@@ -148,7 +158,7 @@ namespace Software_SARA.Services
             catch (Exception ex)
             {
                 dto.Response = 0;
-                dto.Message = "Error técnico: " + ex.Message;
+                dto.Message = "Error técnico: " + (ex.InnerException?.Message ?? ex.Message);
             }
 
             return dto;
@@ -159,9 +169,6 @@ namespace Software_SARA.Services
             return await _repository.ActualizarEstadoRecordatorio(idRecordatorio, 1);
         }
 
-        // ==========================================
-        // LÓGICA DE NOTIFICACIONES (10, 5, 3 días y el día de entrega)
-        // ==========================================
         public async Task<List<RecordatorioPedidoDto>> ObtenerEntregasProximasNotificaciones()
         {
             var todos = await _repository.ObtenerTodosLosRecordatorios();
@@ -174,10 +181,11 @@ namespace Software_SARA.Services
                 {
                     int diasRestantes = rec.FechaEntrega.DayNumber - hoy.DayNumber;
 
-                    // Hitos exactos solicitados: 10, 5, 3 días o el mismo día / vencido (<= 0)
                     if (diasRestantes == 10 || diasRestantes == 5 || diasRestantes == 3 || diasRestantes <= 0)
                     {
-                        rec.Estado = diasRestantes == 0 ? "¡Vence hoy!" : (diasRestantes < 0 ? $"Vencido hace {Math.Abs(diasRestantes)} días" : $"Faltan {diasRestantes} días");
+                        rec.Estado = diasRestantes == 0
+                            ? "¡Vence hoy!"
+                            : (diasRestantes < 0 ? $"Vencido hace {Math.Abs(diasRestantes)} días" : $"Faltan {diasRestantes} días");
                         listaAlertas.Add(rec);
                     }
                 }

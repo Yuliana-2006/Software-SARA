@@ -1,23 +1,36 @@
-﻿using Microsoft.Data.SqlClient;
+using System;
+using System.Data.Common;
+using Microsoft.Data.SqlClient;
 
 namespace Software_SARA.Utilities
 {
-    public class DBSaraUtility
+    public interface IDBSaraUtility
     {
-        static string SERVER = "LAPTOP-OG1EFTPF";
+        void Connect();
+        void Disconnect();
+        SqlConnection CONN();
+        DbConnection GetDbConnection();
+    }
 
-        static string DB_NAME = "SARABD";
+    public class DBSaraUtility : IDBSaraUtility
+    {
+        // --- DATOS DE MONSTERASP ---
+        static string SERVER = "db81718.databaseasp.net";
+        static string DB_NAME = "db81718";
 
-        static string DB_USER = "SARA_app";
+        // El usuario en MonsterASP suele ser el mismo ID del servidor: db81718
+        static string USER = "db81718";
 
-        static string DB_PASSWORD = "123";
+        // Pon aquí la contraseña real que te dio MonsterASP
+        static string PASSWORD = "3229634208";
 
-        static string Conn = "Server=" + SERVER + ";Database=" + DB_NAME + ";Trusted_Connection=True;TrustServerCertificate=True;";
-        //mi conxion:
+        // Cadena de conexión corregida (usando comillas y variables)
+        static string Conn = $"Server={SERVER};Database={DB_NAME};User Id={USER};Password={PASSWORD};Encrypt=False;MultipleActiveResultSets=True;";
 
+        // Conexión
         SqlConnection Con = new SqlConnection(Conn);
 
-        //procedimiento para abrir la conexion a la base de datos
+        // Procedimiento para abrir la conexión a la base de datos
         public void Connect()
         {
             try
@@ -31,7 +44,7 @@ namespace Software_SARA.Utilities
             }
         }
 
-        //procedimiento para cerrar la conexion a la base de datos
+        // Procedimiento para cerrar la conexión a la base de datos
         public void Disconnect()
         {
             try
@@ -45,11 +58,15 @@ namespace Software_SARA.Utilities
             }
         }
 
-        //Funcion que retorna la conexion a la base de datos
+        // Función que retorna la conexión a la base de datos
         public SqlConnection CONN()
         {
             return Con;
+        }
 
+        public DbConnection GetDbConnection()
+        {
+            return Con;
         }
     }
 }

@@ -1,13 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System;
+using System.Linq;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Software_SARA.Dtos;
 using Software_SARA.Repositories.Models;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Http;
-using System;
-using System.Linq;
+using Software_SARA.Utilities;
 
 namespace Software_SARA.Controllers
 {
+    // REGLA GENERAL: Gerente y Tesorero pueden entrar al módulo de Caja
+    [AuthorizeRole("Gerente", "Tesorero")]
     public class CajaController : Controller
     {
         private readonly SarabdContext _context;
@@ -20,18 +23,13 @@ namespace Software_SARA.Controllers
         [HttpGet]
         public IActionResult Index()
         {
-            var rol = HttpContext.Session.GetString("UsuarioRol");
-            if (rol != "Gerente" && rol != "Tesorero") return RedirectToAction("Login", "Acceso");
             return View();
         }
 
-        // --- CU-15 APERTURA ---
+        // --- CU-15 APERTURA (Gerente y Tesorero) ---
         [HttpGet]
         public IActionResult Apertura()
         {
-            var rol = HttpContext.Session.GetString("UsuarioRol");
-            if (rol != "Gerente" && rol != "Tesorero") return RedirectToAction("Login", "Acceso");
-
             int usuarioId = int.Parse(HttpContext.Session.GetString("UsuarioId") ?? "0");
             var usuarioActual = _context.Usuarios.Find(usuarioId);
             if (usuarioActual == null) return RedirectToAction("Login", "Acceso");
@@ -57,9 +55,6 @@ namespace Software_SARA.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Apertura(AperturaCajaDTO dto)
         {
-            var rol = HttpContext.Session.GetString("UsuarioRol");
-            if (rol != "Gerente" && rol != "Tesorero") return RedirectToAction("Login", "Acceso");
-
             int usuarioId = int.Parse(HttpContext.Session.GetString("UsuarioId") ?? "0");
             var usuarioActual = _context.Usuarios.Find(usuarioId);
             if (usuarioActual == null) return RedirectToAction("Login", "Acceso");
@@ -89,7 +84,7 @@ namespace Software_SARA.Controllers
                 FechaHoraCierre = DateTime.Now,
                 MontoFinal = 0,
                 EstadoDia = true,
-                IdUsuario = usuarioId // Forzado al usuario actual
+                IdUsuario = usuarioId // Forzado al usuario logueado
             };
 
             try
@@ -106,17 +101,12 @@ namespace Software_SARA.Controllers
             return RedirectToAction("Index");
         }
 
-        // --- CU-32 CIERRE ---
+        // --- CU-32 CIERRE (EXCLUSIVO TESORERO) ---
+        // AQUÍ APLICAMOS EL CANDADO ESTRICTO
+        [AuthorizeRole("Tesorero")]
         [HttpGet]
         public IActionResult Cierre()
         {
-            var rol = HttpContext.Session.GetString("UsuarioRol");
-            if (rol != "Tesorero")
-            {
-                TempData["MensajeError"] = "No tiene permisos para acceder a esta sección.";
-                return RedirectToAction("Index");
-            }
-
             int usuarioId = int.Parse(HttpContext.Session.GetString("UsuarioId") ?? "0");
             var tesorero = _context.Usuarios.Find(usuarioId);
             if (tesorero == null) return RedirectToAction("Login", "Acceso");
@@ -132,20 +122,17 @@ namespace Software_SARA.Controllers
 
             var sede = _context.Sedes.Find(tesorero.IdSede);
             ViewBag.NombreSede = sede?.NomSede ?? "Sede Principal";
-
             ViewBag.NombreResponsable = tesorero.NomUsuario + " " + tesorero.ApelliUsuario;
             ViewBag.UsuarioActualId = usuarioId;
 
             return View(new CierreCajaDTO { IdResponsable = usuarioId });
         }
 
+        [AuthorizeRole("Tesorero")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Cierre(CierreCajaDTO dto)
         {
-            var rol = HttpContext.Session.GetString("UsuarioRol");
-            if (rol != "Tesorero") return RedirectToAction("Index");
-
             int usuarioId = int.Parse(HttpContext.Session.GetString("UsuarioId") ?? "0");
             var tesorero = _context.Usuarios.Find(usuarioId);
 
@@ -172,9 +159,7 @@ namespace Software_SARA.Controllers
                 cajaActiva.MontoFinal = dto.MontoFinal;
                 cajaActiva.FechaHoraCierre = DateTime.Now;
                 cajaActiva.EstadoDia = false;
-
-                // ¡AQUÍ ESTÁ EL CAMBIO! Guardamos al que cierra en la nueva columna, sin borrar al que abrió.
-                cajaActiva.IdUsuarioCierre = usuarioId;
+                cajaActiva.IdUsuarioCierre = usuarioId; // Guardamos quién cierra
 
                 _context.DiaCajas.Update(cajaActiva);
                 _context.SaveChanges();
@@ -189,23 +174,19 @@ namespace Software_SARA.Controllers
             return RedirectToAction("Index");
         }
 
-        // --- HISTORIAL ---
+        // --- HISTORIAL (Gerente y Tesorero) ---
         [HttpGet]
         public IActionResult Historial()
         {
-            var rol = HttpContext.Session.GetString("UsuarioRol");
-            if (rol != "Gerente" && rol != "Tesorero") return RedirectToAction("Login", "Acceso");
-
             int usuarioId = int.Parse(HttpContext.Session.GetString("UsuarioId") ?? "0");
             var usuarioActual = _context.Usuarios.Find(usuarioId);
             if (usuarioActual == null) return RedirectToAction("Login", "Acceso");
 
             var usuariosSede = _context.Usuarios.Where(u => u.IdSede == usuarioActual.IdSede).Select(u => u.IdUsuario).ToList();
 
-            // IMPORTANTE: Incluir las DOS navegaciones para traer los nombres
             var historial = _context.DiaCajas
                 .Include(c => c.IdUsuarioNavigation)
-                .Include(c => c.IdUsuarioCierreNavigation) // <-- Incluimos al que cierra
+                .Include(c => c.IdUsuarioCierreNavigation)
                 .Where(c => usuariosSede.Contains(c.IdUsuario))
                 .OrderByDescending(c => c.FechaHoraApertura)
                 .ToList();
