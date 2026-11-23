@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Data.SqlClient;
 
 namespace Software_SARA.Repositories
 {
@@ -81,17 +82,17 @@ namespace Software_SARA.Repositories
             var idsUsuariosSede = ObtenerIdsUsuariosSedeActual();
             if (idsUsuariosSede.Count == 0) return listaFacturas;
 
-            string inClause = string.Join(", ", idsUsuariosSede.Select((_, idx) => $"@u{idx}"));
-            string sql = $@"SELECT f.id_factura, f.id_usuario, f.tip_factura, f.id_proveedor,
-                                   p.nom_proveedor, f.id_servicio, f.valor_factura,
-                                   f.fecha_reg_factura, f.fecha_vencimiento, f.estado_factura
-                            FROM SARABD.dbo.factura f
-                            LEFT JOIN SARABD.dbo.proveedor p ON f.id_proveedor = p.id_proveedor
-                            WHERE f.estado_factura = 1 AND f.id_proveedor IS NOT NULL
-                              AND f.id_usuario IN ({inClause})
-                            ORDER BY f.id_factura DESC;";
+            var parametros = idsUsuariosSede.Select((id, idx) => new SqlParameter($"@u{idx}", id)).ToArray();
+            string inClause = string.Join(", ", parametros.Select(p => p.ParameterName));
 
-            IDBSaraUtility connectionUtility = _dbFactory();
+            string sql = $@"SELECT id_factura, id_usuario, tip_factura, id_proveedor,
+                       nom_proveedor, id_servicio, valor_factura,
+                       fecha_reg_factura, fecha_vencimiento, estado_factura
+                FROM dbo.vw_FacturasNombresProveedoresActivas
+                WHERE id_usuario IN ({inClause})
+                ORDER BY id_factura DESC;";
+
+            DBSaraUtility connectionUtility = new DBSaraUtility();
             connectionUtility.Connect();
             try
             {
@@ -135,7 +136,7 @@ namespace Software_SARA.Repositories
         public virtual async Task<bool> CreateFacturaProveedor(FacProveedorDto facProveedorDto)
         {
             bool result = false;
-            string sql = "SARABD.dbo.InsertarFacturaProveedor";
+            string sql = "dbo.InsertarFacturaProveedor";
 
             IDBSaraUtility connectionUtility = _dbFactory();
             connectionUtility.Connect();
@@ -166,7 +167,7 @@ namespace Software_SARA.Repositories
         public virtual async Task<List<SelectListItem>> ObtenerListaProveedores()
         {
             var listaProveedores = new List<SelectListItem>();
-            string sql = "SELECT id_proveedor, nom_proveedor FROM SARABD.dbo.proveedor ORDER BY nom_proveedor ASC;";
+            string sql = "SELECT id_proveedor, nom_proveedor FROM dbo.proveedor ORDER BY nom_proveedor ASC;";
 
             IDBSaraUtility connectionUtility = _dbFactory();
             connectionUtility.Connect();
@@ -198,7 +199,7 @@ namespace Software_SARA.Repositories
         public virtual async Task<bool> EditarFacturaProveedor(FacProveedorDto facProveedorDto)
         {
             bool result = false;
-            string SQL = @"UPDATE SARABD.dbo.factura
+            string SQL = @"UPDATE dbo.factura
                            SET id_usuario = @IdUsuario,
                                id_proveedor = @IdProveedor,
                                id_servicio = @IdServicio,
@@ -238,7 +239,7 @@ namespace Software_SARA.Repositories
         {
             bool result = false;
             string fechaActual = DateTime.Now.ToString("yyyy-MM-dd");
-            string SQL = "UPDATE SARABD.dbo.factura SET estado_factura = 0, fecha_pago = @FechaPago WHERE id_factura = @IdFactura;";
+            string SQL = "UPDATE dbo.factura SET estado_factura = 0, fecha_pago = @FechaPago WHERE id_factura = @IdFactura;";
 
             IDBSaraUtility connectionUtility = _dbFactory();
             connectionUtility.Connect();
@@ -266,19 +267,18 @@ namespace Software_SARA.Repositories
             var idsUsuariosSede = ObtenerIdsUsuariosSedeActual();
             if (idsUsuariosSede.Count == 0) return lista;
 
-            string inClause = string.Join(", ", idsUsuariosSede.Select((_, idx) => $"@u{idx}"));
-            string sql = $@"SELECT f.id_factura, f.id_usuario, u.nom_usuario AS nom_usuario,
-                                   f.tip_factura, f.id_proveedor, p.nom_proveedor,
-                                   f.id_servicio, f.valor_factura, f.fecha_reg_factura,
-                                   f.fecha_vencimiento, f.fecha_pago, f.estado_factura
-                            FROM SARABD.dbo.factura f
-                            LEFT JOIN SARABD.dbo.usuario u ON f.id_usuario = u.id_usuario
-                            LEFT JOIN SARABD.dbo.proveedor p ON f.id_proveedor = p.id_proveedor
-                            WHERE f.estado_factura = 0 AND f.id_proveedor IS NOT NULL
-                              AND f.id_usuario IN ({inClause})
-                            ORDER BY f.id_factura DESC;";
+            var parametros = idsUsuariosSede.Select((id, idx) => new SqlParameter($"@u{idx}", id)).ToArray();
+            string inClause = string.Join(", ", parametros.Select(p => p.ParameterName));
 
-            IDBSaraUtility connectionUtility = _dbFactory();
+            string sql = $@"SELECT id_factura, id_usuario, nom_usuario,
+                           id_proveedor, nom_proveedor, valor_factura,
+                           fecha_reg_factura, fecha_vencimiento, fecha_pago,
+                           estado_factura
+                    FROM dbo.vw_FacturasProveedoresPagoConfirmadoConUsuario
+                    WHERE id_usuario IN ({inClause})
+                    ORDER BY id_factura DESC;";
+
+            DBSaraUtility connectionUtility = new DBSaraUtility();
             connectionUtility.Connect();
             try
             {

@@ -18,8 +18,12 @@ builder.Services.AddControllersWithViews()
     });
 
 // Usar el contexto del profesor
+// Usar el contexto del profesor
 builder.Services.AddDbContext<SarabdContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlOptions => sqlOptions.EnableRetryOnFailure()
+    ));
 
 builder.Services.AddScoped<SedeRepository>();
 builder.Services.AddScoped<SedesServices>();

@@ -89,7 +89,7 @@ namespace Software_SARA.Repositories
         public virtual async Task<bool> EditarSede(SedeDto sedeDto)
         {
             bool result = false;
-            string sql = @"UPDATE SARABD.dbo.Sede
+            string sql = @"UPDATE dbo.Sede
                            SET nom_sede = @NomSede,
                                dir_sede = @DirSede,
                                tel_sede = @TelSede,
@@ -131,7 +131,8 @@ namespace Software_SARA.Repositories
                 return false;
             }
             bool result = false;
-            string sql = "UPDATE SARABD.dbo.sede SET estado_sede = 0 WHERE id_sede = @IdSede;";
+            string sql = "UPDATE dbo.sede SET estado_sede = 0 WHERE id_sede = @IdSede;";
+
             IDBSaraUtility connection = _dbFactory();
             connection.Connect();
             try
@@ -154,7 +155,8 @@ namespace Software_SARA.Repositories
         public virtual async Task<bool> ReactivarSede(int idSede)
         {
             bool result = false;
-            string sql = "UPDATE SARABD.dbo.sede SET estado_sede = 1 WHERE id_sede = @IdSede;";
+            string sql = "UPDATE dbo.sede SET estado_sede = 1 WHERE id_sede = @IdSede;";
+
             IDBSaraUtility connection = _dbFactory();
             connection.Connect();
             try
